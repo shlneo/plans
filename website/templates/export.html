@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Экспорт') }} - ErespondentS{% endblock %}
+{% block content %}
+<div class="pers-page">
+    <div class="personal-acc-conteiner">
+        <a class="name">{{ _('Экспорт данных') }}</a>
+        <a class="sername">{{ _('Выберите формат экспорта') }}</a>
+
+        <div class="choose-conteiner-area">
+            <div class="choose-conteiner" data-format="xlsx">
+                <img src="/static/img/Plan_gray.svg" alt="">
+                <div class="choose-conteiner-text">
+                    <a class="choose-conteiner-text-title">Excel (.xlsx)</a>
+                    <a class="choose-conteiner-text-dis">Таблица с данными планов и мероприятий</a>
+                </div>
+            </div>
+            <div class="choose-conteiner disabled" data-format="pdf" >
+                <img src="/static/img/Pdf.svg" alt="">
+                <div class="choose-conteiner-text">
+                    <a class="choose-conteiner-text-title">Отчет (.pdf)</a>
+                    <a class="choose-conteiner-text-dis">Форматированный отчет для печати</a>
+                </div>
+            </div>
+            <div class="choose-conteiner" data-format="xml">
+                <img src="/static/img/Xml.svg" alt="">
+                <div class="choose-conteiner-text">
+                    <a class="choose-conteiner-text-title">Отчет (.xml)</a>
+                    <a class="choose-conteiner-text-dis">Структурированные данные для программ</a>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div class="header-content">
+            <a class="sername" style="padding:0;">{{ _('Выберите планы для экспорта') }}</a>
+            <div class="check-box-area">
+                <input type="checkbox" id="selectAllBtn">
+                <a>{{ _('Выбрать все') }}</a>
+            </div>
+        </div>
+
+        <div class="filters-area">
+            <form method="GET" action="{{ url_for('views.export') }}" class="filter-form" id="statusFilter">
+                <input type="hidden" name="status" id="statusInput" value="{{ request.args.get('status', 'all') }}">
+                <div class="custom-dropdown" data-filter-type="status">
+                    <button type="button" class="dropdown-toggle">
+                        <span class="selected-option">
+                            {% if request.args.get('status') == 'draft' %}{{ _('В редакции') }}
+                            {% elif request.args.get('status') == 'control' %}{{ _('Контроль пройден') }}
+                            {% elif request.args.get('status') == 'sent' %}{% if current_user.is_auditor != true %}{{ _('Отправленные') }}{%else%}{{ _('Не просмотренные') }}{%endif%}
+                            {% elif request.args.get('status') == 'error' %}{{ _('С ошибками') }}
+                            {% elif request.args.get('status') == 'approved' %}{{ _('Одобренные') }}
+                            {% else %}{{ _('Статус') }}{% endif %}
+                        </span>
+                        <svg class="dropdown-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1L6 6L11 1" stroke="#666" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" data-value="all">{{ _('Все') }}</div>
+                        <div class="dropdown-item" data-value="draft">{{ _('В редакции') }}</div>
+                        <div class="dropdown-item" data-value="control">{{ _('Контроль пройден') }}</div>
+                        <div class="dropdown-item" data-value="sent">{% if current_user.is_auditor != true %}{{ _('Отправленные') }}{%else%}{{ _('Не просмотренные') }}{%endif%}</div>
+                        <div class="dropdown-item" data-value="error">{{ _('С ошибками') }}</div>
+                        <div class="dropdown-item" data-value="approved">{{ _('Одобренные') }}</div>
+                    </div>
+                </div>
+            </form>
+
+            <form method="GET" action="{{ url_for('views.export') }}" class="filter-form" id="yearFilter">
+                <input type="hidden" name="year" id="yearInput" value="{{ request.args.get('year', 'all') }}">
+                <div class="custom-dropdown" data-filter-type="year">
+                    <button type="button" class="dropdown-toggle">
+                        <span class="selected-option">
+                            {% if request.args.get('year') and request.args.get('year') != 'all' %}{{ request.args.get('year') }}
+                            {% else %}{{ _('Год') }}{% endif %}
+                        </span>
+                        <svg class="dropdown-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M1 1L6 6L11 1" stroke="#666" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <div class="dropdown-menu">
+                        <div class="dropdown-item" data-value="all">{{ _('Все года') }}</div>
+                        {% for year in years %}
+                            <div class="dropdown-item" data-value="{{ year }}">{{ year }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </form>
+
+            {% if current_user.is_auditor %}     
+                <div class="input-with-icon">
+                    <img src="/static/img/Search_gray.svg" alt="" class="input-icon">
+                    <input type="text" data-action="search-directions" 
+                            placeholder="{{ _('Наим. предприятия') }}" 
+                            class="app-input" id="search-name">
+                </div>
+                <div class="input-with-icon">
+                    <img src="/static/img/Search_gray.svg" alt="" class="input-icon">
+                    <input type="text" data-action="search-directions" 
+                            placeholder="{{ _('ОКПО предприятия') }}" 
+                            class="app-input" id="search-okpo">
+                </div>
+            {% endif %}
+        </div>
+        <form method="POST" id="exportForm">
+            <div class="choose-plan-area">
+                {% if plans %}
+                    {% for plan in plans %}
+                        <div class="choose-plan"        
+                            data-plan="choose"
+                            data-name="{{ plan.name_org|lower }}" 
+                            data-okpo="{{ plan.okpo|lower }}">
+                            <input type="checkbox" name="ids" value="{{ plan.id }}" id="plan-{{ plan.id }}">
+                            <label for="plan-{{ plan.id }}">
+                                <div class="choose-plan-text">
+                                    <a class="choose-conteiner-text-title" title="{{ plan.name_org or _('Без названия') }}">
+                                        {% if current_user.is_auditor %}     
+                                            {{ plan.name_org | truncate(35, True, '...') }}
+                                            <span class="status-plan">{{ plan.okpo }}</span> 
+                                        {% else %}
+                                            {{ _('План энергосбережения на') }} {{ plan.year }} {{ _('год') }}
+                                        {% endif %}
+                                    </a>
+                                    <a class="choose-conteiner-text-dis">
+                                        {% if plan.is_draft %}{{ _('В редакции') }}{% endif %}
+                                        {% if plan.is_error %}{{ _('Есть ошибки') }}{% endif %}
+                                        {% if plan.is_control %}{{ _('Контроль пройден') }}{% endif %}
+                                        {% if plan.is_sent %}
+                                            {% if not current_user.is_auditor %}
+                                                {{ _('Отправлен') }}
+                                            {% else %}
+                                                {{ _('Не просмотрен') }}
+                                            {% endif %}
+                                        {% endif %}
+                                        {% if plan.is_approved %}{{ _('Одобрен') }}{% endif %}
+                                    </a>
+                                </div>
+                            </label>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="choose-plan">
+                        <div class="choose-plan-text">
+                            <p>{{ _('Нет доступных планов для экспорта.') }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+
+            <input type="hidden" name="format" id="selectedFormat">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="button-area">
+                <button type="submit" class="submit-button" id="exportBtn" disabled>
+                    <img src="/static/img/Export_wh.svg" alt="" class="btn-icon">
+                    <span class="btn-text">{{ _('Экспортировать') }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

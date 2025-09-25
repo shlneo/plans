@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Общее') }} - ErespondentS{% endblock %}
+{% block content %}
+
+<div class="pers-page">
+    <div class="personal-acc-conteiner">
+        <div class="header-content">
+            <div class="header-content-left"> 
+                <a class="name" style = "padding-bottom: 0;">{{ _('План энергосбережения на') }} {{ plan.year }} {{ _('год') }}</a>
+                <a class="status-plan">
+                    {% if plan.is_draft %}В редакции
+                    {% elif plan.is_error %}Есть ошибки
+                    {% elif plan.is_control %}Контроль пройден
+                    {% elif plan.is_sent %}{% if current_user.is_auditor != true %}Отправлен{%else%}Не просмотрен{%endif%}
+                    {% elif plan.is_approved %}Одобрен
+                    {% endif %}
+                </a>  
+            </div> 
+            <div class="header-content-right"> 
+                {% if current_user.is_auditor != true %}
+                    <form id = "sentPlanForm" action="{{ url_for('views.api_change_plan_status', id=plan.id) }}" method="POST" class="button-area" style="text-align: left;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="status" value="sent">
+                        <button id = "sentPlanButton" type="submit" class="submit-button sent" 
+                                {% if plan.is_sent or plan.is_approved or plan.is_draft or plan.is_error%}disabled{% endif %}>
+                            <img src="/static/img/Send.svg" alt="" class="btn-icon">
+                            <span class="btn-text">{{ _('Отправить') }}</span>
+                        </button>
+                    </form>
+                    <form data-modal-form="deletePlan" action="{{ url_for('views.delete_plan', id=plan.id) }}" method="POST" class="button-area" style="text-align: left;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" data-modal-trigger="deletePlan" class="submit-button delete" 
+                                {% if plan.is_sent or plan.is_approved %}disabled{% endif %}>
+                            <img src="/static/img/Delete_white.svg" alt="{{ _('Удалить') }}" class="btn-icon">
+                            <span class="btn-text">{{ _('Удалить') }}</span>
+                        </button>
+                    </form>
+                {% else %}
+                {% endif %}
+            </div>
+        </div>
+        <a class="sername">{{ _('Основные параметры') }}</a>
+        <form id = "editPlanForm" class="main-form" action="{{ url_for('views.edit_plan', id=plan.id) }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">    
+            <div class="row-app-group"> 
+                <div class="app-group">
+                    <label>{{ _('Год') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
+                        <input type="number" id="year" name="year" min="2024" max="2030" value="{{ plan.year }}" 
+                            placeholder="" class="app-input" required
+                            onchange="checkExistingPlan(this.value)"
+                            data-current-year="{{ plan.year }}">
+                    </div>
+                    <small id="year-error" class="error-message-small">
+                        {{ _('У вас уже есть план c таким годом!') }}
+                    </small>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('') }}</label>
+                    <div class="input-with-icon"> 
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Показатель энергосбережения') }} (%)</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Eco_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="energy_saving" maxlength="15" value="{{ plan.energy_saving }}" required
+                            placeholder="0.000" class="app-numeric-input-negative"
+                            pattern="-?[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('Доля местных ТЭР в КПТ') }} (%)</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Half_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="share_fuel" maxlength="15" value="{{ plan.share_fuel }}" required
+                            placeholder="0.000" class="app-numeric-input" required
+                            pattern="[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+            </div>
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Задания по экономии ТЭР (т. у. т.)') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Pig_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="saving_fuel" maxlength="15" value="{{ plan.saving_fuel }}" 
+                            placeholder="0.000" class="app-numeric-input" required
+                            pattern="[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('Доля ВИЭ в КПТ') }} (%)</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Half_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="share_energy" maxlength="15" value="{{ plan.share_energy }}" 
+                            placeholder="0.000" class="app-numeric-input" required
+                            pattern="[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+            </div>
+            {% if current_user.is_auditor != true %}
+            <div class="button-area">
+                <button id = "editPlanButton" type="submit" class="submit-button" {% if plan.is_sent or plan.is_approved %}disabled{% endif %} >
+                    <img src="/static/img/Edit.svg" alt="" class="btn-icon">
+                    <span class="btn-text">{{ _('Применить изменения') }}</span>
+                </button>
+            </div>
+            {% endif %}
+        </form>
+        <hr>
+        <a class="sername">{{ _('Персональные данные') }}</a>
+        <div class="row-app-group">
+            <div class="app-group">
+                <label>{{ _('Организация') }}</label>
+                <div class="input-with-icon">
+                    <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                    <input type="text" value="{{ plan.name_org }}"  readonly class="app-input">
+                    <div class="input-mes" title = "{{ _('Не изм.') }}">
+                        <img src="/static/img/Edit_off.svg">
+                        <a>{{ _('Не изм.') }}</a>
+                    </div>
+                </div>
+            </div>
+            <div class="app-group">
+                <label>{{ _('ФИО') }}</label>
+                <div class="input-with-icon">
+                    <img src="/static/img/Account.svg" alt="" class="input-icon">
+                    <input type="text" id="secondname" maxlength="15" value="{{ plan.fio }}" 
+                        placeholder="{{ _('Иванов') }}" class="app-input" readonly>
+                    <div class="input-mes" title = "{{ _('Не изм.') }}">
+                        <img src="/static/img/Edit_off.svg">
+                        <a>{{ _('Не изм.') }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row-app-group">
+            <div class="app-group">
+                <label>{{ _('Email') }}</label>
+                <div class="input-with-icon">
+                    <img src="/static/img/Email.svg" alt="" class="input-icon">
+                    <input type="text" maxlength="15" value="{{ plan.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
+                    <div class="input-mes" title = "{{ _('Не изм.') }}">
+                        <img src="/static/img/Edit_off.svg">
+                        <a>{{ _('Не изм.') }}</a>
+                    </div>
+                </div>
+            </div>
+            <div class="app-group">
+                <label>{{ _('Телефон') }}</label>
+                <div class="input-with-icon">
+                    <img src="/static/img/Phone.svg" alt="" class="input-icon">
+                    <input type="text" maxlength="15" value="{{ plan.phone }}" placeholder="+375.." readonly class="app-input">
+                    <div class="input-mes" title = "{{ _('Не изм.') }}">
+                        <img src="/static/img/Edit_off.svg">
+                        <a>{{ _('Не изм.') }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% if current_user.is_auditor != true %}
+            <hr>
+            <a class="sername">{{ _('Результаты проверки') }}</a>
+            <div class="tickets-conteiner">
+                {% if plan.tickets %}
+                    {% for ticket in plan.tickets %}
+                        <div class="tickets-message {% if ticket.is_owner %}tickets-message-left{% else %}tickets-message-right{% endif %}">
+                            <div class="tickets-message-content">
+                                <a class="text-ticket">{{ ticket.note }}</a>
+                                <a class="time-ticket">{{ ticket.begin_time.strftime('%d-%m-%Y %H:%M') if ticket.begin_time else '-- -- --' }}</a>
+                            </div>
+                            <img src="/static/img/{{ 'Checkmark' if ticket.luck else 'Error' }}.svg" alt="" class="btn-icon">
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="no_info-conteiner">
+                        <a>{{ _('Нет сообщений') }}</a>
+                    </div>        
+                {% endif %}
+            </div>
+        {% endif %}
+        <hr>        
+        <a class="sername">{{ _('Прочая информация') }}</a>
+        <div class="no-input"> 
+            <img src="/static/img/Calendar_grey.svg" alt="" >
+            <a>{{ _('Создан') }}: {{ plan.begin_time.strftime('%d-%m-%Y %H:%M') if plan.begin_time else '-- -- --' }}</a>
+        </div>
+        <div class="no-input"> 
+            <img src="/static/img/Calendar_grey.svg" alt="" >
+            <a>    
+                {{ _('Последняя редакция') }}: 
+                    {{ plan.change_time.strftime('%d-%m-%Y %H:%M') if plan.change_time else '-- -- --' }}
+            </a>
+        </div>
+        <div class="no-input"> 
+            <img src="/static/img/Calendar_grey.svg" alt="" >
+            <a>    
+                {{ _('Отправлен') }}: 
+                {{ plan.sent_time.strftime('%d-%m-%Y %H:%M') if plan.sent_time else '-- -- --' }}
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function checkExistingPlan(year) {
+    if (!year) return;
+    
+    const inputElement = document.getElementById('year');
+    const currentPlanYear = inputElement.dataset.currentYear;
+    
+    let url = '/check-plan-year?year=' + year;
+    if (currentPlanYear) {
+        url += '&current_plan_year=' + currentPlanYear;
+    }
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            const errorElement = document.getElementById('year-error');
+            const submitBtn = document.getElementById('edit_btn');
+            
+            if (data.exists) {
+                errorElement.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            } else {
+                errorElement.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при проверке плана:', error);
+        });
+}
+
+document.getElementById('plan-form').addEventListener('submit', function(event) {
+    const yearInput = document.getElementById('year');
+    const errorElement = document.getElementById('year-error');
+    
+    if (errorElement.style.display === 'block') {
+        event.preventDefault();
+        alert('{{ _("У вас уже есть план на этот год! Пожалуйста, выберите другой год.") }}');
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const yearInput = document.getElementById('year');
+    if (yearInput.value) {
+        checkExistingPlan(yearInput.value);
+    }
+});
+
+</script>
+{% endblock %}

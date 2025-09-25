@@ -1,0 +1,14 @@
+.vscode
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+*.sql
+
+.venv/
+.env
+
+database_export.xlsx
+website/__pycache__
+website/static/files/ministerstvo
+website/static/files/organizations

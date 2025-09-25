@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Показатели') }} - ErespondentS{% endblock %}
+{% block content %}
+
+<div class="pers-page">
+    <div class="personal-acc-conteiner" style = "background-color: transparent;  padding: 0 20px;  width: calc(100% - 40px); border: none; margin:0;">
+        <div class="menu-conteiner">
+            <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id = "AddIndicatorModalButton">
+                <img src="/static/img/Add.svg" alt="">  
+                <a class="element-text">Добавить</a>  
+            </div>
+            <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id="tableDeleteButton">
+                <img src="/static/img/Delete.svg" alt="">  
+                <a class="element-text">Удалить</a>  
+            </div>
+            <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id="tableEditButton">
+                <img src="/static/img/Edit_black.svg" alt="">  
+                <a class="element-text">Редакт.</a>  
+            </div>
+            <form id = "controlPlanForm" action="/api/change-plan-status/{{ plan.id }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="status" value="control">
+                <button id = "controlPlanButton" type="submit" class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}">
+                    <img src="/static/img/Control.svg" alt="">  
+                    <span class="element-text">Контроль</span>  
+                </button>
+            </form>
+        </div>      
+        <div class = "table-container">
+            <table class="main-table"  id="indicatorsTable">
+                <thead class="main-table-titels">
+                    <tr>
+                        <th rowspan="2" class="resizable" style="white-space: nowrap;">
+                            <a>Строка</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="2" class="resizable" style="white-space: nowrap;">
+                            <a>№ п/п</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="2" class="resizable" style="min-width: 800px;">
+                            <a>Основные показатели по использованию ТЭР</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="2" class="resizable">
+                            <a>Ед. изм.</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th colspan="2" class="resizable" style="min-width: 200px;">
+                            <a>{{ plan.year - 1}} г. отчет</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th colspan="2" class="resizable" style="min-width: 200px;">
+                            <a>{{ plan.year }} г. отчет</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th colspan="2" class="resizable" style="min-width: 200px;">
+                            <a>{{ plan.year + 1}} г. прогноз</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="2" class="resizable">
+                            <a>Изменение ТЭР прогнозного года к предыдущему</a>
+                            <div class="resizer"></div>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th rowspan="1" class="resizable">
+                            в ед. изм.
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="1" class="resizable">
+                            в т у. т.
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="1" class="resizable">
+                            в ед. изм.
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="1" class="resizable">
+                            в т у. т.
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="1" class="resizable">
+                            в ед. изм.
+                            <div class="resizer"></div>
+                        </th>
+                        <th rowspan="1" class="resizable">
+                            в т у. т.
+                            <div class="resizer"></div>
+                        </th>
+                    </tr>
+                    <tr>
+                        <th class="resizable">0<div class="resizer"></div></th>
+                        <th class="resizable">1<div class="resizer"></div></th>
+                        <th class="resizable">2<div class="resizer"></div></th>
+                        <th class="resizable">3<div class="resizer"></div></th>
+                        <th class="resizable">4<div class="resizer"></div></th>
+                        <th class="resizable">5<div class="resizer"></div></th>
+                        <th class="resizable">6<div class="resizer"></div></th>
+                        <th class="resizable">7<div class="resizer"></div></th>
+                        <th class="resizable">8<div class="resizer"></div></th>
+                        <th class="resizable">9<div class="resizer"></div></th>
+                        <th class="resizable">10<div class="resizer"></div></th>
+                    </tr>
+                </thead>
+                <tbody class = "rows">
+                    {% set ns = namespace(last_group=none) %}
+                    {% for row in indicators %}
+                        {% set group_color = none %}
+                        {% if row.indicator.Group != ns.last_group %}
+                            {% if row.indicator.Group == 1 %}
+                                {% set group_color = '#E3F2FD' %} 
+                            {% elif row.indicator.Group == 2 %}
+                                {% set group_color = '#BBDEFB' %}
+                            {% elif row.indicator.Group == 3 %}
+                                {% set group_color = '#90CAF9' %} 
+                            {% elif row.indicator.Group == 4 %}
+                                {% set group_color = '#64B5F6' %}
+                            {% elif row.indicator.Group == 5 %}
+                                {% set group_color = '#42A5F5' %} 
+                            {% elif row.indicator.Group == 6 %}
+                                {% set group_color = '#1191F3' %}
+                            {% elif row.indicator.Group == 7 %}
+                                {% set group_color = '#1E99E5' %}
+                            {% endif %}
+                        {% endif %}
+                        <tr class="menu-row" data-id="{{ row.id }}" {% if group_color %}style="background-color: {{ group_color }}"{% endif %}>
+                            <td>{{ loop.index }}</td>
+                            <td style="text-align: center;">
+                                {% if row.indicator.Group != ns.last_group %}
+                                    {{ row.indicator.Group }}
+                                    {% set ns.last_group = row.indicator.Group %}
+                                {% endif %}
+                            </td>
+                            <td style="text-align: start;">{{ row.indicator.name }}</td>
+                            <td style="text-align: start;">{{ row.indicator.unit.name }}</td>
+                            <td>{{ (row.QYearPrev / row.indicator.CoeffToTut) | round(3) }}</td>
+                            <td>{{ row.QYearPrev }}</td>
+                            <td>{{ (row.QYearCurr / row.indicator.CoeffToTut) | round(3) }}</td>
+                            <td>{{ row.QYearCurr }}</td>
+                            <td>{{ (row.QYearNext / row.indicator.CoeffToTut) | round(3) }}</td>
+                            <td>{{ row.QYearNext }}</td>
+                            <td class="difference-cell" 
+                                style="{% if (row.QYearNext - row.QYearCurr) < 0 %}background-color: rgb(255, 96, 96, 0.705);{% elif (row.QYearNext - row.QYearCurr) > 0 %}background-color: rgb(96, 255, 122, 0.705);{% endif %}">
+                                {{ row.QYearNext - row.QYearCurr }}
+                            </td>
+                            <td style = "display: none;">{{ row.indicator.code }}</td>
+                            <td style="display: none;" data-group="{{ row.indicator.Group }}">{{ row.indicator.Group }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>    
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const inputIds = ['QYearPrev-edit', 'QYearCurr-edit', 'QYearNext-edit'];
+    inputIds.forEach(inputId => {
+        const inputElement = document.getElementById(inputId);
+        const predictionElement = inputElement.nextElementSibling;
+        function updatePredictionValue() {
+            const inputValue = parseFloat(inputElement.value) || 0;
+            const multiplier = parseFloat(predictionElement.dataset.multiplier) || 1;
+            const result = inputValue * multiplier;
+            
+            predictionElement.textContent = result.toFixed(3);
+        }
+        inputElement.addEventListener('input', updatePredictionValue);
+        updatePredictionValue();
+    });
+
+    const multiplierValueElements = document.querySelectorAll('.multiplier-value');
+    multiplierValueElements.forEach(element => {
+        element.addEventListener('click', function() {
+
+            const fieldId = this.dataset.field;
+            const predictionElement = document.querySelector(`#${fieldId}`).nextElementSibling;
+            
+            const newMultiplier = prompt('Введите новое значение множителя:', predictionElement.dataset.multiplier);
+            if (newMultiplier !== null && !isNaN(parseFloat(newMultiplier))) {
+                predictionElement.dataset.multiplier = newMultiplier;
+                this.textContent = newMultiplier;
+            
+                const inputElement = document.getElementById(fieldId);
+                const inputValue = parseFloat(inputElement.value) || 0;
+                const result = inputValue * parseFloat(newMultiplier);
+                predictionElement.textContent = result.toFixed(3);
+            }
+        });
+    });
+
+});
+</script>
+{% endblock %}

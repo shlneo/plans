@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Создание плана') }} - ErespondentS{% endblock %}
+{% block content %}
+
+<div class="pers-page">
+    <div class="personal-acc-conteiner">
+        <a class="name">{{ _('Создание нового плана') }}</a>
+        <a class="sername">{{ _('Основная информация') }}</a>
+        <form class="main-form" action="/create-plan" method="POST" id="plan-form">
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Год') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
+                        <input type="number" id="year" name="year" min="2024" max="2030" value="2026" 
+                            placeholder="2026" class="app-input"  required
+                            onchange="checkExistingPlan(this.value)">
+                    </div>
+                    <small id="year-error" class="error-message-small">
+                        {{ _('У вас уже есть план на этот год!') }}
+                    </small>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('') }}</label>
+                    <div class="input-with-icon"> 
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Показатель энергосбережения') }} (%)</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Eco_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="energy_saving" maxlength="15" value="0.000" required
+                            placeholder="0.000" class="app-numeric-input-negative"
+                            pattern="-?[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('Доля местных ТЭР в КПТ') }} (%)</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Half_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="share_fuel" maxlength="15" value="0.000" required 
+                            placeholder="0.000" class="app-numeric-input"
+                            pattern="[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+            </div> 
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Задания по экономии ТЭР (т. у. т.)') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Pig_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="saving_fuel" maxlength="15" value="0.000" required
+                            placeholder="0.000" class="app-numeric-input"
+                            pattern="[0-9]+([\.,][0-9]+)?" title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('Доля ВИЭ в КПТ') }} (%)</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Half_gray.svg" alt="" class="input-icon">
+                        <input type="text" name="share_energy" maxlength="15" value="0.000" 
+                            placeholder="0.000" class="app-numeric-input" required
+                            pattern="[0-9]+([\.,][0-9]+)?"title="{{ _('Введите числовое значение (например: 12.345)') }}">
+                    </div>
+                </div>
+            </div>
+            <hr>
+
+            <a class="sername">{{ _('Персональные данные') }}</a>
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Организация') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                        <input type="text" value="{{ current_user.organization.name }}"  readonly class="app-input">
+                        <div class="input-mes" title = "{{ _('Не изм.') }}">
+                            <img src="/static/img/Edit_off.svg">
+                            <a>{{ _('Не изм.') }}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('ФИО') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Account.svg" alt="" class="input-icon">
+                        <input type="text" id="secondname" maxlength="15" value="{{ current_user.last_name + ' ' + current_user.first_name + ' ' + current_user.patronymic_name}}" 
+                            placeholder="{{ _('Иванов') }}" class="app-input" readonly>
+                        <div class="input-mes" title = "{{ _('Не изм.') }}">
+                            <img src="/static/img/Edit_off.svg">
+                            <a>{{ _('Не изм.') }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row-app-group">
+                <div class="app-group">
+                    <label>{{ _('Email') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Email.svg" alt="" class="input-icon">
+                        <input type="text" maxlength="15" value="{{ current_user.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
+                        <div class="input-mes" title = "{{ _('Не изм.') }}">
+                            <img src="/static/img/Edit_off.svg">
+                            <a>{{ _('Не изм.') }}</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="app-group">
+                    <label>{{ _('Телефон') }}</label>
+                    <div class="input-with-icon">
+                        <img src="/static/img/Phone.svg" alt="" class="input-icon">
+                        <input type="text" maxlength="15" value="{{ current_user.phone }}" placeholder="+375.." readonly class="app-input">
+                        <div class="input-mes" title = "{{ _('Не изм.') }}">
+                            <img src="/static/img/Edit_off.svg">
+                            <a>{{ _('Не изм.') }}</a>
+                        </div> 
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="button-area">
+                <button type="submit" id="submit-btn" class="submit-button">
+                    <img src="/static/img/Add_wh.svg" alt="" class="btn-icon">
+                    <span class="btn-text">{{ _('Создать новый план') }}</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function checkExistingPlan(year) {
+    if (!year) return;
+    
+    fetch('/check-plan-year?year=' + year)
+        .then(response => response.json())
+        .then(data => {
+            const errorElement = document.getElementById('year-error');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            if (data.exists) {
+                errorElement.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.5';
+                submitBtn.style.cursor = 'not-allowed';
+            } else {
+                errorElement.style.display = 'none';
+                submitBtn.disabled = false;
+                submitBtn.style.opacity = '1';
+                submitBtn.style.cursor = 'pointer';
+            }
+        })
+        .catch(error => {
+            console.error('Ошибка при проверке плана:', error);
+        });
+}
+
+document.getElementById('plan-form').addEventListener('submit', function(event) {
+    const yearInput = document.getElementById('year');
+    const errorElement = document.getElementById('year-error');
+    
+    if (errorElement.style.display === 'block') {
+        event.preventDefault();
+        alert('{{ _("У вас уже есть план на этот год! Пожалуйста, выберите другой год.") }}');
+    }
+});
+
+document.querySelectorAll('.app-numeric-input').forEach(input => {
+    input.addEventListener('input', function(e) {
+        this.value = this.value.replace(',', '.');
+        
+        if (this.value && isNaN(parseFloat(this.value))) {
+            this.setCustomValidity('{{ _("Пожалуйста, введите числовое значение") }}');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const yearInput = document.getElementById('year');
+    if (yearInput.value) {
+        checkExistingPlan(yearInput.value);
+    }
+});
+</script>
+
+{% endblock %}

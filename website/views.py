@@ -1,0 +1,1272 @@
+from datetime import timedelta
+import io
+import zipfile
+from flask import (
+    Blueprint, abort, current_app, render_template, redirect, send_file, url_for, flash, request, jsonify, session, g
+)
+
+from flask_login import (
+    current_user, login_required, login_user
+)
+from sqlalchemy.orm import joinedload
+from sqlalchemy import func, asc, or_
+from werkzeug.security import check_password_hash, generate_password_hash
+
+from .models import User, Organization, Plan, Ticket, Unit, Direction, Indicator, EconMeasure, EconExec, IndicatorUsage, Notification, current_utc_time
+from . import db
+
+from functools import wraps
+
+from decimal import Decimal, InvalidOperation
+
+views = Blueprint('views', __name__)
+
+def to_decimal_3(value):
+    try:
+        return Decimal(value).quantize(Decimal('0.001'))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal('0.000')
+
+def owner_only(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        plan_id = kwargs.get('id')
+        
+        if not plan_id:
+            flash('ID плана не указан.', 'error')
+            return redirect(url_for('views.plans', user=current_user.id))
+        
+        plan = Plan.query.get(plan_id)
+        
+        if plan is None:
+            flash('План не найден.', 'error')
+            return redirect(url_for('views.plans', user=current_user.id))
+        
+        has_access = (
+            current_user.is_admin or 
+            current_user.is_auditor or 
+            plan.user_id == current_user.id
+        )
+        
+        if not has_access:
+            flash('У вас нет доступа к этому плану.', 'error')
+            return redirect(url_for('views.plans', user=current_user.id))
+    
+        g.current_plan = plan
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+
+@views.route('/change_language/<lang_code>')
+def change_language(lang_code):
+    if lang_code in current_app.config['LANGUAGES']:
+        session['language'] = lang_code
+    return redirect(request.referrer or url_for('views.login'))
+
+@views.route('/profile')
+@login_required
+def profile():
+    can_change_modal = True
+    if Plan.query.filter(Plan.user_id == current_user.id).count() > 0:
+        can_change_modal = False
+        
+    return render_template('profile.html', 
+                        can_change_modal=can_change_modal,
+                        hide_header=False,
+                        second_header = True,
+                        active_tab='account',
+                        current_user=current_user,
+                        change_orgUser_modal = True
+                           )
+
+@views.route('/edit-user-org', methods=['POST'])
+@login_required
+def edit_user_org():
+    id = request.form.get('id_org')
+    
+    current_org = Organization.query.filter_by(
+        id=id
+    ).first()
+    
+    if not current_org:
+        flash('Организация не найдена!', 'error')
+        return redirect(request.referrer)
+    
+    if Plan.query.filter(Plan.user_id == current_user.id).count() > 0:
+        flash('У вас существуют планы энергосбрежения, редактирование запрещено!', 'error')
+        return redirect(url_for('views.profile'))
+    
+    current_user.organization_id = current_org.id
+    db.session.commit()
+    
+    flash('Изменения приняты!', 'success')
+    return redirect(url_for('views.profile'))
+
+@views.route('/api/organizations')
+@login_required
+def get_organizations():
+    page = request.args.get("page", 1, type=int)
+    search_query = request.args.get("q", "", type=str)
+
+    query = Organization.query
+    if search_query:
+        query = query.filter(
+            db.or_(
+                Organization.name.ilike(f"%{search_query}%"),
+                Organization.okpo.ilike(f"%{search_query}%")
+            )
+        )
+
+    per_page = 10
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    
+    return jsonify({
+        "organizations": [
+            {
+                "id": org.id,
+                "name": org.name,
+                "okpo": org.okpo,
+                "ynp": org.ynp,
+                "ministry": org.ministry,
+            }
+            for org in pagination.items
+        ],
+        "page": pagination.page,
+        "has_next": pagination.has_next
+    })
+
+
+def get_plans_by_okpo():
+    okpo_digit = str(current_user.organization.okpo)[-4]
+    """Фильтрация по 4-ой цифре с конца OKPO: {okpo_digit}"""
+    
+    status_filter = or_(
+        Plan.is_sent == True,
+        Plan.is_error == True, 
+        Plan.is_approved == True
+    )
+    
+    if current_user.is_admin or (current_user.is_auditor and str(current_user.organization.okpo)[-4] == "8"):
+        """Доступ для администраторов/аудиторов"""
+        return Plan.query.filter(
+            status_filter
+        ).order_by(Plan.year.asc())
+    else:
+        """Доступ для других аудиторов с фильтрацией по OKPO"""
+        return Plan.query.join(Organization).filter(
+            status_filter,
+            func.substr(Organization.okpo, func.length(Organization.okpo) - 3, 1) == okpo_digit
+        ).order_by(Plan.year.asc())
+
+def get_filtered_plans(user, status_filter="all", year_filter="all"):
+    """Возвращает планы и счетчики по фильтрам для конкретного пользователя"""
+    
+    if user.is_auditor:
+        base_query = get_plans_by_okpo()
+    else:
+        base_query = Plan.query.filter_by(user_id=user.id)
+    
+    display_query = base_query
+
+    status_filters = {
+        'draft': Plan.is_draft == True,
+        'control': Plan.is_control == True,
+        'sent': Plan.is_sent == True,
+        'error': Plan.is_error == True,
+        'approved': Plan.is_approved == True
+    }
+
+    if status_filter != 'all' and status_filter in status_filters:
+        display_query = display_query.filter(status_filters[status_filter])
+
+    if year_filter != 'all':
+        display_query = display_query.filter(Plan.year == int(year_filter))
+
+    plans = display_query.all()
+
+    count_query = base_query
+    if year_filter != 'all':
+        count_query = count_query.filter(Plan.year == int(year_filter))
+    if status_filter != 'all' and status_filter in status_filters:
+        count_query = count_query.filter(status_filters[status_filter])
+
+    status_counts = {
+        'all': count_query.count(),
+        'draft': count_query.filter(Plan.is_draft == True).count(),
+        'control': count_query.filter(Plan.is_control == True).count(),
+        'sent': count_query.filter(Plan.is_sent == True).count(),
+        'error': count_query.filter(Plan.is_error == True).count(),
+        'approved': count_query.filter(Plan.is_approved == True).count()
+    }
+    return plans, status_counts
+
+@views.route('/plans')
+@login_required
+def plans():
+    status_filter = request.args.get('status', 'all')
+    year_filter = request.args.get('year', 'all')
+
+    plans, status_counts = get_filtered_plans(current_user, status_filter, year_filter)
+
+    context = {
+        'years': range(2024, 2056),
+        'plans': plans,
+        'status_counts': status_counts,
+        'current_status_filter': status_filter,
+        'current_year_filter': year_filter
+    }
+
+    return render_template(
+        'plans.html',
+        **context,
+        current_user=current_user,
+        hide_header=False,
+        second_header=True,
+        active_tab='plans'
+    )
+
+@views.route('/export')
+@login_required
+def export():
+    status_filter = request.args.get('status', 'all')
+    year_filter = request.args.get('year', 'all')
+
+    plans, status_counts = get_filtered_plans(current_user, status_filter, year_filter)
+
+    context = {
+        'years': range(2024, 2056),
+        'plans': plans,
+        'status_counts': status_counts,
+        'current_status_filter': status_filter,
+        'current_year_filter': year_filter
+    }
+
+    return render_template(
+        'export.html',
+        **context,
+        current_user=current_user,
+        hide_header=False,
+        second_header=True,
+        active_tab='export'
+    )
+
+@views.route('/create-plan', methods=['GET', 'POST'])
+@login_required
+def create_plan():
+    if request.method == 'POST':
+        year = request.form.get('year')
+
+        existing_plan = Plan.query.filter_by(
+            user_id=current_user.id,
+            year=year
+        ).first()
+        
+        if existing_plan:
+            flash(f'У вас уже есть план на {year} год!', 'error')
+            return render_template('create_plan.html', 
+                        hide_header=False,
+                        second_header=True,
+                        active_tab='create')
+
+        energy_saving = to_decimal_3(request.form.get('energy_saving'))
+        share_fuel = to_decimal_3(request.form.get('share_fuel'))
+        saving_fuel = to_decimal_3(request.form.get('saving_fuel'))
+        share_energy = to_decimal_3(request.form.get('share_energy'))
+
+        new_plan = Plan(
+            okpo=current_user.organization.okpo,
+            org_id=current_user.organization.id,
+            name_org=current_user.organization.name,
+            year=year,
+            user_id=current_user.id,
+            email=current_user.email,
+            fio=current_user.last_name + ' ' + current_user.first_name + ' ' + current_user.patronymic_name,
+            phone=current_user.phone,
+            energy_saving=energy_saving,
+            share_fuel=share_fuel,
+            saving_fuel=saving_fuel,
+            share_energy=share_energy
+        )
+        
+        db.session.add(new_plan)
+        db.session.commit()
+
+
+        existing_indicators = db.session.query(IndicatorUsage.id_indicator)\
+            .filter(IndicatorUsage.id_plan == new_plan.id)\
+            .subquery()
+        
+        mandatory_indicators = Indicator.query\
+            .filter(Indicator.IsMandatory == True)\
+            .filter(~Indicator.id.in_(existing_indicators))\
+            .all()
+        
+        for indicator in mandatory_indicators:
+            indicator_usage = IndicatorUsage(
+                id_indicator=indicator.id,
+                id_plan=new_plan.id,
+                QYearPrev=to_decimal_3(0),
+                QYearCurr=to_decimal_3(0),
+                QYearNext=to_decimal_3(0)
+            )
+            db.session.add(indicator_usage)
+        
+        db.session.commit()
+        flash('Новый план создан!', 'success')
+        return redirect(url_for('views.plans'))
+
+    return render_template('create_plan.html', 
+                    hide_header=False,
+                    second_header=True,
+                    active_tab='create')
+    
+@views.route('/edit-plan/<int:id>', methods=['POST'])
+@owner_only
+@login_required
+def edit_plan(id):
+    current_plan = Plan.query.filter_by(
+        id=id,
+        user_id=current_user.id
+    ).first()
+    
+    if not current_plan:
+        flash('План не найден или у вас нет прав для его редактирования!', 'error')
+        return redirect(url_for('views.plans'))
+    
+    year = request.form.get('year')
+    
+    existing_plan = Plan.query.filter(
+        Plan.user_id == current_user.id,
+        Plan.year == year,
+        Plan.id != id 
+    ).first()
+    
+    if existing_plan:
+        flash(f'У вас уже есть другой план на {year} год!', 'error')
+        return redirect(url_for('views.plans'))
+    
+    energy_saving = to_decimal_3(request.form.get('energy_saving'))
+    share_fuel = to_decimal_3(request.form.get('share_fuel'))
+    saving_fuel = to_decimal_3(request.form.get('saving_fuel'))
+    share_energy = to_decimal_3(request.form.get('share_energy'))
+
+    current_plan.year = year
+    current_plan.energy_saving = energy_saving
+    current_plan.share_fuel = share_fuel
+    current_plan.saving_fuel = saving_fuel
+    current_plan.share_energy = share_energy
+    
+    current_plan.change_time = current_utc_time()
+    
+    db.session.commit()
+    flash('Изменения приняты!', 'success')
+    update_ChangeTimePlan(current_plan.id)
+    return redirect(url_for('views.plan_review', id=current_plan.id))  
+    
+@views.route('/delete-plan/<int:id>', methods=['POST'])
+@owner_only
+@login_required
+def delete_plan(id):
+    try:
+        current_plan = Plan.query.filter_by(
+            id=id,
+            user_id=current_user.id
+        ).first()
+
+        db.session.delete(current_plan)
+        db.session.commit()
+        
+        flash('План успешно удален!', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error deleting plan {id}: {str(e)}")
+        flash('Произошла ошибка при удалении плана', 'error')
+    return redirect(url_for('views.plans'))
+    
+@views.route('/check-plan-year')
+@login_required
+def check_plan_year():
+    year = request.args.get('year')
+    current_plan_year = request.args.get('current_plan_year')
+    
+    if not year:
+        return jsonify({'error': 'Year parameter is required'}), 400
+    
+    if current_plan_year and current_plan_year == year:
+        return jsonify({'exists': False})
+    
+    existing_plan = Plan.query.filter_by(
+        user_id=current_user.id,
+        year=year
+    ).first()   
+        
+    return jsonify({'exists': existing_plan is not None})
+
+@views.route('/stats', methods=['GET', 'POST'])
+@login_required
+def stats():
+    if request.method == 'POST':
+        pass
+    return render_template('stats.html', 
+                        hide_header=False,
+                        second_header = True,
+                        active_tab='stats')
+
+
+
+def export_xml_single(plan: Plan):
+    xml_content = f"<plan id='{plan.id}' year='{plan.year}' name_org='{plan.name_org}' okpo='{plan.okpo}'/>"
+    file_stream = io.BytesIO()
+    file_stream.write(xml_content.encode("utf-8"))
+    file_stream.seek(0)
+    filename = f"plan_{plan.id}.xml"
+    return file_stream, "application/xml", filename
+
+def export_xlsx_single(plan: Plan):
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["ID", "Год", "Организация", "ОКПО"])
+    ws.append([plan.id, plan.year, plan.name_org, plan.okpo])
+    file_stream = io.BytesIO()
+    wb.save(file_stream)
+    file_stream.seek(0)
+    filename = f"plan_{plan.id}.xlsx"
+    return file_stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename
+
+def export_pdf_single(plan: Plan):
+    pass
+
+@views.route('/export-to/<string:format>', methods=['POST'])
+@login_required
+def export_to(format):
+    ids = request.form.getlist("ids")
+    if not ids:
+        flash("Не выбраны планы.", "error")
+        return redirect(request.url)
+
+    plans = Plan.query.filter(Plan.id.in_(ids)).all()
+    if not plans:
+        flash("Не найдены выбранные планы.", "error")
+        return redirect(request.url)
+
+    if len(plans) == 1:
+        plan = plans[0]
+        if format == "xml":
+            file_stream, mime, filename = export_xml_single(plan)
+        elif format == "xlsx":
+            file_stream, mime, filename = export_xlsx_single(plan)
+        elif format == "pdf":
+            file_stream, mime, filename = export_pdf_single(plan)
+        else:
+            flash("Неизвестный формат.", "error")
+            return redirect(request.url)
+        return send_file(file_stream, as_attachment=True, download_name=filename, mimetype=mime)
+    
+    zip_stream = io.BytesIO()
+    with zipfile.ZipFile(zip_stream, "w") as zip_file:
+        for plan in plans:
+            if format == "xml":
+                f_stream, _, fname = export_xml_single(plan)
+            elif format == "xlsx":
+                f_stream, _, fname = export_xlsx_single(plan)
+            elif format == "pdf":
+                f_stream, _, fname = export_pdf_single(plan)
+            else:
+                flash("Неизвестный формат.", "error")
+                return redirect(request.url)
+
+            zip_file.writestr(fname, f_stream.getvalue())
+
+    zip_stream.seek(0)
+    return send_file(zip_stream, as_attachment=True, download_name="plans.zip", mimetype="application/zip")
+
+@views.route('/plans/plan-review/<int:id>', methods=['GET', 'POST'])
+@login_required
+@owner_only
+def plan_review(id):    
+    current_plan = g.current_plan
+    if request.method == 'POST':
+        pass
+    
+    return render_template('plan_review.html', 
+                        plan=current_plan,     
+                        hide_header=False,
+                        plan_header=True,
+                        active_plan_tab='review')
+    
+@views.route('/plans/plan-audit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@owner_only
+def plan_audit(id):    
+    current_plan = g.current_plan
+    if request.method == 'POST':
+        pass
+    
+    return render_template('plan_audit.html', 
+                        plan=current_plan,     
+                        hide_header=False,
+                        plan_header=True,
+                        active_plan_tab='audit')
+
+@views.route('/plans/plan-directions/<int:id>', methods=['GET', 'POST'])
+@login_required
+@owner_only
+def plan_directions(id):    
+    if request.method == 'POST':
+        pass
+    
+    current_plan = g.current_plan
+    directions = Direction.query.all() 
+    
+    econ_measures = (
+        EconMeasure.query
+        .filter_by(id_plan=current_plan.id)
+        .join(EconMeasure.direction)
+        .order_by(asc(Direction.code))
+        .all()
+    )
+    
+    return render_template('plan_directions.html', 
+                        econ_measures=econ_measures,
+                        directions=directions,
+                        plan=current_plan,  
+                        hide_header=False,
+                        plan_header=True,
+                        active_plan_tab='directions',
+                        add_direction_modal=True,
+                        confirmModal=True,
+                        edit_direction_modal=True,
+                        context_menu=True
+                         )
+    
+@views.route('/get-econmeasure/<int:id>', methods=['GET'])
+@login_required
+def get_econmeasure(id):
+    try:
+        existing_measure = EconMeasure.query.get(id)
+        if not existing_measure:
+            return jsonify({'error': 'EconMeasure not found'}), 404
+        
+        return jsonify(existing_measure.as_dict())
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@views.route('/create-econmeasure/<int:id>', methods=['POST'])
+@login_required
+@owner_only
+def create_econmeasure(id):
+    
+    id_direction = request.form.get('id_direction')
+    year_econ = to_decimal_3(request.form.get('year_econ'))
+    estim_econ = to_decimal_3(request.form.get('estim_econ'))
+
+    new_econmeasure = EconMeasure(
+        id_plan=id,
+        id_direction=id_direction,
+        year_econ=year_econ,
+        estim_econ=estim_econ
+    )
+    
+    db.session.add(new_econmeasure)
+    db.session.commit()    
+    flash('Направление добавлено!', 'success')
+    update_ChangeTimePlan(id)
+    return redirect(url_for('views.plan_directions', id=id))
+
+@views.route('/delete-econmeasure/<int:id>', methods=['POST'])
+@login_required
+def delete_econmeasure(id):
+    econ_measure = EconMeasure.query.get_or_404(id)
+
+    id_plan = econ_measure.id_plan
+
+    db.session.delete(econ_measure)
+    db.session.commit()
+    update_ChangeTimePlan(id_plan)
+    flash('Направление успешно удалено!', 'success')
+    return redirect(url_for('views.plan_directions', id=id_plan))
+
+@views.route('/edit-econmeasure/<int:id>', methods=['POST'])
+@login_required
+def edit_econmeasure(id):
+
+    year_econ = to_decimal_3(request.form.get('year_econ'))
+    estim_econ = to_decimal_3(request.form.get('estim_econ'))
+
+    econmeasure = EconMeasure.query.filter_by(id=id).first()
+    
+    if not econmeasure:
+        flash('Запись не найдена!', 'error')
+        return redirect(url_for('views.plan_directions'))
+
+    id = econmeasure.id_plan
+    econmeasure.year_econ = year_econ
+    econmeasure.estim_econ = estim_econ
+    db.session.commit()
+    update_ChangeTimePlan(id)
+    flash('Направление обновлено!', 'success')
+    return redirect(url_for('views.plan_directions', id=id))
+
+@views.route('/plans/plan-events/<int:id>', methods=['GET', 'POST'])
+@login_required
+@owner_only
+def plan_events(id):    
+    if request.method == 'POST':
+        pass
+    
+    current_plan = g.current_plan
+  
+    econ_measures = (
+        EconMeasure.query
+        .filter_by(id_plan=current_plan.id)
+        .join(EconMeasure.direction)
+        .order_by(asc(Direction.code))
+        .all()
+    )
+  
+    econ_exec = (
+        EconExec.query
+        .filter_by(id_plan=current_plan.id)
+        .join(EconMeasure.direction)
+        .order_by(asc(Direction.code))
+        .all()
+    )
+  
+    local_econ_execes = (EconExec.query
+        .join(EconMeasure)
+        .join(Plan)
+        .filter(Plan.id == current_plan.id, EconExec.is_local == True)
+        .options(joinedload(EconExec.econ_measures).joinedload(EconMeasure.plan))
+        .all())
+
+    non_local_econ_execes = (EconExec.query
+        .join(EconMeasure)
+        .join(Plan)
+        .filter(Plan.id == current_plan.id, EconExec.is_local == False)
+        .options(joinedload(EconExec.econ_measures).joinedload(EconMeasure.plan))
+        .all())
+    
+
+    return render_template('plan_events.html',  
+                        econ_exec=econ_exec,
+                        econ_measures=econ_measures,
+                        local_econ_execes=local_econ_execes,
+                        non_local_econ_execes=non_local_econ_execes,
+                        plan=current_plan, 
+                        hide_header=False,
+                        plan_header = True,
+                        active_plan_tab='events',
+                        add_event_modal = True,
+                        confirmModal = True,
+                        edit_event_modal=True,
+                        context_menu = True
+                         )
+    
+@views.route('/create-econexeces/<int:id>', methods=['POST'])
+@login_required
+@owner_only
+def create_econexeces(id):
+    id_measure = request.form.get('id_measure')
+    name = request.form.get('name') or None
+
+    Volume_value = request.form.get('Volume')
+    ExpectedQuarter_value = request.form.get('ExpectedQuarter')
+    Payback_value = request.form.get('Payback')
+
+
+    EffTut = to_decimal_3(request.form.get('EffTut'))
+    EffRub = to_decimal_3(request.form.get('EffRub'))
+    EffCurrYear = to_decimal_3(request.form.get('EffCurrYear'))
+
+    VolumeFin = to_decimal_3(request.form.get('VolumeFin'))
+    BudgetState = to_decimal_3(request.form.get('BudgetState')) 
+    BudgetRep = to_decimal_3(request.form.get('BudgetRep')) 
+    BudgetLoc = to_decimal_3(request.form.get('BudgetLoc')) 
+    BudgetOther = to_decimal_3(request.form.get('BudgetOther'))
+    MoneyOwn = to_decimal_3(request.form.get('MoneyOwn')) 
+    MoneyLoan = to_decimal_3(request.form.get('MoneyLoan')) 
+    MoneyOther = to_decimal_3(request.form.get('MoneyOther'))
+
+    Volume = int(float(Volume_value)) if Volume_value else None
+    ExpectedQuarter = int(float(ExpectedQuarter_value)) if ExpectedQuarter_value else None
+    Payback = int(float(Payback_value)) if Payback_value else None
+
+    measure = EconMeasure.query.get(id_measure)
+    if not measure:
+        flash('Направление не найдено!', 'error')
+        return redirect(url_for('views.plan_events', id=id))
+    
+    is_local = measure.direction.is_local if measure.direction else False
+
+    new_econexec = EconExec(
+        id_measure=id_measure,
+        id_plan=id,
+        name=name,
+        Volume=Volume,
+        EffTut=EffTut,
+        EffRub=EffRub,
+        ExpectedQuarter=ExpectedQuarter,
+        EffCurrYear=EffCurrYear,
+        Payback=Payback,
+        VolumeFin=VolumeFin,
+        BudgetState=BudgetState,
+        BudgetRep=BudgetRep,
+        BudgetLoc=BudgetLoc,
+        BudgetOther=BudgetOther,
+        MoneyOwn=MoneyOwn,
+        MoneyLoan=MoneyLoan,
+        MoneyOther=MoneyOther,
+        is_local=is_local 
+    )
+    
+    db.session.add(new_econexec)
+    db.session.commit()
+    other_data_indicatorUpdate(id)
+    update_ChangeTimePlan(id)
+    flash('Мероприятие добавлено!', 'success')
+    return redirect(url_for('views.plan_events', id=id))
+    
+@views.route('/delete-econexeces/<int:id>', methods=['POST'])
+@login_required
+def delete_econexeces(id):
+    econ_exec = EconExec.query.get_or_404(id)
+
+    id_plan = econ_exec.econ_measures.id_plan
+
+    db.session.delete(econ_exec)
+    db.session.commit()
+
+    other_data_indicatorUpdate(id_plan)
+    update_ChangeTimePlan(id_plan)
+    flash('Мероприятие успешно удалено!', 'success')
+    return redirect(url_for('views.plan_events', id=id_plan))
+
+@views.route('/edit-econexeces/<int:id>', methods=['POST'])
+@login_required
+def edit_econexeces(id):
+    name = request.form.get('name') or None
+
+    Volume_value = request.form.get('Volume')
+    ExpectedQuarter_value = request.form.get('ExpectedQuarter')
+    Payback_value = request.form.get('Payback')
+
+    EffTut = to_decimal_3(request.form.get('EffTut'))
+    EffRub = to_decimal_3(request.form.get('EffRub'))
+    EffCurrYear = to_decimal_3(request.form.get('EffCurrYear'))
+    
+    VolumeFin = to_decimal_3(request.form.get('VolumeFin'))
+    BudgetState = to_decimal_3(request.form.get('BudgetState')) 
+    BudgetRep = to_decimal_3(request.form.get('BudgetRep')) 
+    BudgetLoc = to_decimal_3(request.form.get('BudgetLoc')) 
+    BudgetOther = to_decimal_3(request.form.get('BudgetOther'))
+    MoneyOwn = to_decimal_3(request.form.get('MoneyOwn')) 
+    MoneyLoan = to_decimal_3(request.form.get('MoneyLoan')) 
+    MoneyOther = to_decimal_3(request.form.get('MoneyOther'))
+
+    Volume = int(float(Volume_value)) if Volume_value else None
+    ExpectedQuarter = int(float(ExpectedQuarter_value)) if ExpectedQuarter_value else None
+    Payback = int(float(Payback_value)) if Payback_value else None
+    
+
+    current_EconExec = EconExec.query.get(id)
+    if not current_EconExec:
+        flash('Мероприятие не найдено!', 'error')
+        return redirect(url_for('views.plan_events', id=id))
+    
+    current_EconExec.name=name
+    current_EconExec.Volume=Volume
+    current_EconExec.ExpectedQuarter=ExpectedQuarter
+    current_EconExec.EffTut=EffTut
+    current_EconExec.EffRub=EffRub
+    current_EconExec.EffCurrYear=EffCurrYear
+    current_EconExec.Payback=Payback
+    current_EconExec.VolumeFin=VolumeFin
+    current_EconExec.BudgetState=BudgetState
+    current_EconExec.BudgetRep=BudgetRep
+    current_EconExec.BudgetLoc=BudgetLoc
+    current_EconExec.BudgetOther=BudgetOther
+    current_EconExec.MoneyOwn=MoneyOwn
+    current_EconExec.MoneyLoan=MoneyLoan
+    current_EconExec.MoneyOther=MoneyOther
+
+    db.session.commit()
+    flash('Мероприятие изменено!', 'success')
+
+    id_plan = current_EconExec.econ_measures.id_plan
+    other_data_indicatorUpdate(id_plan)
+    update_ChangeTimePlan(id_plan)
+    return redirect(url_for('views.plan_events', id=id_plan))
+
+@views.route('/get-econexece/<int:id>', methods=['GET'])
+@login_required
+def get_econexece(id):
+    try:
+        existing_measure = EconExec.query.get(id)
+        if not existing_measure:
+            return jsonify({'error': 'EconExec not found'}), 404
+        
+        return jsonify(existing_measure.as_dict())
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@views.route('/plans/plan-indicators/<int:id>', methods=['GET', 'POST'])
+@login_required
+@owner_only
+def plan_indicators(id):    
+    if request.method == 'POST':
+        pass
+    
+    current_plan = g.current_plan
+
+    used_indicator_subquery = (db.session.query(IndicatorUsage.id_indicator)
+                            .filter(IndicatorUsage.id_plan == current_plan.id)
+                            .subquery())
+
+    indicators_non_mandatory = (Indicator.query
+                            .filter_by(IsMandatory=False)
+                            .filter(~Indicator.id.in_(used_indicator_subquery))
+                            .all())
+    
+    indicators = (IndicatorUsage.query
+                .join(Indicator, IndicatorUsage.id_indicator == Indicator.id)
+                .filter(IndicatorUsage.id_plan == current_plan.id)
+                .order_by(Indicator.Group.asc(), Indicator.RowN.asc())
+                .all())
+    
+    return render_template('plan_indicators.html',  
+                        plan=current_plan, 
+                        indicators_non_madatory=indicators_non_mandatory,
+                        indicators=indicators,
+                        hide_header=False,
+                        plan_header = True,
+                        active_plan_tab='indicators',
+                        add_indicator_modal=True,
+                        edit_indicator_modal=True,
+                        confirmModal = True,
+                        context_menu = True
+                         )
+
+@views.route('/get-indicator/<int:id>', methods=['GET'])
+@login_required
+def get_indicator(id):
+    try:
+        existing_IndicatorUsage = IndicatorUsage.query.get(id)
+        if not existing_IndicatorUsage:
+            return jsonify({'error': 'Indicator not found'}), 404
+        
+        return jsonify(existing_IndicatorUsage.as_dict())
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
+@views.route('/create-indicator/<int:id>', methods=['POST'])
+@login_required
+@owner_only
+def create_indicator(id):
+    QYearPrev_ed = to_decimal_3(request.form.get('QYearPrev'))
+    QYearCurr_ed = to_decimal_3(request.form.get('QYearCurr'))
+    QYearNext_ed = to_decimal_3(request.form.get('QYearNext'))
+    id_indicator = request.form.get('id_indicator')
+
+    if id_indicator == None:
+        flash('Пустой показатель', 'error')
+        return redirect(url_for('views.plan_indicators', id=id))
+    
+    indicator = Indicator.query.filter_by(id=id_indicator).first()
+
+    QYearPrev = to_decimal_3(QYearPrev_ed * indicator.CoeffToTut)
+    QYearCurr = to_decimal_3(QYearCurr_ed * indicator.CoeffToTut)
+    QYearNext = to_decimal_3(QYearNext_ed * indicator.CoeffToTut)
+
+    new_IndicatorUsage = IndicatorUsage(
+        id_plan=id,
+        id_indicator=id_indicator,
+        QYearPrev=QYearPrev,
+        QYearCurr=QYearCurr,
+        QYearNext=QYearNext
+    )
+    
+    db.session.add(new_IndicatorUsage)
+    db.session.commit()
+    other_data_indicatorUpdate(id)
+    update_ChangeTimePlan(id)
+    flash('Показатель добавлен!', 'success')
+    return redirect(url_for('views.plan_indicators', id=id))
+
+@views.route('/edit-indicator/<int:id>', methods=['POST'])
+@login_required
+def edit_indicator(id):
+    QYearPrev_ed = to_decimal_3(request.form.get('QYearPrev'))
+    QYearCurr_ed = to_decimal_3(request.form.get('QYearCurr'))
+    QYearNext_ed = to_decimal_3(request.form.get('QYearNext'))
+
+    if id == None:
+        flash('Пустой id', 'error')
+        return redirect(request.url)
+    
+    indicator_usage = IndicatorUsage.query.filter_by(id=id).first()
+
+    indicator_usage.QYearPrev = to_decimal_3(QYearPrev_ed * indicator_usage.indicator.CoeffToTut)
+    indicator_usage.QYearCurr = to_decimal_3(QYearCurr_ed * indicator_usage.indicator.CoeffToTut)
+    indicator_usage.QYearNext = to_decimal_3(QYearNext_ed * indicator_usage.indicator.CoeffToTut)
+    db.session.commit()
+
+    id = indicator_usage.id_plan
+    other_data_indicatorUpdate(id)
+    update_ChangeTimePlan(id)
+    flash('Обновление данных!', 'success')
+    return redirect(url_for('views.plan_indicators', id=id))
+
+@views.route('/delete-indicator/<int:id>', methods=['POST'])
+@login_required
+def delete_indicator(id):
+    indicator = IndicatorUsage.query.get_or_404(id)
+
+    id_plan = indicator.id_plan
+
+    db.session.delete(indicator)
+    db.session.commit()
+    other_data_indicatorUpdate(id_plan)
+    update_ChangeTimePlan(id_plan)
+    flash('Показатель успешно удален!', 'success')
+    return redirect(url_for('views.plan_indicators', id=id_plan))
+
+
+def update_ChangeTimePlan(id):
+    def owner_ticket(plan):
+        new_ticket = Ticket(
+            note='Внесение изменений.',
+            luck = True,
+            is_owner = True,
+            plan_id=plan.id,
+        )
+
+        db.session.add(new_ticket)
+        plan.afch = False
+        db.session.commit()
+        
+     
+    plan = Plan.query.filter_by(id=id).first()
+    if not plan:
+        return 
+    
+    plan.change_time = current_utc_time()
+    plan.is_draft = True   
+    plan.is_control = False  
+    plan.is_sent = False      
+    plan.is_error = False    
+    plan.is_approved = False  
+
+    if plan.afch == True:
+        owner_ticket(plan)
+
+    db.session.commit()
+
+def other_data_indicatorUpdate(id):
+    plan = Plan.query.filter_by(id=id).first()
+    if not plan:
+        return
+
+    indicator_usages = IndicatorUsage.query.filter_by(id_plan=plan.id).all()
+
+    def econom_ter():
+        total_eff_curr_year = db.session.query(func.sum(EconExec.EffCurrYear))\
+            .filter(
+                EconExec.id_plan == plan.id,
+                EconExec.EffCurrYear.isnot(None)
+            )\
+            .scalar() or 0
+        
+        indicator_usages = IndicatorUsage.query.filter_by(id_plan=plan.id).all()
+        usage_with_code_9900 = None
+        for usage in indicator_usages:
+            if usage.indicator.code == '9900':
+                usage_with_code_9900 = usage
+                break
+        
+        usage_with_code_9900.QYearNext = to_decimal_3(total_eff_curr_year)
+        db.session.commit()
+
+    def first_title():
+        totals = db.session.query(
+                func.sum(IndicatorUsage.QYearPrev).label('total_prev'),
+                func.sum(IndicatorUsage.QYearCurr).label('total_curr'),
+                func.sum(IndicatorUsage.QYearNext).label('total_next')
+            )\
+            .join(IndicatorUsage.indicator)\
+            .filter(
+                IndicatorUsage.id_plan == plan.id,
+                Indicator.IsMandatory == False
+            )\
+            .first()
+
+        total_prev = totals.total_prev or 0
+        total_curr = totals.total_curr or 0
+        total_next = totals.total_next or 0
+
+        usage_with_code_1000 = None
+        for usage in indicator_usages:
+            if usage.indicator.code == '1000':
+                usage_with_code_1000 = usage
+                break
+        
+        if usage_with_code_1000:
+            usage_with_code_1000.QYearPrev = to_decimal_3(total_prev)
+            usage_with_code_1000.QYearCurr = to_decimal_3(total_curr)
+            usage_with_code_1000.QYearNext = to_decimal_3(total_next)
+            db.session.commit()
+    
+    def four_title():
+        indicators_by_code = {}
+        codes_to_find = ['260', '1000', '1105', '1405', '1104', '1404']
+        
+        for usage in indicator_usages:
+            if usage.indicator.code in codes_to_find:
+                indicators_by_code[usage.indicator.code] = usage
+                if len(indicators_by_code) == len(codes_to_find):
+                    break
+        
+        missing_codes = [code for code in codes_to_find if code not in indicators_by_code]
+        if missing_codes:
+            print(f"Не найдены индикаторы: {missing_codes}")
+            return
+        
+        indicator_260 = indicators_by_code['260']
+        indicator_1000 = indicators_by_code['1000']
+        indicator_1105 = indicators_by_code['1105']
+        indicator_1405 = indicators_by_code['1405']
+        indicator_1104 = indicators_by_code['1104']
+        indicator_1404 = indicators_by_code['1404']
+        
+        def get_value(indicator, field_name):
+            value = getattr(indicator, field_name)
+            return value if value is not None else Decimal('0')
+        
+        def calculate_period(period):
+            base = get_value(indicator_1000, period)
+            diff1 = get_value(indicator_1105, period) - get_value(indicator_1405, period)
+            diff2 = get_value(indicator_1104, period) - get_value(indicator_1404, period)
+            return to_decimal_3(base + (diff1 * Decimal('0.123')) + (diff2 * Decimal('0.143')))
+        
+        indicator_260.QYearPrev = calculate_period('QYearPrev')
+        indicator_260.QYearCurr = calculate_period('QYearCurr')
+        indicator_260.QYearNext = calculate_period('QYearNext')
+        db.session.commit()
+
+    def seven_title():
+        usage_with_code_9999 = None
+        for usage in indicator_usages:
+            if usage.indicator.code == '9999':
+                usage_with_code_9999 = usage
+                break
+
+        usage_with_code_9900 = None
+        for usage in indicator_usages:
+            if usage.indicator.code == '9900':
+                usage_with_code_9900 = usage
+                break
+        
+        usage_with_code_9910 = None
+        for usage in indicator_usages:
+            if usage.indicator.code == '9910':
+                usage_with_code_9910 = usage
+                break
+
+        usage_with_code_9999.QYearNext = usage_with_code_9900.QYearNext + usage_with_code_9910.QYearNext
+
+    first_title()
+    four_title()
+    seven_title()
+    econom_ter()
+
+def handle_draft_status(plan):
+    plan.is_draft = True
+    plan.is_control = plan.is_sent = plan.is_error = plan.is_approved = False
+    plan.afch = False
+    return "Статус переведен в редактирование."
+
+def handle_control_status(plan):
+    plan.is_control = True
+    plan.is_draft = plan.is_sent = plan.is_error = plan.is_approved = False
+    plan.afch = False
+    return "План прошел проверку на контроль."
+
+def handle_sent_status(plan):
+    if plan.audit_time and (current_utc_time() - plan.audit_time) > timedelta(hours=1):
+        return {"error": "Нельзя изменить статус: прошло больше допустимого времени."}
+    plan.sent_time = current_utc_time()
+    plan.is_sent = True
+    plan.is_draft = plan.is_control = plan.is_error = plan.is_approved = False
+    plan.afch = False
+    return "План отправлен."
+
+def handle_error_status(plan):
+    plan.audit_time = current_utc_time()
+    plan.is_error = True
+    plan.is_draft = plan.is_control = plan.is_sent = plan.is_approved = False
+
+    notification = Notification(
+        user_id=plan.user_id,
+        message=f"В плане на {plan.year} год нашли ошибки."
+    )
+    db.session.add(notification)
+    return "Статус ошибки установлен."
+
+def handle_approved_status(plan):
+    plan.audit_time = current_utc_time()
+    plan.is_approved = True
+    plan.is_draft = plan.is_control = plan.is_sent = plan.is_error = False
+    plan.afch = False 
+
+    new_ticket = Ticket(
+        note='План был одобрен и передан в следующую стадию ..!',
+        luck=True,
+        plan_id=plan.id,
+    )
+    db.session.add(new_ticket)
+
+    notification = Notification(
+        user_id=plan.user_id,
+        message=f"План на {plan.year} год был утверждён."
+    )
+    db.session.add(notification)
+    return "План утверждён."
+
+
+status_handlers = {
+    'draft': handle_draft_status,
+    'control': handle_control_status,
+    'sent': handle_sent_status,
+    'error': handle_error_status,
+    'approved': handle_approved_status
+}
+
+status_handlers = {
+    'draft': handle_draft_status,
+    'control': handle_control_status,
+    'sent': handle_sent_status,
+    'error': handle_error_status,
+    'approved': handle_approved_status
+}
+
+@views.route('/api/change-plan-status/<int:id>', methods=['POST'])
+@login_required
+@owner_only
+def api_change_plan_status(id):
+    plan = Plan.query.get_or_404(id)
+    
+    if request.is_json:
+        data = request.get_json()
+        status = data.get('status')
+    else:
+        status = request.form.get('status')
+    
+    if not status:
+        if request.is_json:
+            return jsonify({'error': 'Статус не указан'}), 400
+        else:
+            flash('Статус не указан', 'error')
+            return redirect(request.referrer or url_for('views.plans'))
+    
+    status_mapping = {
+        'draft': 'is_draft',
+        'control': 'is_control',
+        'sent': 'is_sent', 
+        'error': 'is_error',
+        'approved': 'is_approved'
+    }
+    
+    if status not in status_mapping:
+        if request.is_json:
+            return jsonify({'error': 'Неверный статус'}), 400
+        else:
+            flash('Неверный статус', 'error')
+            return redirect(request.referrer or url_for('views.plans'))
+    
+    if status in status_handlers:
+        try:
+            result = status_handlers[status](plan)
+            db.session.commit()
+
+            if isinstance(result, dict) and "error" in result:
+                if request.is_json:
+                    return jsonify(result), 400
+                else:
+                    flash(result["error"], "error")
+                    return redirect(request.referrer or url_for('views.plans'))
+
+            # Сообщение об успешном изменении
+            message = result if isinstance(result, str) else "Статус изменен"
+
+        except Exception as e:
+            db.session.rollback()
+            if request.is_json:
+                return jsonify({'error': f'Ошибка обработки статуса: {str(e)}'}), 500
+            else:
+                flash(f'Ошибка обработки статуса: {str(e)}', 'error')
+                return redirect(request.referrer or url_for('views.plans'))
+
+    # Возврат ответа
+    if request.is_json:
+        return jsonify({'message': message, 'status': status})
+    else:
+        flash(message, 'success')
+        return redirect(request.referrer or url_for('views.plans'))
+
+
+
+
+
+
+@views.route('/create-ticket/<int:id>', methods=['POST'])
+@login_required
+@owner_only
+def create_ticket(id):
+    plan = Plan.query.filter_by(
+        id=id
+    ).first()
+    plan.afch = True
+
+    note = request.form.get('note')
+    new_ticket = Ticket(
+        note=note,
+        luck = False,
+        plan_id=id,
+    )
+
+    db.session.add(new_ticket)
+    db.session.commit()
+    return redirect(request.referrer or url_for('views.plan_review'))
+
+@views.route('/FAQ', methods=['GET'])
+def FAQ_page():    
+    return render_template('FAQ.html',
+            hide_header=False,
+            hide_circle_buttons=False)
+
+
+@views.route('/api/notifications', methods=['GET'])
+@login_required
+def api_notifications():
+    notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
+    return jsonify([
+        {
+            'id': n.id,
+            'message': n.message,
+            'is_read': n.is_read,
+            'created_at': n.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+        for n in notifications
+    ])
+
+@views.route('/api/notifications/mark-all-read', methods=['POST'])
+@login_required
+def mark_all_notifications_read():
+    Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})
+    db.session.commit()
+    return jsonify({'message': 'Все уведомления отмечены как прочитанные'})

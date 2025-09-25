@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Направления') }} - ErespondentS{% endblock %}
+{% block content %}
+
+<div class="pers-page">
+    <div class="personal-acc-conteiner" style = "background-color: transparent;  padding: 0 20px;  width: calc(100% - 40px); border: none; margin:0;">
+
+        <div class="menu-conteiner" >
+
+                <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id = "AddDirectionModalButton">
+                    <img src="/static/img/Add.svg" alt="">  
+                    <a class="element-text">Добавить</a>  
+                </div>
+                <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id="tableDeleteButton">
+                    <img src="/static/img/Delete.svg" alt="">  
+                    <a class="element-text">Удалить</a>  
+                </div>
+                <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id="tableEditButton">
+                    <img src="/static/img/Edit_black.svg" alt="">  
+                    <a class="element-text">Редакт.</a>  
+                </div>
+          
+
+        </div>   
+        <div class = "table-container">
+            <table class="directions-table" id="directionTable">
+                <thead class="directions-table-titles">
+                    <tr>
+                        <th>№</th>
+                        <th><a>{{ _('Код основных направлений энергосбережения в соостветствии с формой 4-энергосбережения (Госстандарт)') }}</a></th>
+                        <th><a>{{ _('Наименование направлений в соответствии с формой 4-энергосбережение (Госстандарт)') }}</a></th>
+                        <th><a>{{ _('Условно-годовой экономический эффект, т у.т.') }}</a></th>
+                        <th><a>{{ _('Ожидаемая экономия ТЭР от внедрения мероприятий в') }} 2025 г., {{ _('т у. т.') }}</a></th>
+                        <th><a>{{ _('Местные ТЭР') }}</a></th>
+                    </tr>
+                </thead>
+                <tbody class = "rows">
+                    {% if econ_measures %}
+                        {% for row in econ_measures %}
+                        <tr class = "menu-row" data-id="{{ row.id }}">
+                            <td>{{ loop.index }}</td>
+                            <td>{{ row.direction.code }}</td>
+                            <td>{{ row.direction.name }}</td>
+                            <td>{{ row.year_econ }}</td>
+                            <td>{{ row.estim_econ }}</td>
+                            <td>
+                                <input type="checkbox" {% if row.direction.is_local %} checked {% endif %} onclick="return false;">
+                            </td>  
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                    <tr class="no_info-conteiner">
+                        <td style = "text-align: left; padding-left: 60px; padding-bottom: 15px;">{{ _('Нет активных направлений') }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

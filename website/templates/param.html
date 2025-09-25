@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ _('Заполнение личных параметров - ErespondentS') }}{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+  <div class="auth-text-upper">
+    <h1 class="auth-title">ErespondentS</h1>
+    <p class="auth-subtitle">{{ _(' Система представления планов энергосберегающих <br> мероприятий') }}
+     
+    </p>
+  </div>
+
+  <form class="steps-wrapper">
+    <!-- Шаг 1 -->
+    <div class="step auth-step-1 active auth-container">
+      <div class="auth-container-title">{{ _('Личная информация') }}</div>
+      <div class="auth-choose" style="justify-content: center;" role="tablist">
+        <a class="auth-tab active wave-effect" role="tab" style="width: 100%;" aria-selected="true">
+          {{ _('Шаг 1') }}
+        </a>
+      </div>
+      <div class="auth-form" id="form-part-1">
+        <div class="row-form-group">
+          <div class="form-group">
+            <label>{{ _('Имя') }}</label>
+            <input type="text" id="name" maxlength="15" placeholder="{{ _('Иван') }}" class="auth-input">
+          </div>
+          <div class="form-group">
+            <label>{{ _('Фамилия') }}</label>
+            <input type="text" id="secondname" maxlength="15" placeholder="{{ _('Иванов') }}" class="auth-input">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="phone">{{ _('Телефон') }}</label>
+          <input type="tel" id="phone" maxlength="11" placeholder="{{ _('Введите номер телефона') }}" class="auth-input">
+        </div>
+        <div class="form-group">
+          <label>{{ _('Должность (необязательно)') }}</label>
+          <input type="text" id="post" placeholder="{{ _('Инженер-энергетик') }}" class="auth-input">
+        </div>   
+        <div class = "button-auth-area">
+            <button type="button" class="auth-next-button" id="next-btn">
+                <span class="btn-text">{{ _('Далее') }}</span>
+                <img src="/static/img/Next.svg" alt="" class="btn-icon">
+            </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Шаг 2 -->
+    <div class="step auth-step-2 auth-container">
+      <div class="auth-container-title">{{ _('Информация об организации') }}</div>
+      <div class="auth-choose" style="justify-content: center;" role="tablist">
+        <a class="auth-tab active wave-effect" role="tab" style="width: 100%;" aria-selected="true">{{ _('Шаг 2') }}</a>
+      </div>
+
+      <div class="auth-form " id="form-part-2">
+        <div class="form-group organization-select">
+          <label>{{ _('Организация') }}</label>
+          <input type="text" id="organization" placeholder="{{ _('Наименование организации') }}" class="auth-input" autocomplete="off">
+          
+          <!-- Выдвигающаяся панель организаций -->
+          <div class="organization-dropdown">
+            <div class="search-panel">
+              <input type="text" placeholder="{{ _('Поиск организации...') }}" class="search-input">
+              <button class="search-button">
+                <img src="/static/img/Search.svg" alt="Поиск">
+              </button>
+            </div>
+
+            <table class="organizations-table">
+              <thead>
+                <tr>
+                  <th class="org-name">{{ _('Наименование') }}</th>
+                  <th class="org-okpo">{{ _('ОКПО') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="organization-row">
+                  <td class="organization-item org-name">ФИЛИАЛ ЗАО "АТЛАНТ" БАРАНОВИЧСКИЙ СТАНКОСТРОИТЕЛЬНЫЙ ЗАВОД"</td>
+                  <td class="organization-item org-okpo">23425</td>
+                </tr>
+                <tr class="organization-row">
+                  <td class="organization-item org-name">ФИЛИАЛ "БАРАНОВИЧСКИЙ КОМБИНАТ ЖЕЛЕЗОБЕТОННЫХ КОНСТРУКЦИЙ" ОАО "КРИЧЕВЦЕМЕНТНОШИФЕР"</td>
+                  <td class="organization-item org-okpo">663234</td>
+                </tr>
+                <tr class="organization-row">
+                  <td class="organization-item org-name">ОБОСОБЛЕННОЕ СТРУКТУРНОЕ ПОДРАЗДЕЛЕНИЕ "ШВЕЙНОЕ ПРОИЗВОДСТВО "БЛАКИТ" ОАО "БПХО"</td>
+                  <td class="organization-item org-okpo">745434</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+        <button type="submit" class="auth-button">
+          <img src="/static/img/Sign.svg" alt="" class="btn-icon">
+          <span class="btn-text">{{ _('Зарегистрироваться') }}</span>
+        </button>
+        
+        <div class="button-auth-area" style="text-align: start; margin-top: 10px;">
+          <button type="button" class="auth-next-button" id="prev-btn">
+            <img src="/static/img/Back.svg" alt="" class="btn-icon">
+            <span class="btn-text">{{ _('Назад') }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </form>
+</div>  
+
+{% endblock %}
