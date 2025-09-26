@@ -143,45 +143,47 @@
                     </td>
                 </tr>
                 <tbody class = "rows" id="non-local-content">
-                    {% for row in non_local_econ_execes %}
-                        <tr class = "menu-row" data-id="{{ row.id }}">
-                            <td>{{ loop.index }}</td>
-                            <td>{{ row.econ_measures.direction.code }}</td>
-                            <td>{{ row.name }}</td>
-                            <td>{{ row.econ_measures.direction.unit.name }}</td>
-                            <td>{{ row.Volume }}</td>
-                            <td>{{ row.EffTut }}</td>
-                            <td>{{ row.EffRub }}</td>
-                            <td>{{ row.ExpectedQuarter }}</td>
-                            <td>{{ row.EffCurrYear }}</td>
-                            <td>{{ row.Payback }}</td>
-                            <td>{{ row.VolumeFin }}</td>
-                            <td>{{ row.BudgetState }}</td>
-                            <td>{{ row.BudgetRep }}</td>
-                            <td>{{ row.BudgetLoc }}</td>
-                            <td>{{ row.BudgetOther }}</td>
-                            <td>{{ row.MoneyOwn }}</td>
-                            <td>{{ row.MoneyLoan }}</td>
-                            <td>{{ row.MoneyOther }}</td>
+                    {% if non_local_econ_execes %}
+                        {% for row in non_local_econ_execes %}
+                            <tr class = "menu-row" data-id="{{ row.id }}">
+                                <td>{{ loop.index }}</td>
+                                <td>{{ row.econ_measures.direction.code }}</td>
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.econ_measures.direction.unit.name }}</td>
+                                <td>{{ row.Volume }}</td>
+                                <td>{{ row.EffTut }}</td>
+                                <td>{{ row.EffRub }}</td>
+                                <td>{{ row.ExpectedQuarter }}</td>
+                                <td>{{ row.EffCurrYear }}</td>
+                                <td>{{ row.Payback }}</td>
+                                <td>{{ row.VolumeFin }}</td>
+                                <td>{{ row.BudgetState }}</td>
+                                <td>{{ row.BudgetRep }}</td>
+                                <td>{{ row.BudgetLoc }}</td>
+                                <td>{{ row.BudgetOther }}</td>
+                                <td>{{ row.MoneyOwn }}</td>
+                                <td>{{ row.MoneyLoan }}</td>
+                                <td>{{ row.MoneyOther }}</td>
+                            </tr>
+                        {% endfor %}   
+                        <tr class="total-row" >
+                            <td style="text-align: left; padding-left: 60px;" colspan="4">Итого по разделу:</td>
+                            <td style = "text-align: end;">{{ non_local_econ_execes|sum(attribute='Volume')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='EffTut')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='EffRub')|default(0)|round(3)}}</td>
+                            <td>-</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='EffCurrYear')|default(0)|round(3) }}</td>
+                            <td>-</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='VolumeFin')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='BudgetState')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='BudgetRep')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='BudgetLoc')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='BudgetOther')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='MoneyOwn')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
+                            <td>{{ non_local_econ_execes|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
                         </tr>
-                    {% endfor %}   
-                    <tr class="total-row" >
-                        <td style="text-align: left; padding-left: 60px;" colspan="4">Итого по разделу:</td>
-                        <td style = "text-align: end;">{{ non_local_econ_execes|sum(attribute='Volume')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='EffTut')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='EffRub')|default(0)|round(3)}}</td>
-                        <td>-</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='EffCurrYear')|default(0)|round(3) }}</td>
-                        <td>-</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='VolumeFin')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='BudgetState')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='BudgetRep')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='BudgetLoc')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='BudgetOther')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='MoneyOwn')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
-                        <td>{{ non_local_econ_execes|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
-                    </tr>
+                    {% endif %} 
                 </tbody>
                 <tr class="group-header" data-target="local-content">
                     <td colspan="18">
@@ -194,45 +196,47 @@
                     </td>
                 </tr>
                 <tbody class = "rows" id="local-content">
-                    {% for row in local_econ_execes %}
-                        <tr class = "menu-row" data-id="{{ row.id }}">
-                            <td>{{ loop.index }}</td>
-                            <td>{{ row.econ_measures.direction.code }}</td>
-                            <td>{{ row.name }}</td>
-                            <td>{{ row.econ_measures.direction.unit.name }}</td>
-                            <td>{{ row.Volume }}</td>
-                            <td>{{ row.EffTut }}</td>
-                            <td>{{ row.EffRub }}</td>
-                            <td>{{ row.ExpectedQuarter }}</td>
-                            <td>{{ row.EffCurrYear }}</td>
-                            <td>{{ row.Payback }}</td>
-                            <td>{{ row.VolumeFin }}</td>
-                            <td>{{ row.BudgetState }}</td>
-                            <td>{{ row.BudgetRep }}</td>
-                            <td>{{ row.BudgetLoc }}</td>
-                            <td>{{ row.BudgetOther }}</td>
-                            <td>{{ row.MoneyOwn }}</td>
-                            <td>{{ row.MoneyLoan }}</td>
-                            <td>{{ row.MoneyOther }}</td>
+                    {% if local_econ_execes %}
+                        {% for row in local_econ_execes %}
+                            <tr class = "menu-row" data-id="{{ row.id }}">
+                                <td>{{ loop.index }}</td>
+                                <td>{{ row.econ_measures.direction.code }}</td>
+                                <td>{{ row.name }}</td>
+                                <td>{{ row.econ_measures.direction.unit.name }}</td>
+                                <td>{{ row.Volume }}</td>
+                                <td>{{ row.EffTut }}</td>
+                                <td>{{ row.EffRub }}</td>
+                                <td>{{ row.ExpectedQuarter }}</td>
+                                <td>{{ row.EffCurrYear }}</td>
+                                <td>{{ row.Payback }}</td>
+                                <td>{{ row.VolumeFin }}</td>
+                                <td>{{ row.BudgetState }}</td>
+                                <td>{{ row.BudgetRep }}</td>
+                                <td>{{ row.BudgetLoc }}</td>
+                                <td>{{ row.BudgetOther }}</td>
+                                <td>{{ row.MoneyOwn }}</td>
+                                <td>{{ row.MoneyLoan }}</td>
+                                <td>{{ row.MoneyOther }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td style="text-align: left; padding-left: 60px;" colspan="4">Итого по разделу:</td>
+                            <td style = "text-align: end;">{{ local_econ_execes|sum(attribute='Volume')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='EffTut')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='EffRub')|default(0)|round(3)}}</td>
+                            <td>-</td>
+                            <td>{{ local_econ_execes|sum(attribute='EffCurrYear')|default(0)|round(3) }}</td>
+                            <td>-</td>
+                            <td>{{ local_econ_execes|sum(attribute='VolumeFin')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='BudgetState')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='BudgetRep')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='BudgetLoc')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='BudgetOther')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='MoneyOwn')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
+                            <td>{{ local_econ_execes|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
                         </tr>
-                    {% endfor %}
-                    <tr class="total-row">
-                        <td style="text-align: left; padding-left: 60px;" colspan="4">Итого по разделу:</td>
-                        <td style = "text-align: end;">{{ local_econ_execes|sum(attribute='Volume')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='EffTut')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='EffRub')|default(0)|round(3)}}</td>
-                        <td>-</td>
-                        <td>{{ local_econ_execes|sum(attribute='EffCurrYear')|default(0)|round(3) }}</td>
-                        <td>-</td>
-                        <td>{{ local_econ_execes|sum(attribute='VolumeFin')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='BudgetState')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='BudgetRep')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='BudgetLoc')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='BudgetOther')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='MoneyOwn')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
-                        <td>{{ local_econ_execes|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
-                    </tr>
+                    {% endif %}
                 </tbody>
                 <tr class="group-header" data-target="other-content">
                     <td colspan="18">
@@ -247,15 +251,15 @@
                 <tbody id="other-content">
                     <tr>
                         <td></td>
-                        <td>Всего:</td>
-                        <td></td>
-                        <td></td>
+                        <td >Всего:</td>
+                        <td colspan="2"></td>
+                     
                         <td>{{ econ_exec|sum(attribute='Volume')|default(0)|round(3)}}</td>
                         <td>{{ econ_exec|sum(attribute='EffTut')|default(0)|round(3)}}</td>
                         <td>{{ econ_exec|sum(attribute='EffRub')|default(0)|round(3)}}</td>
-                        <td></td>
+                        <td>-</td>
                         <td>{{ econ_exec|sum(attribute='EffCurrYear')|default(0)|round(3)}}</td>
-                        <td></td>
+                        <td>-</td>
                         <td>{{ econ_exec|sum(attribute='VolumeFin')|default(0)|round(3)}}</td>
                         <td>{{ econ_exec|sum(attribute='BudgetState')|default(0)|round(3)}}</td>
                         <td>{{ econ_exec|sum(attribute='BudgetRep')|default(0)|round(3)}}</td>
@@ -265,86 +269,24 @@
                         <td>{{ econ_exec|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
                         <td>{{ econ_exec|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
                     </tr>
+                    {% set periods = [
+                        ('Январь-Март', 'jan_mar_eff', 'jan_mar_vol'),
+                        ('Январь-Июнь', 'jan_jun_eff', 'jan_jun_vol'),
+                        ('Январь-Сентябрь', 'jan_sep_eff', 'jan_sep_vol'),
+                        ('Январь-Декабрь', 'jan_dec_eff', 'jan_dec_vol')
+                    ] %}
+
+                    {% for period_name, eff_key, vol_key in periods %}
                     <tr>
                         <td></td>
-                        <td>Январь-Март</td>
+                        <td>{{ period_name }}</td>
+                        <td colspan="6"></td>
+                        <td>{{ total_metrics[eff_key]|default('0.000') }}</td>
                         <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
+                        <td>{{ total_metrics[vol_key]|default('0.000') }}</td>
+                        <td colspan="7"></td>
                     </tr>
-                    <tr>
-                        <td></td>
-                        <td>Январь-Июнь</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>Январь-Сентябрь</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
-                    <tr>
-                        <td></td>
-                        <td>Январь-Декабрь</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td>0.000</td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

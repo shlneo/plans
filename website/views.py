@@ -611,6 +611,52 @@ def edit_econmeasure(id):
     flash('Направление обновлено!', 'success')
     return redirect(url_for('views.plan_directions', id=id))
 
+def get_cumulative_econ_metrics(plan_id, is_local): 
+    """ Возвращает нарастающие итоги экономических показателей по кварталам """
+    quarterly_results = (db.session.query(
+            EconExec.ExpectedQuarter,  
+            func.sum(EconExec.EffCurrYear).label('total_eff'), 
+            func.sum(EconExec.VolumeFin).label('total_vol')
+        )
+        .join(EconMeasure) 
+        .join(Plan)
+        .filter(Plan.id == plan_id, EconExec.is_local == is_local)
+        .group_by(EconExec.ExpectedQuarter)
+        .all())
+    
+    cumulative_totals = {
+        'jan_mar': {'eff_curr_year': 0, 'volume_fin': 0},  # Январь-Март
+        'jan_jun': {'eff_curr_year': 0, 'volume_fin': 0},  # Январь-Июнь
+        'jan_sep': {'eff_curr_year': 0, 'volume_fin': 0},  # Январь-Сентябрь
+        'jan_dec': {'eff_curr_year': 0, 'volume_fin': 0}   # Январь-Декабрь
+    }
+    
+
+    quarter_data = {1: {'eff': 0, 'vol': 0}, 2: {'eff': 0, 'vol': 0}, 
+                   3: {'eff': 0, 'vol': 0}, 4: {'eff': 0, 'vol': 0}}
+    
+    for quarter, eff_sum, vol_sum in quarterly_results:
+        if quarter in [1, 2, 3, 4]:
+            quarter_data[quarter]['eff'] = eff_sum or 0
+            quarter_data[quarter]['vol'] = vol_sum or 0
+    
+
+    cumulative_totals['jan_mar']['eff_curr_year'] = quarter_data[1]['eff']
+    cumulative_totals['jan_mar']['volume_fin'] = quarter_data[1]['vol']
+    
+    cumulative_totals['jan_jun']['eff_curr_year'] = quarter_data[1]['eff'] + quarter_data[2]['eff']
+    cumulative_totals['jan_jun']['volume_fin'] = quarter_data[1]['vol'] + quarter_data[2]['vol']
+    
+    cumulative_totals['jan_sep']['eff_curr_year'] = quarter_data[1]['eff'] + quarter_data[2]['eff'] + quarter_data[3]['eff']
+    cumulative_totals['jan_sep']['volume_fin'] = quarter_data[1]['vol'] + quarter_data[2]['vol'] + quarter_data[3]['vol']
+    
+    cumulative_totals['jan_dec']['eff_curr_year'] = (quarter_data[1]['eff'] + quarter_data[2]['eff'] + 
+                                                   quarter_data[3]['eff'] + quarter_data[4]['eff'])
+    cumulative_totals['jan_dec']['volume_fin'] = (quarter_data[1]['vol'] + quarter_data[2]['vol'] + 
+                                                quarter_data[3]['vol'] + quarter_data[4]['vol'])
+    
+    return cumulative_totals
+
 @views.route('/plans/plan-events/<int:id>', methods=['GET', 'POST'])
 @login_required
 @owner_only
@@ -651,19 +697,34 @@ def plan_events(id):
         .all())
     
 
+    local_totals = get_cumulative_econ_metrics(current_plan.id, True)
+    non_local_totals = get_cumulative_econ_metrics(current_plan.id, False)
+    
+    total_metrics = {
+        'jan_mar_eff': local_totals['jan_mar']['eff_curr_year'] + non_local_totals['jan_mar']['eff_curr_year'],
+        'jan_mar_vol': local_totals['jan_mar']['volume_fin'] + non_local_totals['jan_mar']['volume_fin'],
+        'jan_jun_eff': local_totals['jan_jun']['eff_curr_year'] + non_local_totals['jan_jun']['eff_curr_year'],
+        'jan_jun_vol': local_totals['jan_jun']['volume_fin'] + non_local_totals['jan_jun']['volume_fin'],
+        'jan_sep_eff': local_totals['jan_sep']['eff_curr_year'] + non_local_totals['jan_sep']['eff_curr_year'],
+        'jan_sep_vol': local_totals['jan_sep']['volume_fin'] + non_local_totals['jan_sep']['volume_fin'],
+        'jan_dec_eff': local_totals['jan_dec']['eff_curr_year'] + non_local_totals['jan_dec']['eff_curr_year'],
+        'jan_dec_vol': local_totals['jan_dec']['volume_fin'] + non_local_totals['jan_dec']['volume_fin']
+    }
+
     return render_template('plan_events.html',  
                         econ_exec=econ_exec,
                         econ_measures=econ_measures,
                         local_econ_execes=local_econ_execes,
                         non_local_econ_execes=non_local_econ_execes,
+                        total_metrics=total_metrics,
                         plan=current_plan, 
                         hide_header=False,
-                        plan_header = True,
+                        plan_header=True,
                         active_plan_tab='events',
-                        add_event_modal = True,
-                        confirmModal = True,
+                        add_event_modal=True,
+                        confirmModal=True,
                         edit_event_modal=True,
-                        context_menu = True
+                        context_menu=True
                          )
     
 @views.route('/create-econexeces/<int:id>', methods=['POST'])
