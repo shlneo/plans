@@ -226,7 +226,7 @@ def plans():
         active_tab='plans'
     )
 
-@views.route('/export')
+@views.route('/export', methods=['GET'])
 @login_required
 def export():
     status_filter = request.args.get('status', 'all')
@@ -250,6 +250,75 @@ def export():
         second_header=True,
         active_tab='export'
     )
+    
+def export_xml_single(plan: Plan):
+    xml_content = f"<plan id='{plan.id}' year='{plan.year}' name_org='{plan.name_org}' okpo='{plan.okpo}'/>"
+    file_stream = io.BytesIO()
+    file_stream.write(xml_content.encode("utf-8"))
+    file_stream.seek(0)
+    filename = f"plan_{plan.id}.xml"
+    return file_stream, "application/xml", filename
+
+def export_xlsx_single(plan: Plan):
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["ID", "Год", "Организация", "ОКПО"])
+    ws.append([plan.id, plan.year, plan.name_org, plan.okpo])
+    file_stream = io.BytesIO()
+    wb.save(file_stream)
+    file_stream.seek(0)
+    filename = f"plan_{plan.id}.xlsx"
+    return file_stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename
+
+def export_pdf_single(plan: Plan):
+    pass
+
+@views.route('/export-to/<string:format>', methods=['POST'])
+@login_required
+def export_to(format):
+    ids = request.form.getlist("ids")
+    if not ids:
+        flash("Не выбраны планы.", "error")
+        return redirect(request.url)
+
+    plans = Plan.query.filter(Plan.id.in_(ids)).all()
+    if not plans:
+        flash("Не найдены выбранные планы.", "error")
+        return redirect(request.url)
+
+    if len(plans) == 1:
+        plan = plans[0]
+        if format == "xml":
+            file_stream, mime, filename = export_xml_single(plan)
+        elif format == "xlsx":
+            file_stream, mime, filename = export_xlsx_single(plan)
+        elif format == "pdf":
+            file_stream, mime, filename = export_pdf_single(plan)
+        else:
+            flash("Неизвестный формат.", "error")
+            return redirect(request.url)
+        return send_file(file_stream, as_attachment=True, download_name=filename, mimetype=mime)
+    
+    zip_stream = io.BytesIO()
+    with zipfile.ZipFile(zip_stream, "w") as zip_file:
+        for plan in plans:
+            if format == "xml":
+                f_stream, _, fname = export_xml_single(plan)
+            elif format == "xlsx":
+                f_stream, _, fname = export_xlsx_single(plan)
+            elif format == "pdf":
+                f_stream, _, fname = export_pdf_single(plan)
+            else:
+                flash("Неизвестный формат.", "error")
+                return redirect(request.url)
+
+            zip_file.writestr(fname, f_stream.getvalue())
+
+    zip_stream.seek(0)
+    return send_file(zip_stream, as_attachment=True, download_name="plans.zip", mimetype="application/zip")
+    
+    
 
 @views.route('/create-plan', methods=['GET', 'POST'])
 @login_required
@@ -413,75 +482,6 @@ def stats():
                         hide_header=False,
                         second_header = True,
                         active_tab='stats')
-
-
-
-def export_xml_single(plan: Plan):
-    xml_content = f"<plan id='{plan.id}' year='{plan.year}' name_org='{plan.name_org}' okpo='{plan.okpo}'/>"
-    file_stream = io.BytesIO()
-    file_stream.write(xml_content.encode("utf-8"))
-    file_stream.seek(0)
-    filename = f"plan_{plan.id}.xml"
-    return file_stream, "application/xml", filename
-
-def export_xlsx_single(plan: Plan):
-    from openpyxl import Workbook
-    wb = Workbook()
-    ws = wb.active
-    ws.append(["ID", "Год", "Организация", "ОКПО"])
-    ws.append([plan.id, plan.year, plan.name_org, plan.okpo])
-    file_stream = io.BytesIO()
-    wb.save(file_stream)
-    file_stream.seek(0)
-    filename = f"plan_{plan.id}.xlsx"
-    return file_stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename
-
-def export_pdf_single(plan: Plan):
-    pass
-
-@views.route('/export-to/<string:format>', methods=['POST'])
-@login_required
-def export_to(format):
-    ids = request.form.getlist("ids")
-    if not ids:
-        flash("Не выбраны планы.", "error")
-        return redirect(request.url)
-
-    plans = Plan.query.filter(Plan.id.in_(ids)).all()
-    if not plans:
-        flash("Не найдены выбранные планы.", "error")
-        return redirect(request.url)
-
-    if len(plans) == 1:
-        plan = plans[0]
-        if format == "xml":
-            file_stream, mime, filename = export_xml_single(plan)
-        elif format == "xlsx":
-            file_stream, mime, filename = export_xlsx_single(plan)
-        elif format == "pdf":
-            file_stream, mime, filename = export_pdf_single(plan)
-        else:
-            flash("Неизвестный формат.", "error")
-            return redirect(request.url)
-        return send_file(file_stream, as_attachment=True, download_name=filename, mimetype=mime)
-    
-    zip_stream = io.BytesIO()
-    with zipfile.ZipFile(zip_stream, "w") as zip_file:
-        for plan in plans:
-            if format == "xml":
-                f_stream, _, fname = export_xml_single(plan)
-            elif format == "xlsx":
-                f_stream, _, fname = export_xlsx_single(plan)
-            elif format == "pdf":
-                f_stream, _, fname = export_pdf_single(plan)
-            else:
-                flash("Неизвестный формат.", "error")
-                return redirect(request.url)
-
-            zip_file.writestr(fname, f_stream.getvalue())
-
-    zip_stream.seek(0)
-    return send_file(zip_stream, as_attachment=True, download_name="plans.zip", mimetype="application/zip")
 
 @views.route('/plans/plan-review/<int:id>', methods=['GET', 'POST'])
 @login_required
@@ -1260,8 +1260,6 @@ def api_change_plan_status(id):
                 else:
                     flash(result["error"], "error")
                     return redirect(request.referrer or url_for('views.plans'))
-
-            # Сообщение об успешном изменении
             message = result if isinstance(result, str) else "Статус изменен"
 
         except Exception as e:
@@ -1271,18 +1269,11 @@ def api_change_plan_status(id):
             else:
                 flash(f'Ошибка обработки статуса: {str(e)}', 'error')
                 return redirect(request.referrer or url_for('views.plans'))
-
-    # Возврат ответа
     if request.is_json:
         return jsonify({'message': message, 'status': status})
     else:
         flash(message, 'success')
         return redirect(request.referrer or url_for('views.plans'))
-
-
-
-
-
 
 @views.route('/create-ticket/<int:id>', methods=['POST'])
 @login_required
