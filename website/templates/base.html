@@ -53,26 +53,38 @@
     </header>
     <div class="user-sidebar" id="user-sidebar">
         <div class="sidebar-content">
-            <div class="sidebar-content-header">
-                <div class="header-bside">
-                <a class = "clear-but">
-                    <img src="{{ url_for('static', filename='img/Notifications.svg') }}" class="clear-icon">
-                </a>
-                <a class = "clear-but" onclick="window.location.href='/FAQ'">
-                    <img src="{{ url_for('static', filename='img/FAQ.svg') }}" class="clear-icon">
-                </a>
-                <div class="divider"></div>
-                <div class="circle-fi-header" onclick="window.location.href='/profile'">
-                    {{ current_user.first_name[:1] | upper }}{{ current_user.last_name[:1] | upper }}
+            <div class="short-acc-info">
+                <div class="circle-fi">{{ current_user.first_name[:1] | upper }}{{ current_user.last_name[:1] | upper }}</div>
+                <div class="employee-card">
+                    <a class="employee-name">{{ current_user.first_name}} {{ current_user.last_name}}</a>
+                    <a class="employee-position">{{ current_user.post}}</a>
                 </div>
-                <div class="info-user">
-                    <a class="fio">{{ current_user.first_name }} {{ current_user.last_name }}</a>
-                </div> 
-                <svg id = "user-info-trigger" class="dropdown-arrow" width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1L6 6L11 1" stroke="#666" stroke-width="2" stroke-linecap="round"></path>
-                </svg>  
             </div>
+            <div class="input-with-icon">
+                <img src="/static/img/Email.svg" alt="" class="input-icon">
+                <input type="text" value="{{current_user.email}}" 
+                    class="app-input" readonly>
             </div>
+            <div class="input-with-icon">
+                <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                <input type="text" value="{{ current_user.organization.name }}" 
+                    class="app-input" readonly>
+            </div>
+            <hr>
+
+            <button type="button" class="button-grey-border" onclick="window.location.href='/profile'">
+                <img src="/static/img/Account.svg" alt="" class="btn-icon">
+                <span class="btn-text">Профиль</span>
+            </button>
+            <button type="button" class="button-grey-border" onclick="window.location.href=''">
+                <img src="/static/img/Account.svg" alt="" class="btn-icon">
+                <span class="btn-text">Изменить пароль</span>
+            </button>
+            <button type="button" class="button-grey-border" onclick="window.location.href=''">
+                <img src="/static/img/Organization.svg" alt="" class="btn-icon">
+                <span class="btn-text">Еще что-то</span>
+            </button>
+            <hr>
             <div class = "user-sidebar-buttons-area">
                 <form id = "logout_form" action="{{ url_for('auth.logout') }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -81,39 +93,6 @@
                         <span class="btn-text">{{ _('Выйти из аккаунта') }}</span>
                     </button>
                 </form>
-            </div>
-            <div class = "user-sidebar-conteiner">
-                <a class = "user-sidebar-name">{{ _('Кабинет пользователя') }}</a>
-                <div class="short-acc-info">
-                    <div class="circle-fi">{{ current_user.first_name[:1] | upper }}{{ current_user.last_name[:1] | upper }}</div>
-                    <div class="employee-card">
-                        <a class="employee-name">{{ current_user.first_name}} {{ current_user.last_name}}</a>
-                        <a class="employee-position">{{ current_user.post}}</a>
-                        <a class="employee-company">{{ current_user.organization.name | truncate(25, True, '...') }}</a>
-                    </div>
-                </div>
-
-              <div class="input-with-icon">
-                    <img src="/static/img/Numbers.svg" alt="" class="input-icon">
-                    <input type="text" value="demo{{current_user.id}}" 
-                        class="app-input" readonly>
-                </div>
-                <div class="input-with-icon">
-                    <img src="/static/img/Email.svg" alt="" class="input-icon">
-                    <input type="text" value="{{current_user.email}}" 
-                        class="app-input" readonly>
-                </div>
-                <div class="input-with-icon">
-                    <img src="/static/img/Phone.svg" alt="" class="input-icon">
-                    <input type="text" value="{{current_user.phone}}" 
-                        class="app-input" readonly>
-                </div>
-  
-            </div>
-            <div class = "user-sidebar-conteiner">
-                <a class = "user-sidebar-name">{{ _('Изменить пароль') }}</a>
-                <a href="">...</a>
-  
             </div>
         </div>
     </div>

@@ -447,7 +447,7 @@ header nav{
   background-color: var(--background-grey1); 
 }
 
-.user-sidebar {
+/* .user-sidebar {
   position: fixed;
   top: 0;
   right: -640px;
@@ -465,12 +465,39 @@ header nav{
 
 .user-sidebar.show {
   right: 0;
+} */
+
+
+.user-sidebar {
+  position: absolute;
+  top: 60px;
+  right: 10px;
+  width: 210px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.1);
+  font-family: sans-serif;
+  z-index: 5;
+  opacity: 0;
+  transform: translateY(-20px);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.user-sidebar.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .sidebar-content {
   display: flex;
   flex-direction: column;
-  gap: 30px;
+  gap: 8px;
+  padding: 10px;
 }
 
 .sidebar-content-header {
@@ -482,89 +509,68 @@ header nav{
   padding-right: 20px;
 }
 
-.sidebar-content-header button img {
-  width: 20px;
-  height: 20px;
-}
-
-.user-sidebar-buttons-area{
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.user-sidebar-buttons-area button{
-  width: 100%;
-}
-
-.user-sidebar-conteiner{
-  width: calc(100% - 40px);
-  background: rgba(255, 255, 255, 0.486);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(0,0,0,0.1);
-  border-radius: 8px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;  
-}
-
-.user-sidebar-conteiner .circle-fi{
-  width: 41px;
-  height: 41px;
-}
-
-.user-sidebar-conteiner .short-acc-info{
+.sidebar-content .short-acc-info{
   font-size: 14px;
   gap: 11px;
 }
 
-.user-sidebar-conteiner .short-acc-info .employee-company {
-  max-width: 150px;
-  overflow-y: auto;
-  scrollbar-width: thin; /* Для Firefox */
+.sidebar-content .circle-fi{
+  width: 15px;
+  height: 15px;
 }
 
-/* Для Webkit-браузеров (Chrome, Safari, Edge) */
-.user-sidebar-conteiner .short-acc-info .employee-company::-webkit-scrollbar {
-  width: 2px; /* Тонкая полоса */
+.sidebar-content .short-acc-info .circle-fi,
+.sidebar-content .short-acc-info .employee-card{
+  font-size: 12px;
+  gap: 5px;
 }
 
-.user-sidebar-conteiner .short-acc-info .employee-company::-webkit-scrollbar-track {
-  background: transparent; /* Прозрачный фон */
+.sidebar-content .input-with-icon img {
+  width: 15px;
+  height: 15px;
+  left: 5px;
 }
 
-.user-sidebar-conteiner .short-acc-info .employee-company::-webkit-scrollbar-thumb {
-  background-color: #c1c1c1; /* Цвет полосы */
-  border-radius: 2px; /* Закругленные углы */
+.sidebar-content .btn-icon{
+  width: 15px;
+  height: 15px;
 }
 
-
-.user-sidebar-conteiner input{
+.sidebar-content .input-with-icon input{
+  font-size: 12px;
   background-color: transparent;
-  padding: 9px 0px 9px 25px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  padding: 9px 15px 9px 29px;
 }
 
-.user-sidebar-conteiner .input-icon{
-  left: 0;
+.sidebar-content hr{
+  margin: 0;
 }
 
-.user-sidebar-name{
-  color: var(--text-title);
-  font-size: 18px;
-  margin-bottom: 21px;
-  font-weight: 600;
+.sidebar-content button{
+  font-size: 12px;
+  width: 100%;
+  justify-content: start;
+  border: none;
+  padding: 9px 14px;
+
 }
 
-.sidebar-profile-row{
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 14px;
+.sidebar-content .button-grey-border{
+  padding-left: 5px;
 }
+
+
+
+
+
+
+
+
+
+
 
 
 .close-btn {
@@ -1306,8 +1312,9 @@ input::placeholder {
   font-weight: 500;
   overflow-x: auto;
   max-width: 100%;
-  white-space: nowrap;  
-  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; 
 }
 
 .employee-position{
