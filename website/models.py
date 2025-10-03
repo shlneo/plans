@@ -45,6 +45,8 @@ class Organization(db.Model):
     ynp = db.Column(db.String(), nullable=True)
     ministry = db.Column(db.String()) 
     is_active = db.Column(db.Boolean, default=True)
+    plans = db.relationship("Plan", back_populates="organization")
+
 
 class Plan(db.Model):
     __tablename__ = 'plans'
@@ -83,6 +85,8 @@ class Plan(db.Model):
     econ_measures = db.relationship('EconMeasure', back_populates='plan', lazy=True, cascade="all, delete-orphan")
     econ_execes = db.relationship('EconExec', back_populates='plan', lazy=True, cascade="all, delete-orphan")
     indicators_usage = db.relationship('IndicatorUsage', back_populates='plan', lazy=True, cascade="all, delete-orphan")
+    organization = db.relationship("Organization", back_populates="plans")
+
 
 class Ticket(db.Model):
     __tablename__ = 'tickets'

@@ -2378,7 +2378,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     Notifications.init();
-    setInterval(() => {
-        Notifications.init();
-    }, 60000);
+    // setInterval(() => {
+    //     Notifications.init();
+    // }, 60000);
 });

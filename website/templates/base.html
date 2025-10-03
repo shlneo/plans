@@ -443,7 +443,7 @@
                         <label>[3] {{ _('Наименование мероприятий, работ') }}</label>
                         <div class="input-with-icon">
                             <img src="/static/img/3.svg" alt="" class="input-icon">
-                            <input type="text" maxlength="" value=""  name = "name"
+                            <input type="text" maxlength="" value="Наименование"  name = "name"
                                 placeholder="{{ _('Наименование') }}" class="app-input" required>
                         </div>
                     </div>
@@ -452,7 +452,7 @@
                         <div class="input-with-icon">
                             <img src="/static/img/Half_gray.svg" alt="" class="input-icon">
                                             <input type="number" name="Volume" step="1" 
-                            placeholder="Объем" class="app-input" required
+                            placeholder="Объем" class="app-input" value="1" required
                             oninput="this.value = this.value.replace(/[^0-9]/g, '')">
                         </div>
                     </div>
@@ -481,7 +481,7 @@
                         <div class="input-with-icon">
                             <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
                             <input type="number" name="ExpectedQuarter" min="1" max="4" 
-                            pattern="[1-4]" inputmode="numeric"
+                            pattern="[1-4]" inputmode="numeric" value="1"
                             placeholder="Квартал" class="app-input" required
                             oninput="this.value = this.value.replace(/[^1-4]/g, '').slice(0, 1)">
                         </div>
@@ -502,7 +502,7 @@
                             <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
                             <input type="number" name="Payback" min="1" max="99" 
                                 inputmode="numeric" placeholder="Количество лет" 
-                                class="app-input" required
+                                class="app-input"  value="5" required
                                 oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2); 
                                             if (this.value > 99) this.value = 99; 
                                             if (this.value < 1) this.value = '';">    

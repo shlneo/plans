@@ -201,7 +201,7 @@ def get_filtered_plans(user, status_filter="all", year_filter="all"):
     }
     return plans, status_counts
 
-@views.route('/plans')
+@views.route('/plans', methods=['GET'])
 @login_required
 def plans():
     status_filter = request.args.get('status', 'all')
@@ -251,115 +251,6 @@ def export():
         active_tab='export'
     )
     
-def export_xml_single(plan: Plan):
-    xml_content = f"<plan id='{plan.id}' year='{plan.year}' name_org='{plan.name_org}' okpo='{plan.okpo}'/>"
-    file_stream = io.BytesIO()
-    file_stream.write(xml_content.encode("utf-8"))
-    file_stream.seek(0)
-    filename = f"plan_{plan.id}.xml"
-    return file_stream, "application/xml", filename
-    
-
-def export_xlsx_single(plan: Plan):
-    from openpyxl import Workbook
-    from openpyxl.utils import get_column_letter
-    
-    wb = Workbook()
-    if "Sheet" in wb.sheetnames:
-        wb.remove(wb["Sheet"])
-    
-
-    create_title_page(wb, plan)
-    
-    ws_data = wb.create_sheet("Данные плана", 1)
-    ws_data.append(["ID", "Год", "Организация", "ОКПО"])
-    ws_data.append([plan.id, plan.year, plan.name_org, plan.okpo])
-
-    for col in range(1, 5):
-        ws_data.column_dimensions[get_column_letter(col)].width = 20
-    
-    file_stream = io.BytesIO()
-    wb.save(file_stream)
-    file_stream.seek(0)
-    filename = f"plan_{plan.id}.xlsx"
-    return file_stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename
-
-
-def create_title_page(wb, plan):
-    from openpyxl.utils import get_column_letter
-    from openpyxl.styles import Font, Alignment
-    
-    # Создаем титульный лист
-    ws_title = wb.create_sheet("Титульный лист", 0)
-    
-    # Настройка размеров колонок и строк
-    for col in range(2, 10): 
-        ws_title.column_dimensions[get_column_letter(col)].width = 20
-    for row in range(2, 20):
-        ws_title.row_dimensions[row].height = 25
-
-    ws_title.column_dimensions['A'].width = 80  
-
-    # Стили
-    bold_font = Font(name='Times New Roman', size=12, bold=True)
-    regular_font = Font(name='Times New Roman', size=11)
-    center = Alignment(horizontal='center', vertical='center', wrap_text=True)
-    left = Alignment(horizontal='left', vertical='center', wrap_text=True)
-
-    # Заголовок "УТВЕРЖДЕНО"
-    ws_title.merge_cells("F2:G6")
-    cell = ws_title["F2"]
-    cell.value = "УТВЕРЖДЕНО\nПостановление Государственного\nкомитета по стандартизации\nРеспублики Беларусь\nот 22.11.2024 №125"
-    cell.font = bold_font
-    cell.alignment = center
-
-    # Основные заголовки
-    ws_title.merge_cells("B8:G8")
-    ws_title["B8"].value = "ВЕДОМСТВЕННАЯ ОТЧЕТНОСТЬ"
-    ws_title["B8"].font = bold_font
-    ws_title["B8"].alignment = center
-
-    ws_title.merge_cells("B10:G10")
-    ws_title["B10"].value = "СВЕДЕНИЯ"
-    ws_title["B10"].font = bold_font
-    ws_title["B10"].alignment = center
-
-    ws_title.merge_cells("B11:G11")
-    ws_title["B11"].value = f"о нормах расхода и (или) предельных уровнях потребления топливно-энергетических ресурсов квартал {plan.year} г."
-    ws_title["B11"].font = regular_font
-    ws_title["B11"].alignment = center
-
-    # Информация об организации
-    # Предполагается, что у плана есть связь с организацией и пользователем
-    org_info = [
-        "Полное наименование юридического лица:",
-        f"Полное наименование обособленного подразделения юридического лица: {plan.name_org}",
-        f"УНП: {getattr(plan, 'ynp', '')}",
-        f"ОКПО: {plan.okpo}",
-        "Почтовый адрес (фактический)",
-        f"Электронный адрес (www, e-mail): {getattr(plan, 'email', '')}"
-    ]
-
-    start_row = 13
-    for i, text in enumerate(org_info):
-        cell = ws_title[f'A{start_row + i}']
-        cell.value = text
-        cell.font = regular_font
-        cell.alignment = left
-
-    # Параметры печати
-    ws_title.page_setup.orientation = ws_title.ORIENTATION_LANDSCAPE
-    ws_title.page_setup.paperSize = ws_title.PAPERSIZE_A4
-    ws_title.page_setup.fitToWidth = 1
-    ws_title.page_setup.fitToHeight = 1
-    ws_title.page_setup.fitToPage = True
-    
-    return ws_title
-
-
-def export_pdf_single(plan: Plan):
-    pass
-
 @views.route('/export-to/<string:format>', methods=['POST'])
 @login_required
 def export_to(format):
@@ -372,7 +263,8 @@ def export_to(format):
     if not plans:
         flash("Не найдены выбранные планы.", "error")
         return redirect(request.url)
-
+    
+    from .plans.export import export_pdf_single, export_xlsx_single, export_xml_single
     if len(plans) == 1:
         plan = plans[0]
         if format == "xml":
@@ -403,8 +295,6 @@ def export_to(format):
 
     zip_stream.seek(0)
     return send_file(zip_stream, as_attachment=True, download_name="plans.zip", mimetype="application/zip")
-    
-    
 
 @views.route('/create-plan', methods=['GET', 'POST'])
 @login_required

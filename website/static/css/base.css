@@ -2795,6 +2795,7 @@ th .resizer::before {
     opacity: 0;
     transform: translateY(20px) scale(0.95);
     transition: all 0.4s cubic-bezier(0.32, 0.72, 0, 1);
+    transition: width 0.3s ease, height 0.3s ease;
 }
 
 .modal.active .modal-content {
