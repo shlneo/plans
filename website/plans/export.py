@@ -258,6 +258,7 @@ def usage_xlsx(wb, plan):
             
             cell.alignment = center if col != 2 else left
             cell.border = thin_border
+            cell.number_format = '0.00' 
     
     signatures_xlsx(ws, row_index + 1, plan)
 
@@ -334,6 +335,7 @@ def derections_xlsx(wb, plan):
             cell.font = regular_font
             cell.alignment = center if col not in [3] else left
             cell.border = thin_border
+            cell.number_format = '0.00' 
 
     ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
@@ -352,11 +354,13 @@ def events_xlsx(wb, plan):
     regular_font = Font(name="Times New Roman", size=11)
     center = Alignment(horizontal="center", vertical="center", wrap_text=True)
     left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    vertical_text = Alignment(horizontal="center", vertical="center", textRotation=90, wrap_text=True)
     thin_border = Border(
         left=Side(style="thin"), right=Side(style="thin"),
         top=Side(style="thin"), bottom=Side(style="thin")
     )
 
+    # Заголовки
     ws.merge_cells("A1:R1")
     ws["A1"].value = "Часть 3."
     ws["A1"].font = bold_font
@@ -367,61 +371,146 @@ def events_xlsx(wb, plan):
     ws["A2"].font = bold_font
     ws["A2"].alignment = center
 
-    ws.merge_cells("A3:A4"); ws["A3"].value = "№ п/п"
-    ws.merge_cells("B3:B4"); ws["B3"].value = "Код основных направлений энергосбережения в соответствии с формой 4-энерго-сбережение"
-    ws.merge_cells("C3:C4"); ws["C3"].value = "Наименование мероприятий, работ"
-    ws.merge_cells("D3:D4"); ws["D3"].value = "Единицы измерения"
-    ws.merge_cells("E3:E4"); ws["E3"].value = "Объем внедрения, ед."
-    
-
-    ws.merge_cells("F3:K3"); ws["F3"].value = "Условно-годовой экономический эффект"
-    subheaders = [
-        "т у.т.", "руб.", "Ожидаемый срок внедрения",
-        "Ожидаемый экономический эффект от внедрения мероприятия в текущем году, т у.т.",
-        "Срок окупаемости, лет", "Объем финансирования, руб."
-    ]
-    for i, text in enumerate(subheaders, start=6):
-        ws.cell(row=4, column=i).value = text
-
-
+    ws.merge_cells("A3:A5"); ws["A3"].value = "№ п/п"
+    ws.merge_cells("B3:B5"); ws["B3"].value = "Код основных направлений энергосбережения"
+    ws.merge_cells("C3:C5"); ws["C3"].value = "Наименование мероприятий, работ"
+    ws.merge_cells("D3:D5"); ws["D3"].value = "Единицы измерения"
+    ws.merge_cells("E3:E5"); ws["E3"].value = "Объем внедрения, ед."
+    ws.merge_cells("F3:G3"); ws["F3"].value = "Условно-годовой экономический эффект"
+    ws.merge_cells("F4:F5"); ws["F4"].value = "т у.т."
+    ws.merge_cells("G4:G5"); ws["G4"].value = "руб."
+    ws.merge_cells("H3:H5"); ws["H3"].value = "Ожидаемый срок внедрения мероприятия, квартал"
+    ws.merge_cells("I3:I5"); ws["I3"].value = "Ожидаемый экономический эффект от внедрения мероприятия в текущем году, т у.т."
+    ws.merge_cells("J3:J5"); ws["J3"].value = "Срок окупаемости, лет"
+    ws.merge_cells("K3:K5"); ws["K3"].value = "Объем финансирования, руб."
     ws.merge_cells("L3:R3"); ws["L3"].value = "в том числе по источникам финансирования, руб."
-    funding_subs = [
-        "республиканский бюджет", "республиканский бюджет", "местный бюджет",
-        "другие", "собственные средства организаций", "кредиты банков, займы", "иные"
-    ]
-    for i, text in enumerate(funding_subs, start=12):
-        ws.cell(row=4, column=i).value = text
+    ws.merge_cells("L4:O4"); ws["L4"].value = "бюджетные"
+    ws["L5"].value = "республиканский бюджет"
+    ws["M5"].value = "областной (городской) бюджет"
+    ws["N5"].value = "местный бюджет"
+    ws["O5"].value = "другие"
+    ws.merge_cells("P4:P5"); ws["P4"].value = "собственные средства организации"
+    ws.merge_cells("Q4:Q5"); ws["Q4"].value = "кредиты банков, займы"
+    ws.merge_cells("R4:R5"); ws["R4"].value = "иные"
 
-    for row in ws.iter_rows(min_row=3, max_row=4, min_col=1, max_col=18):
+    # Заголовки: шрифт, выравнивание, границы
+    for row in ws.iter_rows(min_row=3, max_row=5, min_col=1, max_col=18):
         for cell in row:
+            if not cell.value:
+                continue
+            if cell.coordinate in ("B3", "D3", "E3", "J3", "K3", "H3", "I3", "L5", "M5", "N5", "O5", "P4", "Q4", "R4"):
+                cell.alignment = vertical_text
+            else:
+                cell.alignment = center
             cell.font = bold_font
-            cell.alignment = center
             cell.border = thin_border
 
-    widths = [6, 30, 60, 15, 15, 10, 10, 20, 20, 15, 15, 15, 15, 15, 15, 15, 15, 15]
-    for i, width in enumerate(widths, start=1):
-        col_letter = get_column_letter(i)
-        ws.column_dimensions[col_letter].width = width
+    ws.row_dimensions[3].height = 55
 
-    row_index = 4
-    for idx, measure in enumerate(sorted(plan.econ_measures, key=lambda u: u.direction.code), start=1):
+    # Нумерация колонок
+    row_index = 6
+    for col in range(1, 19):
+        cell = ws.cell(row=row_index, column=col, value=col)
+        cell.alignment = center
+        cell.font = bold_font
+        cell.border = thin_border
+
+    from ..models import Plan, EconMeasure, EconExec
+    from sqlalchemy.orm import joinedload
+
+    local_econ_execes = (EconExec.query
+        .join(EconMeasure)
+        .join(Plan)
+        .filter(Plan.id == plan.id, EconExec.is_local == True)
+        .options(joinedload(EconExec.econ_measures).joinedload(EconMeasure.plan))
+        .all()
+    )
+
+    non_local_econ_execes = (EconExec.query
+        .join(EconMeasure)
+        .join(Plan)
+        .filter(Plan.id == plan.id, EconExec.is_local == False)
+        .options(joinedload(EconExec.econ_measures).joinedload(EconMeasure.plan))
+        .all()
+    )
+
+    def add_section(title, execs, start_number=1):
+        nonlocal row_index
         row_index += 1
-        row = [
-            idx,
-            measure.direction.code,
-            measure.direction.name,
-            "",  # единицы измерения, если есть
-            float(measure.year_econ or 0),  # объем внедрения
-            "", "", "", "", "", "",  # подгруппа экономический эффект
-            "", "", "", "", "", "", "",  # подгруппа финансирование
-        ]
-        ws.append(row)
+        ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=18)
+        cell = ws.cell(row=row_index, column=1, value=title)
+        cell.font = bold_font
+        cell.alignment = center
+        cell.border = thin_border
 
-        for col in range(1, len(row)+1):
-            cell = ws.cell(row=row_index, column=col)
-            cell.font = regular_font
-            cell.alignment = left if col == 3 else center
+        sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
+        sums = {col: 0 for col in sum_cols}
+
+        for idx, econ in enumerate(execs, start=start_number):
+            row_index += 1
+            row = [
+                idx,
+                econ.econ_measures.direction.code if econ.econ_measures and econ.econ_measures.direction else "",
+                econ.name if hasattr(econ, "name") else "",
+                econ.econ_measures.direction.unit.name if econ.econ_measures and econ.econ_measures.direction and econ.econ_measures.direction.unit else "",
+                econ.Volume if hasattr(econ, "Volume") else 0,
+                econ.EffTut if hasattr(econ, "EffTut") else 0,
+                econ.EffRub if hasattr(econ, "EffRub") else 0,
+                econ.ExpectedQuarter if hasattr(econ, "ExpectedQuarter") else 0,
+                econ.EffCurrYear if hasattr(econ, "EffCurrYear") else 0,
+                econ.Payback if hasattr(econ, "Payback") else 0,
+                econ.VolumeFin if hasattr(econ, "VolumeFin") else 0, 
+                econ.BudgetState if hasattr(econ, "BudgetState") else 0, 
+                econ.BudgetRep if hasattr(econ, "BudgetRep") else 0, 
+                econ.BudgetLoc if hasattr(econ, "BudgetLoc") else 0,
+                econ.BudgetOther if hasattr(econ, "BudgetOther") else 0, 
+                econ.MoneyOwn if hasattr(econ, "MoneyOwn") else 0,
+                econ.MoneyLoan if hasattr(econ, "MoneyLoan") else 0,
+                econ.MoneyOther if hasattr(econ, "MoneyOther") else 0
+            ]
+
+            for col in sum_cols:
+                try:
+                    sums[col] += float(row[col-1])
+                except (TypeError, ValueError):
+                    pass
+
+            ws.append(row)
+            for col_idx in range(1, 19):
+                cell = ws.cell(row=row_index, column=col_idx)
+                cell.border = thin_border
+                # Выравнивание: текстовая колонка 3 слева, все остальные числа по центру
+                cell.alignment = left if col_idx == 3 else center
+                cell.font = regular_font
+
+        # Итоги
+        row_index += 1
+        ws.cell(row=row_index, column=3, value="ИТОГО по разделу:")
+        ws.cell(row=row_index, column=3).alignment = left
+        ws.cell(row=row_index, column=3).border = thin_border
+        for col in sum_cols:
+            cell = ws.cell(row=row_index, column=col, value=sums[col])
             cell.border = thin_border
+            cell.alignment = center
+            cell.font = regular_font
+
+
+        for col_idx in range(1, 19):
+            cell = ws.cell(row=row_index, column=col_idx)
+            cell.border = thin_border
+            cell.alignment = left if col_idx == 3 else center
+            cell.font = regular_font
+            if col_idx != 3:
+                cell.number_format = '0.00' 
+
+        return start_number + len(execs)
+
+    next_number = add_section("Раздел 2.1 Мероприятия по экономии ТЭР (первоначальная ред.)", non_local_econ_execes, 1)
+    add_section("Раздел 3.1. Мероприятия по увеличению использования местных ТЭР (первоначальная ред.)", local_econ_execes, next_number)
+
+    widths = [6, 12, 40, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11]
+    for i, width in enumerate(widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = width
 
     ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
