@@ -116,7 +116,7 @@ def title_xlsx(wb, plan):
 
     return ws_title
 
-def signatures_xlsx(ws, start_row, plan):
+def signatures_indicators_xlsx(ws, start_row, plan):
     from openpyxl.styles import Font, Alignment
 
     bold_font = Font(name="Times New Roman", size=11, bold=True)
@@ -260,7 +260,7 @@ def usage_xlsx(wb, plan):
             cell.border = thin_border
             cell.number_format = '0.00' 
     
-    signatures_xlsx(ws, row_index + 1, plan)
+    signatures_indicators_xlsx(ws, row_index + 1, plan)
 
     ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
@@ -344,9 +344,81 @@ def derections_xlsx(wb, plan):
 
     return ws
 
+def signatures_events_xlsx(ws, start_row, plan):
+    from openpyxl.styles import Font, Alignment
+
+    bold_font = Font(name="Times New Roman", size=11, bold=True)
+    regular_font = Font(name="Times New Roman", size=11)
+    left = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+    def set_cell(ws, row, col_start, col_end, text, font, row_height=20):
+        """
+        Устанавливает текст в объединённой ячейке
+        row_height - высота строки в пунктах
+        """
+        ws.merge_cells(start_row=row, start_column=col_start, end_row=row, end_column=col_end)
+        cell = ws.cell(row=row, column=col_start)
+        cell.value = text
+        cell.font = font
+        cell.alignment = left
+        ws.row_dimensions[row].height = row_height
+
+
+    set_cell(ws, start_row+6, 2, 4, "от Департамента по энергоэффективности Госстандарта", bold_font, row_height=20)
+    set_cell(ws, start_row+7, 2, 4, 
+        "Производственно-техническое управление\n"
+        "_________________________\n"
+        "«___» ____________ 20__ г.",
+        regular_font, row_height=60
+    )
+
+    set_cell(ws, start_row+9, 2, 4, 
+        "Управление экономики и финансов\n"
+        "_________________________\n"
+        "«___» ____________ 20__ г.",
+        regular_font, row_height=60
+    )
+
+
+    set_cell(ws, start_row+11, 2, 4, 
+        "Начальник Минского городского управления\n"
+        "по наздору за рациональным использованием ТЭР\n"
+        "_________________________\n"
+        "«___» ____________ 20__ г.",
+        regular_font, row_height=60
+    )
+
+    set_cell(ws, start_row+6, 6, 11, f"от {plan.name_org}", bold_font, row_height=45)
+    set_cell(ws, start_row+7, 6, 11, 
+        "________________________________________________\n"
+        "________________________________________________\n"
+        "«___» ____________ 20__ г.",
+        regular_font, row_height=60
+    )
+
+    ministry_name = plan.organization.ministry
+    ministrytext = f"от {ministry_name if ministry_name else 'Министерство (концерн, государственный комитет)'}"
+    set_cell(ws, start_row+8, 6, 11, f"{ministrytext}", bold_font, row_height=45)
+    set_cell(ws, start_row+9, 6, 11, 
+        "________________________________________________\n"
+        "________________________________________________\n"
+        "«___» ____________ 20__ г.",
+        regular_font, row_height=60
+    )
+
+    set_cell(ws, start_row+10, 6, 11, "от Минского городского исполнительного комитета", bold_font, row_height=45)
+    set_cell(ws, start_row+11, 6, 11, 
+        "________________________________________________\n"
+        "«___» ____________ 20__ г.",
+        regular_font, row_height=60
+    )
+
 def events_xlsx(wb, plan):
     from openpyxl.styles import Font, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
+    from ..models import Plan, EconMeasure, EconExec
+    from sqlalchemy.orm import joinedload
+    from ..views import get_cumulative_econ_metrics
 
     ws = wb.create_sheet("Часть 3")
 
@@ -360,7 +432,6 @@ def events_xlsx(wb, plan):
         top=Side(style="thin"), bottom=Side(style="thin")
     )
 
-    # Заголовки
     ws.merge_cells("A1:R1")
     ws["A1"].value = "Часть 3."
     ws["A1"].font = bold_font
@@ -393,7 +464,6 @@ def events_xlsx(wb, plan):
     ws.merge_cells("Q4:Q5"); ws["Q4"].value = "кредиты банков, займы"
     ws.merge_cells("R4:R5"); ws["R4"].value = "иные"
 
-    # Заголовки: шрифт, выравнивание, границы
     for row in ws.iter_rows(min_row=3, max_row=5, min_col=1, max_col=18):
         for cell in row:
             if not cell.value:
@@ -403,20 +473,14 @@ def events_xlsx(wb, plan):
             else:
                 cell.alignment = center
             cell.font = bold_font
-            cell.border = thin_border
 
     ws.row_dimensions[3].height = 55
 
-    # Нумерация колонок
     row_index = 6
     for col in range(1, 19):
         cell = ws.cell(row=row_index, column=col, value=col)
         cell.alignment = center
         cell.font = bold_font
-        cell.border = thin_border
-
-    from ..models import Plan, EconMeasure, EconExec
-    from sqlalchemy.orm import joinedload
 
     local_econ_execes = (EconExec.query
         .join(EconMeasure)
@@ -434,18 +498,16 @@ def events_xlsx(wb, plan):
         .all()
     )
 
+    
+
     def add_section(title, execs, start_number=1):
         nonlocal row_index
         row_index += 1
         ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=18)
-        cell = ws.cell(row=row_index, column=1, value=title)
-        cell.font = bold_font
-        cell.alignment = center
-        cell.border = thin_border
-
+        ws.cell(row=row_index, column=1, value=title).font = bold_font
+        ws.cell(row=row_index, column=1).alignment = center
         sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
         sums = {col: 0 for col in sum_cols}
-
         for idx, econ in enumerate(execs, start=start_number):
             row_index += 1
             row = [
@@ -459,58 +521,95 @@ def events_xlsx(wb, plan):
                 econ.ExpectedQuarter if hasattr(econ, "ExpectedQuarter") else 0,
                 econ.EffCurrYear if hasattr(econ, "EffCurrYear") else 0,
                 econ.Payback if hasattr(econ, "Payback") else 0,
-                econ.VolumeFin if hasattr(econ, "VolumeFin") else 0, 
-                econ.BudgetState if hasattr(econ, "BudgetState") else 0, 
-                econ.BudgetRep if hasattr(econ, "BudgetRep") else 0, 
+                econ.VolumeFin if hasattr(econ, "VolumeFin") else 0,
+                econ.BudgetState if hasattr(econ, "BudgetState") else 0,
+                econ.BudgetRep if hasattr(econ, "BudgetRep") else 0,
                 econ.BudgetLoc if hasattr(econ, "BudgetLoc") else 0,
-                econ.BudgetOther if hasattr(econ, "BudgetOther") else 0, 
+                econ.BudgetOther if hasattr(econ, "BudgetOther") else 0,
                 econ.MoneyOwn if hasattr(econ, "MoneyOwn") else 0,
                 econ.MoneyLoan if hasattr(econ, "MoneyLoan") else 0,
                 econ.MoneyOther if hasattr(econ, "MoneyOther") else 0
             ]
-
             for col in sum_cols:
                 try:
                     sums[col] += float(row[col-1])
                 except (TypeError, ValueError):
                     pass
-
             ws.append(row)
             for col_idx in range(1, 19):
                 cell = ws.cell(row=row_index, column=col_idx)
-                cell.border = thin_border
-                # Выравнивание: текстовая колонка 3 слева, все остальные числа по центру
                 cell.alignment = left if col_idx == 3 else center
                 cell.font = regular_font
-
-        # Итоги
         row_index += 1
-        ws.cell(row=row_index, column=3, value="ИТОГО по разделу:")
-        ws.cell(row=row_index, column=3).alignment = left
-        ws.cell(row=row_index, column=3).border = thin_border
+        ws.cell(row=row_index, column=3, value="ИТОГО по разделу:").alignment = left
         for col in sum_cols:
             cell = ws.cell(row=row_index, column=col, value=sums[col])
-            cell.border = thin_border
             cell.alignment = center
             cell.font = regular_font
-
-
-        for col_idx in range(1, 19):
-            cell = ws.cell(row=row_index, column=col_idx)
-            cell.border = thin_border
-            cell.alignment = left if col_idx == 3 else center
-            cell.font = regular_font
-            if col_idx != 3:
-                cell.number_format = '0.00' 
-
+            cell.number_format = '0.00'
         return start_number + len(execs)
 
     next_number = add_section("Раздел 2.1 Мероприятия по экономии ТЭР (первоначальная ред.)", non_local_econ_execes, 1)
     add_section("Раздел 3.1. Мероприятия по увеличению использования местных ТЭР (первоначальная ред.)", local_econ_execes, next_number)
 
+    row_index += 2
+    ws.cell(row=row_index, column=3, value="Всего:").font = bold_font
+    ws.cell(row=row_index, column=3).alignment = left
+    sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
+    total_sums = {col: 0 for col in sum_cols}
+    for row in ws.iter_rows(min_row=6, max_row=row_index, min_col=3, max_col=18):
+        if row[0].value == "ИТОГО по разделу:":
+            for col in sum_cols:
+                val = ws.cell(row=row[0].row, column=col).value
+                try:
+                    total_sums[col] += float(val)
+                except (TypeError, ValueError):
+                    pass
+    for col in sum_cols:
+        cell = ws.cell(row=row_index, column=col, value=total_sums[col])
+        cell.alignment = center
+        cell.font = bold_font
+        cell.number_format = '0.00'
+
+    quarters = [
+        ("Январь–Март", "jan_mar"),
+        ("Январь–Июнь", "jan_jun"),
+        ("Январь–Сентябрь", "jan_sep"),
+        ("Январь–Декабрь", "jan_dec")
+    ]
+    local_totals = get_cumulative_econ_metrics(plan.id, True)
+    non_local_totals = get_cumulative_econ_metrics(plan.id, False)
+    total_metrics = {
+        'jan_mar_eff': local_totals['jan_mar']['eff_curr_year'] + non_local_totals['jan_mar']['eff_curr_year'],
+        'jan_mar_vol': local_totals['jan_mar']['volume_fin'] + non_local_totals['jan_mar']['volume_fin'],
+        'jan_jun_eff': local_totals['jan_jun']['eff_curr_year'] + non_local_totals['jan_jun']['eff_curr_year'],
+        'jan_jun_vol': local_totals['jan_jun']['volume_fin'] + non_local_totals['jan_jun']['volume_fin'],
+        'jan_sep_eff': local_totals['jan_sep']['eff_curr_year'] + non_local_totals['jan_sep']['eff_curr_year'],
+        'jan_sep_vol': local_totals['jan_sep']['volume_fin'] + non_local_totals['jan_sep']['volume_fin'],
+        'jan_dec_eff': local_totals['jan_dec']['eff_curr_year'] + non_local_totals['jan_dec']['eff_curr_year'],
+        'jan_dec_vol': local_totals['jan_dec']['volume_fin'] + non_local_totals['jan_dec']['volume_fin']
+    }
+
+    for q_label, q_key in quarters:
+        row_index += 1
+        ws.cell(row=row_index, column=3, value=q_label).font = regular_font
+        ws.cell(row=row_index, column=3).alignment = left
+        for col in range(3, 19):
+            c = ws.cell(row=row_index, column=col)
+            c.alignment = left
+        ws.cell(row=row_index, column=9, value=total_metrics[f"{q_key}_eff"]).number_format = '0.00'
+        ws.cell(row=row_index, column=11, value=total_metrics[f"{q_key}_vol"]).number_format = '0.00'
+
     widths = [6, 12, 40, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11]
     for i, width in enumerate(widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
+
+    for row in ws.iter_rows(min_row=3, max_row=row_index, min_col=1, max_col=18):
+        for cell in row:
+            cell.border = thin_border
+
+
+    signatures_events_xlsx(ws, row_index + 1, plan)
 
     ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
     ws.page_setup.paperSize = ws.PAPERSIZE_A4
