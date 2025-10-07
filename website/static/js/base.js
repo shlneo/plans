@@ -26,7 +26,8 @@ const togglePassword = {
 const messageFlash = (function() {
     const containerId = 'flash-container';
     let container;
-    let messages = []; // массив всех сообщений
+    let messages = []; 
+    const DISPLAY_TIME = 10000; // 10 секунд
 
     function init() {
         container = document.getElementById(containerId);
@@ -36,8 +37,12 @@ const messageFlash = (function() {
             document.body.appendChild(container);
         }
 
-        // Загружаем из localStorage
-        messages = JSON.parse(localStorage.getItem('flashMessages') || '[]');
+        // Загружаем сообщения и фильтруем уже просроченные
+        const storedMessages = JSON.parse(localStorage.getItem('flashMessages') || '[]');
+        const now = Date.now();
+        messages = storedMessages.filter(msg => now - msg.createdAt < DISPLAY_TIME);
+
+        localStorage.setItem('flashMessages', JSON.stringify(messages));
         renderMessages();
     }
 
@@ -57,23 +62,11 @@ const messageFlash = (function() {
             <button class="alert-close">&times;</button>
         `;
 
-        
-
         alertBox.querySelector('.alert-close').addEventListener('click', e => {
             e.stopPropagation();
-
-            // Добавляем класс для анимации исчезновения
-            alertBox.classList.add('removing');
-
-            // Удаляем из DOM после окончания анимации (300ms)
-            setTimeout(() => {
-                container.removeChild(alertBox);
-                messages = messages.filter(m => m.msg !== msgObj.msg);
-                localStorage.setItem('flashMessages', JSON.stringify(messages));
-                renderMessages();
-            }, 300); // совпадает с transition в CSS
+            removeMessage(alertBox, msgObj);
         });
-        // разворачивание при клике на последний
+
         alertBox.addEventListener('click', () => {
             container.querySelectorAll('.custom-alert').forEach((el, index) => {
                 if (index === container.children.length - 1) {
@@ -87,10 +80,35 @@ const messageFlash = (function() {
         });
 
         container.appendChild(alertBox);
+
+        // Вычисляем оставшееся время до автоудаления
+        const now = Date.now();
+        const elapsed = now - msgObj.createdAt;
+        const remaining = Math.max(DISPLAY_TIME - elapsed, 0);
+
+        if (remaining > 0) {
+            setTimeout(() => {
+                if (container.contains(alertBox)) {
+                    removeMessage(alertBox, msgObj);
+                }
+            }, remaining);
+        } else {
+            removeMessage(alertBox, msgObj);
+        }
+    }
+
+    function removeMessage(alertBox, msgObj) {
+        alertBox.classList.add('removing');
+        setTimeout(() => {
+            if (container.contains(alertBox)) container.removeChild(alertBox);
+            messages = messages.filter(m => m.msg !== msgObj.msg);
+            localStorage.setItem('flashMessages', JSON.stringify(messages));
+            renderMessages();
+        }, 300);
     }
 
     function addMessage(msg, type='success') {
-        const msgObj = { msg, type };
+        const msgObj = { msg, type, createdAt: Date.now() };
         messages.push(msgObj);
         localStorage.setItem('flashMessages', JSON.stringify(messages));
         renderMessages();
@@ -99,7 +117,6 @@ const messageFlash = (function() {
     function renderMessages() {
         container.innerHTML = '';
         messages.forEach(_showMessage);
-        // оставляем только последний видимым развёрнутым по клику
         container.querySelectorAll('.custom-alert').forEach((el, index) => {
             if (index !== container.children.length - 1) {
                 el.classList.add('collapsed');

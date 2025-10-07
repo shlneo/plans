@@ -107,7 +107,7 @@ def add_data_in_db(db):
         ### USER DATA ###
         users_data = [
             ('Инженер-программист', os.getenv('adminemail1'), 'Артем', 'Ярушин', 'Алексеевич', '+375434532847', True, False, 14),
-            ('Инженер-программист', os.getenv('adminemail3'), 'Максим', 'Ярушин', 'Андреевич', '+375445531856', True, False, 15),
+            # ('Инженер-программист', os.getenv('adminemail3'), 'Максим', 'Ярушин', 'Андреевич', '+375445531856', False, False, 15),
             ('HR', os.getenv('adminemail2'), 'Вячеслав', 'Санников', 'Степанович', '3554433', True, False, 6471),
             ('HR', os.getenv('auditoremailBrest'), 'Иванов1', 'Иван', 'Иванович', '+375445544431', False, True, 7940),
             ('HR', os.getenv('auditoremailVitebsk'), 'Иванов2', 'Иван', 'Иванович', '+375445544432', False, True, 7941),

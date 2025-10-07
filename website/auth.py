@@ -3,6 +3,8 @@ from flask import (
     url_for, send_file, Response, make_response
 )
 
+import re
+
 from flask_login import (
     login_user, logout_user, current_user,
     login_required, LoginManager
@@ -54,9 +56,17 @@ def login():
 def sign():
     if request.method == 'GET':
         return render_template('sign.html', 
-                        hide_header=True,
-                        hide_circle_buttons = True,
-                            )
+                               hide_header=True,
+                               hide_circle_buttons=True)
+    
+    elif request.method == 'POST':
+        email = request.form.get('email')
+        password1 = request.form.get('password1')
+        password2 = request.form.get('password2')
+        
+        from .user.account import sign_def
+        return sign_def(email, password1, password2)
+
 
 @auth.route('/kod', methods=['POST', 'GET'])
 def kod():
@@ -66,9 +76,24 @@ def kod():
                         hide_circle_buttons = True,
                             )
 
+@auth.route('/code', methods=['POST', 'GET'])
+def code():
+    if request.method == 'GET':
+        return render_template('code.html', 
+                        hide_header=True,
+                        hide_circle_buttons = True,
+                            )
+    # elif request.method == 'POST':
+    #     from auth import activate_account
+    #     activate_account()
+       
+    # return redirect(url_for('views.code'))
+    
+
+
 @auth.route('/param', methods=['POST'])
 def param():
-    if request.method == 'GET':
+    if request.method == 'POST':
         return render_template('param.html', 
                         hide_header=True,
                         hide_circle_buttons = True,
