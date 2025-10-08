@@ -48,7 +48,7 @@
 
 
 :root {
-    --color1: #7dc5ff;
+    --color1: #ffffff;
     --color2: rgba(184, 220, 255, 0.6);
     --color3: #0085f1;
     --color7: rgb(96, 255, 122);
@@ -728,10 +728,21 @@ footer {
 
 .auth-title {
   font-size: 1.5rem;
-  color: var(--text-title);
+  color: black;
   margin-bottom: 0.5rem;
   font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
 }
+
+.auth-title img{
+  width: 50px;
+  height: 50px;
+}
+
 
 .auth-subtitle {
   color: var(--text-subtitle);
@@ -810,9 +821,9 @@ footer {
   background: linear-gradient(
     90deg,
     rgba(255, 255, 255, 0) 0%,
-    rgba(65, 163, 255, 0.15) 25%,
-    rgba(65, 163, 255, 0.4) 50%,
-    rgba(65, 163, 255, 0.15) 75%,
+    rgba(155, 155, 155, 0.15) 25%,
+    rgba(0, 0, 0, 0.4) 50%,
+    rgba(49, 49, 49, 0.15) 75%,
     rgba(255, 255, 255, 0) 100%
   );
   animation: modernWave 4.0s infinite cubic-bezier(0.4, 0, 0.2, 1);
@@ -1017,81 +1028,82 @@ input::placeholder {
 }
 
 .organization-dropdown {
-  position: absolute;
-  top: 100%; 
-  left: 0;
   width: 100%;
   background: white;
   border-radius: 0 0 8px 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   max-height: 300px; 
   overflow-y: auto; 
   opacity: 1; 
-  z-index: 10;
-  border: 1px solid #e2e8f0;
   border-top: none;
   display: block; 
-
   max-height: 300px;
   overflow-y: auto;
+  margin-bottom: 10px;
 }
 
-.search-panel {
-  display: flex;
-  padding: 12px;
-  border-bottom: 1px solid #edf2f7;
+.organization-dropdown::-webkit-scrollbar {
+    width: 8px;
+    background-color: white;
 }
 
-.search-input {
-  flex: 1;
-  padding: 8px 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 4px;
-  outline: none;
+.organization-dropdown::-webkit-scrollbar-thumb {
+    background-color: #ccc; 
+    border-radius: 4px;
 }
 
-.search-button {
-  background: none;
-  border: none;
-  cursor: pointer;
-  margin-left: 8px;
+.organization-dropdown::-webkit-scrollbar-track {
+    background-color: white;
+    border-radius: 4px;
+}
+
+.organization-dropdown {
+    scrollbar-width: thin;
+    scrollbar-color: #ccc white; 
 }
 
 .organizations-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
+  /* border: 1px solid var(--border-color); */
+
+}
+
+.organizations-table thead{
+
+}
+
+.organization-row .org-name {
+  width: 70%;
+}
+
+.organization-row .org-okpo {
+  width: 30%;
 }
 
 .organizations-table th {
-  background: #f8f9fa;
-  font-weight: 600;
+  font-weight: 500;
   padding: 10px 15px;
   text-align: left;
   position: sticky;
-  top: 0;
+  top: 0;  
+  background-color: white;
+  font-size: 15px;
+  text-align: center;
 }
 
 .organizations-table td {
   padding: 10px 15px;
-  border-bottom: 1px solid #edf2f7;
+  font-size: 14px;
 }
 
 .organization-row {
-  transition: background 0.2s;
+  transition: background 0.3s;
 }
 
 .organization-row:hover {
   background: #f7fafc;
   cursor: pointer;
-}
-
-.org-name {
-  width: 70%;
-}
-
-.org-okpo {
-  width: 30%;
 }
 
 .circle-buttons-container {

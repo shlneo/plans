@@ -4,11 +4,14 @@
 
 <div class="auth-page">
     <div class="auth-text-upper">
-        <h1 class="auth-title">ErespondentS</h1>
+        <div class="auth-title" onclick="window.location.href='/login'">
+   <img src="/static/img/Logo-black.png" alt="">
+   <a>ErespondentS</a>
+</div>
         <p class="auth-subtitle">{{ _('Система представления планов энергосберегающих <br> мероприятий') }}</p>
     </div>
     <div class="auth-container">
-        <div class="auth-container-title">{{ _('Вход в систему') }}</div>
+        <div class="auth-container-title">{{ _('Регистрация в системе') }}</div>
 
         <div class="auth-choose" role="tablist">
             <a class="auth-tab" href="/login" role="tab" aria-selected="true">{{ _('Вход') }}</a>

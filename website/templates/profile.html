@@ -70,7 +70,7 @@
             <div class="button-area">
                 <button type="button" class="submit-button" id="editprofileButton">
                     <img src="/static/img/Edit.svg" alt="" class="btn-icon">
-                    <span class="btn-text">{{ _('Редактировать') }}</span>
+                    <span class="btn-text">{{ _('Применить изменения') }}</span>
                 </button>
             </div>
         </form>
@@ -84,7 +84,7 @@
             </div>
         </div>
         {% if current_user.is_auditor %}     
-        
+    
         {% else %}
             <div class="row-app-group">
                 <div class="app-group">
@@ -115,13 +115,10 @@
         <div class="button-area">
             <button id="orgUserbutton" type="button" class="submit-button"
                     style="{% if not can_change_modal or current_user.is_auditor %}display:none;{% endif %}">
-                <img src="/static/img/Edit.svg" alt="" class="btn-icon">
-                <span class="btn-text">{{ _('Изменить организацию') }}</span>
+                <img src="/static/img/Add_wh.svg" alt="" class="btn-icon">
+                <span class="btn-text">{{ _('Выбрать организацию') }}</span>
             </button>
         </div>
-            
-
-        
         <hr>
         <a class="sername">{{ _('Информация об аккаунте') }}</a>
         <div class="no-input"> 

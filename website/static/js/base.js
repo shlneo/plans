@@ -1692,6 +1692,7 @@ class OrganizationSearchManager {
     }
 }
 
+
 const TableCollapseManager = (function() {
     let isInitialized = false;
     let groupHeaders = [];
@@ -2398,4 +2399,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // setInterval(() => {
     //     Notifications.init();
     // }, 60000);
+
+    new OrganizationSearchManagerAuthStep({
+        searchInputSelector: 'input[data-action="search-organization"]',
+        tableBodySelector: '#orgUserModal table[data-action="organization-table"] tbody',
+        selectedOrgInputSelector: 'input[data-action="selected-org"]',
+        submitButtonSelector: '#orgUserModal button[type="submit"]'
+    });
+
 });

@@ -4,10 +4,11 @@ import os
 import random
 import smtplib
 import string
-from flask import flash, redirect, request, session, url_for
+from flask import current_app, flash, redirect, request, session, url_for
 from sqlalchemy import func
 from website import db
 from website.models import User
+import base64
 
 from flask import (
     Blueprint, jsonify, render_template, request, flash, redirect, session,
@@ -27,154 +28,68 @@ from werkzeug.security import check_password_hash, generate_password_hash
 def mes_on_email(message_body, recipient_email, email_type):
     sender = os.getenv('EMAILNAME')
     password = os.getenv('EMAILPASS')
-    
-    base_styles = """
-        <style>
-           body { 
-                font-family: "Montserrat", sans-serif;   
-                background: #eee;
-                margin: 0; 
-                padding: 0; 
-            }
-            hr{
-                height: 1px;
-                border: none;                  
-                background-color: #d8d8d8;    
-            }
-            .email-container { 
-                max-width: 600px; 
-                margin: 30px auto; 
-                background-color: #fff; 
-                border-radius: 8px; 
-                overflow: hidden; 
-            }
-            .logo-title{
-                margin-top: 9px;
-                display: flex;
-                justify-content: center;
-                gap: 11px;
-                font-weight: 500;
-                font-size: 17px;
-            }
-            .logo-title img{
-                width: 50px;
-                height: 50px;
-            }
-            .title{
-                text-align: center;
-                font-weight: 500;
-                font-size: 17px;
-                padding: 20px 50px;
-            }
-            .content { 
-                padding: 20px 40px; 
-                color: #333; 
-                padding-top: 0;
-            }
-            .code { 
-                text-align: center; 
-                font-size: 32px; 
-                font-weight: bold; 
 
-                padding: 15px; 
-                margin: 20px 0; 
-            }
-            .status { 
-                text-align: center; 
-                font-size: 17px; 
-                font-weight: 600; 
-                background-color: #000000; 
-                padding: 5px 12px; 
-                color: white;
-                border-radius: 5px; 
-                margin-left: 7px;
-            }
-            .footer {
-                padding: 10px; 
-                text-align: center; 
-                font-size: 12px; 
-                color: #777; 
-            }
-            .footer a { 
-                color: #6441a5; 
-                text-decoration: none; 
-            }
-        </style>
-    """
     if email_type == "code":
         content = f"""
-            <div class="content">
-                <p>Здравствуйте!</p>
-                <p>Кто-то пытается войти в ErespondentS используя вашу электронную почту.</p>
-                <p>Код активации:</p>
-                <div class="code">{message_body}</div>
-            </div>
+        <div style='padding:20px 40px; color:#000000; font-size:15px;'>
+            <p style='margin:0 0 10px 0; color:#000000;'>Здравствуйте!</p>
+            <p style='margin:0 0 10px 0; color:#000000;'>Кто-то пытается войти в <b>ErespondentS</b> используя вашу электронную почту.</p>
+            <p style='margin:0 0 10px 0; color:#000000;'>Ваш код активации:</p>
+            <div style='text-align:center; font-size:32px; font-weight:bold; padding:15px; margin:20px 0; color:#000000;'>{message_body}</div>
+        </div>
         """
     elif email_type == "pass":
         content = f"""
-            <div class="content">
-                <p>Здравствуйте!</p>
-                <p>Кто-то пытается войти в ErespondentS используя вашу электронную почту.</p>
-                <p>Ваш новый пароль :</p>
-                <div class="code">{message_body}</div>
-            </div>
+        <div style='padding:20px 40px; color:#000000; font-size:15px;'>
+            <p style='margin:0 0 10px 0; color:#000000;'>Здравствуйте!</p>
+            <p style='margin:0 0 10px 0; color:#000000;'>Вы запросили новый пароль для входа в <b>ErespondentS</b>.</p>
+            <p style='margin:0 0 10px 0; color:#000000;'>Ваш новый пароль:</p>
+            <div style='text-align:center; font-size:32px; font-weight:bold; padding:15px; margin:20px 0; color:#000000;'>{message_body}</div>
+        </div>
         """
     elif email_type == "plan":
         content = f"""
-        <p>Здравствуйте!</p>
-        <p>Сообщение об изменении статуса отчета.</p>
-        <p>Статус отчета изменен на:</p>
-        <div class="code">{message_body}</div>
+        <div style='padding:20px 40px; color:#000000; font-size:15px;'>
+            <p style='margin:0 0 10px 0; color:#000000;'>Здравствуйте!</p>
+            <p style='margin:0 0 10px 0; color:#000000;'>Статус вашего отчета изменен на:</p>
+            <div style='text-align:center; font-size:20px; font-weight:600; padding:10px; margin:15px 0; color:#000000; border:1px solid #000; border-radius:5px; display:inline-block;'>{message_body}</div>
+        </div>
         """
     else:
-        content = f"""
-            <div>{message_body}</div>
-        """   
+        content = f"<div style='padding:20px 40px; color:#000000; font-size:15px;'>{message_body}</div>"
 
     html_template = f"""
     <!DOCTYPE html>
     <html lang="ru">
-        <head>
-            <link rel="preconnect" href="https://fonts.googleapis.com">
-            <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-            <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-            {base_styles}
-        </head>
-        <body>
-            <div class="email-container">
-                <div class = "logo-title">
-                    <img src="/static/img/Logo-black.svg" alt="">
-                    <p>ErespondentS</p>
-                </div>
-                <hr>
-                <div class = "title">Ваша учетная запись ErespondentS — Код активации</div>
-                {content}
-                <div class="footer">
-                    <p>Дополнительную информацию можно найти <a href="">здесь</a>.</p>
-                    <p>Спасибо,<br>Служба поддержки ErespondentS</p>
-                </div>
-            </div>
-        </body>
+      <body style="font-family:'Montserrat',Arial,sans-serif; background-color:#eeeeee; margin:0; padding:20px;">
+        <div style="max-width:600px; margin:0 auto; background-color:#ffffff; border-radius:8px; overflow:hidden; box-shadow:0 0 6px rgba(0,0,0,0.1);">
+          <div style="text-align:center; font-size:17px; font-weight:500; padding:20px 50px; color:#000000;">
+            Ваша учетная запись ErespondentS
+          </div>
+          {content}
+          <div style="padding:10px; background-color:#eeeeee;  text-align:center; font-size:12px; color:#555555;">
+            <p style="margin:5px 0;">Дополнительную информацию можно найти <a href="#" style="color:#6441a5; text-decoration:none;">здесь</a>.</p>
+            <p style="margin:5px 0;">Спасибо,<br>ErespondentS</p>
+          </div>
+        </div>
+      </body>
     </html>
     """
-    
+
     server = smtplib.SMTP('smtp.gmail.com', 587)
     server.starttls()
 
-    try: 
+    try:
         server.login(sender, password)
         msg = MIMEMultipart()
         msg["From"] = sender
         msg["To"] = recipient_email
         msg["Subject"] = "Оповещение"
-        
+
         msg.attach(MIMEText(html_template, "html"))
         server.sendmail(sender, recipient_email, msg.as_string())
-    
-        # print("Письмо успешно отправлено")
         return "Email sent successfully"
     except Exception as _ex:
-        # print(f"Ошибка при отправке письма: {_ex}")
         return f"{_ex}\nCheck log ..."
     finally:
         server.quit()
@@ -227,8 +142,13 @@ def activate_account():
         db.session.commit()
         session.pop('temp_user', None)
         session.pop('activation_code', None)
-        flash('Аккаунт успешно активирован!', 'success')
-        return redirect(url_for('views.login'))        
+
+        login_user(new_user)
+        flash('Аккаунт успешно активирован! Заполните необходимые данные для продолжения!', 'success')
+        return redirect(url_for('auth.param'))        
     else:
         flash('Некорректный код активации.', 'error')
+        return redirect(url_for('auth.code'))      
 
+def add_param(first_name, last_name, patronymic_name, post = None):
+    pass

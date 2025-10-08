@@ -19,6 +19,8 @@ from functools import wraps
 
 from decimal import Decimal, InvalidOperation
 
+from .auth import user_with_all_params
+
 views = Blueprint('views', __name__)
 
 def to_decimal_3(value):
@@ -65,6 +67,7 @@ def change_language(lang_code):
     return redirect(request.referrer or url_for('views.login'))
 
 @views.route('/profile')
+@user_with_all_params()
 @login_required
 def profile():
     can_change_modal = True
