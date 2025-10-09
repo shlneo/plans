@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash
 def create_database(app, db):
     from .models import User, Organization, Plan, Ticket, Unit, Direction, Indicator, EconExec, EconMeasure
     with app.app_context():
-        # db.drop_all()
+        db.drop_all()
         db.create_all()
         add_data_in_db(db)
         
@@ -106,17 +106,16 @@ def add_data_in_db(db):
 
         ### USER DATA ###
         users_data = [
-            ('Инженер-программист', os.getenv('adminemail1'), 'Артем', 'Ярушин', 'Алексеевич', '+375434532847', True, False, 14),
-            # ('Инженер-программист', os.getenv('adminemail3'), 'Максим', 'Ярушин', 'Андреевич', '+375445531856', False, False, 15),
-            ('HR', os.getenv('adminemail2'), 'Вячеслав', 'Санников', 'Степанович', '3554433', True, False, 6471),
-            ('HR', os.getenv('auditoremailBrest'), 'Иванов1', 'Иван', 'Иванович', '+375445544431', False, True, 7940),
-            ('HR', os.getenv('auditoremailVitebsk'), 'Иванов2', 'Иван', 'Иванович', '+375445544432', False, True, 7941),
-            ('HR', os.getenv('auditoremailGomel'), 'Иванов3', 'Иван', 'Иванович', '+375445544433', False, True, 7942),
-            ('HR', os.getenv('auditoremailGrodno'), 'Иванов4', 'Иван', 'Иванович', '+375445544434', False, True, 7943),
-            ('HR', os.getenv('auditoremailMinskobl'), 'Иванов5', 'Иван', 'Иванович', '+375445544435', False, True, 7945),
-            ('HR', os.getenv('auditoremailMogilev'), 'Иванов6', 'Иван', 'Иванович', '+375445544436', False, True, 7946),
-            ('HR', os.getenv('auditoremailMinsk'), 'Иванов7', 'Иван', 'Иванович', '+375445544437', False, True, 7944),
-            ('HR', os.getenv('auditoremailNadzor'), 'Иванов8', 'Иван', 'Иванович', '+375445544438', False, True, 7947),
+            ('Инженер-программист', os.getenv('adminemail1'), os.getenv('adminname1'), os.getenv('adminsecondname1'), os.getenv('adminpatr1'), os.getenv('adminphone1'), True, False, 14),
+            ('Администратор', os.getenv('adminemail2'), os.getenv('adminname2'), os.getenv('adminsecondname2'), os.getenv('adminpatr2'), os.getenv('adminphone2'), True, False, 6471),
+            ('Аудитор', os.getenv('auditoremailBrest'), 'Иванов1', 'Иван', 'Иванович', '+375445544431', False, True, 7940),
+            ('Аудитор', os.getenv('auditoremailVitebsk'), 'Иванов2', 'Иван', 'Иванович', '+375445544432', False, True, 7941),
+            ('Аудитор', os.getenv('auditoremailGomel'), 'Иванов3', 'Иван', 'Иванович', '+375445544433', False, True, 7942),
+            ('Аудитор', os.getenv('auditoremailGrodno'), 'Иванов4', 'Иван', 'Иванович', '+375445544434', False, True, 7943),
+            ('Аудитор', os.getenv('auditoremailMinskobl'), 'Иванов5', 'Иван', 'Иванович', '+375445544435', False, True, 7945),
+            ('Аудитор', os.getenv('auditoremailMogilev'), 'Иванов6', 'Иван', 'Иванович', '+375445544436', False, True, 7946),
+            ('Аудитор', os.getenv('auditoremailMinsk'), 'Иванов7', 'Иван', 'Иванович', '+375445544437', False, True, 7944),
+            ('Аудитор', os.getenv('auditoremailNadzor'), 'Иванов8', 'Иван', 'Иванович', '+375445544438', False, True, 7947),
         ]
 
         for post, email, first_name, last_name, patronymic_name, phone, is_admin, is_auditor, organization_id in users_data:
