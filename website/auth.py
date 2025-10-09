@@ -53,7 +53,6 @@ def user_with_all_params():
             all_filled = (
                 current_user.last_name and
                 current_user.first_name and
-                current_user.patronymic_name and
                 current_user.phone and
                 current_user.organization_id
             )
@@ -79,7 +78,6 @@ def login():
                 if (
                     not user.last_name or
                     not user.first_name or
-                    not user.patronymic_name or
                     not user.phone or
                     not user.organization_id
                 ):  
@@ -94,14 +92,14 @@ def login():
         return render_template(
             'login.html',
             hide_header=True,
-            hide_circle_buttons=True,
+            show_circle_buttons=True,
             current_user=current_user
         )
 
     return render_template(
         'login.html',
         hide_header=True,
-        hide_circle_buttons=True,
+        show_circle_buttons=True,
         current_user=current_user
     )
 
@@ -110,7 +108,7 @@ def sign():
     if request.method == 'GET':
         return render_template('sign.html', 
                                hide_header=True,
-                               hide_circle_buttons=True)
+                               show_circle_buttons=True)
     elif request.method == 'POST':
         email = request.form.get('email')
         password1 = request.form.get('password1')
@@ -124,29 +122,31 @@ def code():
     if request.method == 'GET':
         return render_template('code.html', 
                         hide_header=True,
-                        hide_circle_buttons = True,
+                        show_circle_buttons = True,
                             )
     elif request.method == 'POST':
         from .user.account import activate_account
     return activate_account()
 
-@auth.route('/param', methods=['GET'])
+@auth.route('/param', methods=['GET', 'POST'])
 @login_required
 @user_without_param()
 def param():
     if request.method == 'GET':
         return render_template('param.html', 
                         hide_header=True,
-                        hide_circle_buttons = True,
+                        show_circle_buttons = True,
                             )
     elif request.method == 'POST':
         first_name = request.form.get('first_name')
         last_name = request.form.get('last_name')
         patronymic_name = request.form.get('patronymic_name')
+        phone = request.form.get('phone')
         post = request.form.get('post')
+        organization_id = request.form.get('organization_id')
 
         from .user.account import add_param
-        return add_param(first_name, last_name, patronymic_name, post)
+        return add_param(first_name, last_name, patronymic_name, phone, organization_id, post)
    
     
 @auth.route('/edit-param', methods=['POST'])

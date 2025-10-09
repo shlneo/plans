@@ -2,7 +2,7 @@ from datetime import timedelta
 import io
 import zipfile
 from flask import (
-    Blueprint, abort, current_app, render_template, redirect, send_file, url_for, flash, request, jsonify, session, g
+    Blueprint, abort, current_app, logging, render_template, redirect, send_file, url_for, flash, request, jsonify, session, g
 )
 
 from flask_login import (
@@ -84,6 +84,7 @@ def profile():
                            )
 
 @views.route('/edit-user-org', methods=['POST'])
+@user_with_all_params()
 @login_required
 def edit_user_org():
     id = request.form.get('id_org')
@@ -109,35 +110,39 @@ def edit_user_org():
 @views.route('/api/organizations')
 @login_required
 def get_organizations():
-    page = request.args.get("page", 1, type=int)
-    search_query = request.args.get("q", "", type=str)
+    try:
+        page = request.args.get("page", 1, type=int)
+        search_query = request.args.get("q", "", type=str).strip()
 
-    query = Organization.query
-    if search_query:
-        query = query.filter(
-            db.or_(
-                Organization.name.ilike(f"%{search_query}%"),
-                Organization.okpo.ilike(f"%{search_query}%")
+        query = Organization.query
+        if search_query:
+            query = query.filter(
+                db.or_(
+                    Organization.name.ilike(f"%{search_query}%"),
+                    Organization.okpo.ilike(f"%{search_query}%")
+                )
             )
-        )
 
-    per_page = 10
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    
-    return jsonify({
-        "organizations": [
-            {
-                "id": org.id,
-                "name": org.name,
-                "okpo": org.okpo,
-                "ynp": org.ynp,
-                "ministry": org.ministry,
-            }
-            for org in pagination.items
-        ],
-        "page": pagination.page,
-        "has_next": pagination.has_next
-    })
+        per_page = 10
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        return jsonify({
+            "organizations": [
+                {
+                    "id": org.id,
+                    "name": org.name,
+                    "okpo": org.okpo,
+                    "ynp": org.ynp,
+                    "ministry": org.ministry,
+                }
+                for org in pagination.items
+            ],
+            "page": pagination.page,
+            "has_next": pagination.has_next
+        })
+    except Exception as e:
+        logging.error(f"Error fetching organizations: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
 
 
 def get_plans_by_okpo():
@@ -205,6 +210,7 @@ def get_filtered_plans(user, status_filter="all", year_filter="all"):
     return plans, status_counts
 
 @views.route('/plans', methods=['GET'])
+@user_with_all_params()
 @login_required
 def plans():
     status_filter = request.args.get('status', 'all')
@@ -230,6 +236,7 @@ def plans():
     )
 
 @views.route('/export', methods=['GET'])
+@user_with_all_params()
 @login_required
 def export():
     status_filter = request.args.get('status', 'all')
@@ -255,6 +262,7 @@ def export():
     )
     
 @views.route('/export-to/<string:format>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def export_to(format):
     ids = request.form.getlist("ids")
@@ -300,6 +308,7 @@ def export_to(format):
     return send_file(zip_stream, as_attachment=True, download_name="plans.zip", mimetype="application/zip")
 
 @views.route('/create-plan', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 def create_plan():
     if request.method == 'POST':
@@ -370,6 +379,7 @@ def create_plan():
                     active_tab='create')
     
 @views.route('/edit-plan/<int:id>', methods=['POST'])
+@user_with_all_params()
 @owner_only
 @login_required
 def edit_plan(id):
@@ -413,6 +423,7 @@ def edit_plan(id):
     return redirect(url_for('views.plan_review', id=current_plan.id))  
     
 @views.route('/delete-plan/<int:id>', methods=['POST'])
+@user_with_all_params()
 @owner_only
 @login_required
 def delete_plan(id):
@@ -434,6 +445,7 @@ def delete_plan(id):
     return redirect(url_for('views.plans'))
     
 @views.route('/check-plan-year')
+@user_with_all_params()
 @login_required
 def check_plan_year():
     year = request.args.get('year')
@@ -453,6 +465,7 @@ def check_plan_year():
     return jsonify({'exists': existing_plan is not None})
 
 @views.route('/stats', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 def stats():
     if request.method == 'POST':
@@ -463,6 +476,7 @@ def stats():
                         active_tab='stats')
 
 @views.route('/plans/plan-review/<int:id>', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def plan_review(id):    
@@ -477,6 +491,7 @@ def plan_review(id):
                         active_plan_tab='review')
     
 @views.route('/plans/plan-audit/<int:id>', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def plan_audit(id):    
@@ -491,6 +506,7 @@ def plan_audit(id):
                         active_plan_tab='audit')
 
 @views.route('/plans/plan-directions/<int:id>', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def plan_directions(id):    
@@ -522,6 +538,7 @@ def plan_directions(id):
                          )
     
 @views.route('/get-econmeasure/<int:id>', methods=['GET'])
+@user_with_all_params()
 @login_required
 def get_econmeasure(id):
     try:
@@ -535,6 +552,7 @@ def get_econmeasure(id):
         return jsonify({'error': str(e)}), 500
 
 @views.route('/create-econmeasure/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def create_econmeasure(id):
@@ -557,6 +575,7 @@ def create_econmeasure(id):
     return redirect(url_for('views.plan_directions', id=id))
 
 @views.route('/delete-econmeasure/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def delete_econmeasure(id):
     econ_measure = EconMeasure.query.get_or_404(id)
@@ -570,6 +589,7 @@ def delete_econmeasure(id):
     return redirect(url_for('views.plan_directions', id=id_plan))
 
 @views.route('/edit-econmeasure/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def edit_econmeasure(id):
 
@@ -637,6 +657,7 @@ def get_cumulative_econ_metrics(plan_id, is_local):
     return cumulative_totals
 
 @views.route('/plans/plan-events/<int:id>', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def plan_events(id):    
@@ -707,6 +728,7 @@ def plan_events(id):
                          )
     
 @views.route('/create-econexeces/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def create_econexeces(id):
@@ -771,6 +793,7 @@ def create_econexeces(id):
     return redirect(url_for('views.plan_events', id=id))
     
 @views.route('/delete-econexeces/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def delete_econexeces(id):
     econ_exec = EconExec.query.get_or_404(id)
@@ -786,6 +809,7 @@ def delete_econexeces(id):
     return redirect(url_for('views.plan_events', id=id_plan))
 
 @views.route('/edit-econexeces/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def edit_econexeces(id):
     name = request.form.get('name') or None
@@ -842,6 +866,7 @@ def edit_econexeces(id):
     return redirect(url_for('views.plan_events', id=id_plan))
 
 @views.route('/get-econexece/<int:id>', methods=['GET'])
+@user_with_all_params()
 @login_required
 def get_econexece(id):
     try:
@@ -855,6 +880,7 @@ def get_econexece(id):
         return jsonify({'error': str(e)}), 500
     
 @views.route('/plans/plan-indicators/<int:id>', methods=['GET', 'POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def plan_indicators(id):    
@@ -892,6 +918,7 @@ def plan_indicators(id):
                          )
 
 @views.route('/get-indicator/<int:id>', methods=['GET'])
+@user_with_all_params()
 @login_required
 def get_indicator(id):
     try:
@@ -905,6 +932,7 @@ def get_indicator(id):
         return jsonify({'error': str(e)}), 500
     
 @views.route('/create-indicator/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def create_indicator(id):
@@ -939,6 +967,7 @@ def create_indicator(id):
     return redirect(url_for('views.plan_indicators', id=id))
 
 @views.route('/edit-indicator/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def edit_indicator(id):
     QYearPrev_ed = to_decimal_3(request.form.get('QYearPrev'))
@@ -963,6 +992,7 @@ def edit_indicator(id):
     return redirect(url_for('views.plan_indicators', id=id))
 
 @views.route('/delete-indicator/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 def delete_indicator(id):
     indicator = IndicatorUsage.query.get_or_404(id)
@@ -1195,6 +1225,7 @@ status_handlers = {
 }
 
 @views.route('/api/change-plan-status/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def api_change_plan_status(id):
@@ -1255,6 +1286,7 @@ def api_change_plan_status(id):
         return redirect(request.referrer or url_for('views.plans'))
 
 @views.route('/create-ticket/<int:id>', methods=['POST'])
+@user_with_all_params()
 @login_required
 @owner_only
 def create_ticket(id):
@@ -1277,11 +1309,12 @@ def create_ticket(id):
 @views.route('/FAQ', methods=['GET'])
 def FAQ_page():    
     return render_template('FAQ.html',
-            hide_header=False,
-            hide_circle_buttons=False)
+            hide_header=True,
+            show_circle_buttons=True)
 
 
 @views.route('/api/notifications', methods=['GET'])
+@user_with_all_params()
 @login_required
 def api_notifications():
     notifications = Notification.query.filter_by(user_id=current_user.id).order_by(Notification.created_at.desc()).all()
@@ -1296,6 +1329,7 @@ def api_notifications():
     ])
 
 @views.route('/api/notifications/mark-all-read', methods=['POST'])
+@user_with_all_params()
 @login_required
 def mark_all_notifications_read():
     Notification.query.filter_by(user_id=current_user.id, is_read=False).update({'is_read': True})

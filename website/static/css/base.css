@@ -407,9 +407,25 @@ header nav{
 
 .header-aside{
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: space-between;
   cursor: pointer;
+  gap: 15px;
+
+  align-items: center;
+}
+
+.header-aside img{
+  width: 39.22px;
+  height: 39.22px;
+}
+
+
+.header-aside-text{
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 7px;
 }
 
 .header-aside .title{
@@ -718,7 +734,7 @@ footer {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
+  text-align: center;
 }
 
 .auth-text-upper {
@@ -754,6 +770,7 @@ footer {
   max-width: 400px;
   padding: 36px;
   background: white;
+  text-align: start;
   border-radius: 20px;
   position: relative;
   z-index: 1;
@@ -1023,24 +1040,9 @@ input::placeholder {
     color: rgb(0, 0, 0); 
 }
 
-.organization-select {
-    position: relative;
-}
 
-.organization-dropdown {
-  width: 100%;
-  background: white;
-  border-radius: 0 0 8px 8px;
-  max-height: 300px; 
-  overflow-y: auto; 
-  opacity: 1; 
-  border-top: none;
-  display: block; 
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 10px;
-}
-
+/*organization list choose*/
+/* 
 .organization-dropdown::-webkit-scrollbar {
     width: 8px;
     background-color: white;
@@ -1059,52 +1061,77 @@ input::placeholder {
 .organization-dropdown {
     scrollbar-width: thin;
     scrollbar-color: #ccc white; 
+} */
+
+.organization-search-container {
+  position: relative;
 }
 
-.organizations-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 8px;
-  /* border: 1px solid var(--border-color); */
-
+.organizations-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.organizations-table thead{
-
-}
-
-.organization-row .org-name {
-  width: 70%;
-}
-
-.organization-row .org-okpo {
-  width: 30%;
-}
-
-.organizations-table th {
-  font-weight: 500;
+.organization-item {
   padding: 10px 15px;
-  text-align: left;
-  position: sticky;
-  top: 0;  
-  background-color: white;
-  font-size: 15px;
-  text-align: center;
-}
-
-.organizations-table td {
-  padding: 10px 15px;
-  font-size: 14px;
-}
-
-.organization-row {
-  transition: background 0.3s;
-}
-
-.organization-row:hover {
-  background: #f7fafc;
   cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
+
+.organization-item:hover {
+  background-color: #f5f5f5;
+}
+
+.organization-item.selected {
+  background-color: #e3f2fd;
+}
+
+.organization-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.organization-okpo {
+  color: #666;
+  font-size: 0.9em;
+  margin-left: 10px;
+}
+
+.organizations-loading, .organizations-more {
+  padding: 10px;
+  text-align: center;
+  border-top: 1px solid #f0f0f0;
+}
+
+#load-more-organizations {
+  background: none;
+  border: none;
+  color: #007bff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#load-more-organizations:hover {
+  color: #0056b3;
+}
+
+
+
+
+
+/*circle buttons*/
 
 .circle-buttons-container {
   position: fixed;
@@ -1333,7 +1360,9 @@ input::placeholder {
   font-weight: 500;
   color: var(--text-subtitle2);
   overflow-x: auto;
-  max-width: 100%;
+  width: 100%;
+  overflow-x: auto;
+
   white-space: nowrap;  
   display: inline-block;
 }
@@ -2393,7 +2422,7 @@ input[type="checkbox"]:focus {
 .faq-container-page{
   margin: 0 auto;
   width: calc(80% - 40px);
-  margin-top: 50px;
+  margin-top: 84px;
 }
 
 .faq-container {

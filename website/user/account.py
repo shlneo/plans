@@ -123,7 +123,7 @@ def sign_def(email, password1, password2):
             }
             session.permanent = True
             send_activation_email(email) 
-            flash('Регистрация прошла успешно! Проверьте свою почту для активации аккаунта.', 'success')
+            flash('Проверьте свою почту для активации аккаунта.', 'success')
             return redirect(url_for('auth.code'))
     else:
         flash('Введите данные для регистрации.', 'error')
@@ -144,11 +144,23 @@ def activate_account():
         session.pop('activation_code', None)
 
         login_user(new_user)
-        flash('Аккаунт успешно активирован! Заполните необходимые данные для продолжения!', 'success')
+        flash('Почта подтверждена, заполните необходимые данные для продолжения!', 'success')
         return redirect(url_for('auth.param'))        
     else:
         flash('Некорректный код активации.', 'error')
         return redirect(url_for('auth.code'))      
 
-def add_param(first_name, last_name, patronymic_name, post = None):
-    pass
+def add_param(first_name, last_name, patronymic_name, phone, organization_id, post = None):
+
+
+    current_user.first_name = first_name
+    current_user.last_name = last_name
+    current_user.patronymic_name = patronymic_name
+    current_user.phone = phone
+    current_user.organization_id = organization_id
+    current_user.post = post
+
+    db.session.commit()
+    flash('Вы успешно зарегистрировались!', 'succes')
+
+    return redirect(url_for('views.profile'))      

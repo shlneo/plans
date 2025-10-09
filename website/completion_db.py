@@ -369,4 +369,4 @@ def add_data_in_db(db):
     
         print('The filling is finished!')
     else:
-        print('The database already contains the data.!')
+        print('The database already contains the data!')

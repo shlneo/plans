@@ -13,8 +13,11 @@
     <header>
         <nav>
             <div class="header-aside" onclick="window.location.href='/plans'">
-                <a class="title">ErespondentS</a>
-                <a class="description">{{ _('Система представления планов энергосберегающих мероприятий') }}</a>
+                <img src="{{ url_for('static', filename='img/Logo-black.svg') }}">
+                <div class="header-aside-text">
+                    <a class="title">ErespondentS</a>
+                    <a class="description">{{ _('Система представления планов энергосберегающих мероприятий') }}</a>
+                </div>
             </div>
             <div class="header-bside">
                 <a class="clear-but" id="notifBtn">
@@ -77,12 +80,8 @@
                 <span class="btn-text">Профиль</span>
             </button>
             <button type="button" class="button-grey-border" onclick="window.location.href=''">
-                <img src="/static/img/Account.svg" alt="" class="btn-icon">
-                <span class="btn-text">Изменить пароль</span>
-            </button>
-            <button type="button" class="button-grey-border" onclick="window.location.href=''">
-                <img src="/static/img/Organization.svg" alt="" class="btn-icon">
-                <span class="btn-text">Еще что-то</span>
+                <img src="/static/img/FAQ.svg" alt="" class="btn-icon">
+                <span class="btn-text">FAQ</span>
             </button>
             <hr>
             <div class = "user-sidebar-buttons-area">
@@ -98,8 +97,11 @@
     </div>
     {% endif %}
 
-    {% if hide_circle_buttons %}
+    {% if show_circle_buttons %}
     <div class="circle-buttons-container">
+      <button class="circle-button" onclick="window.location.href='/FAQ'">
+        <img src="{{ url_for('static', filename='img/FAQ.svg') }}" alt="{{ _('FAQ') }}" class="circle-button-icon">
+      </button>
       <button class="circle-button" onclick="window.location.href='/profile'">
         <img src="{{ url_for('static', filename='img/Account.svg') }}" alt="{{ _('Аккаунт') }}" class="circle-button-icon">
       </button>

@@ -1,3 +1,5 @@
+
+
 // toggle password
 const togglePassword = {
   init: function() {
@@ -27,7 +29,7 @@ const messageFlash = (function() {
     const containerId = 'flash-container';
     let container;
     let messages = []; 
-    const DISPLAY_TIME = 10000; // 10 секунд
+    const DISPLAY_TIME = 10000; 
 
     function init() {
         container = document.getElementById(containerId);
@@ -37,7 +39,6 @@ const messageFlash = (function() {
             document.body.appendChild(container);
         }
 
-        // Загружаем сообщения и фильтруем уже просроченные
         const storedMessages = JSON.parse(localStorage.getItem('flashMessages') || '[]');
         const now = Date.now();
         messages = storedMessages.filter(msg => now - msg.createdAt < DISPLAY_TIME);
@@ -81,7 +82,6 @@ const messageFlash = (function() {
 
         container.appendChild(alertBox);
 
-        // Вычисляем оставшееся время до автоудаления
         const now = Date.now();
         const elapsed = now - msgObj.createdAt;
         const remaining = Math.max(DISPLAY_TIME - elapsed, 0);
@@ -1093,7 +1093,6 @@ class TableContextMenu {
     }
 
     showConfirmModal(rowId) {
-        // Проверяем, не отключено ли удаление для строки
         if (this.isDeleteDisabled(this.selectedRow)) {
             return;
         }
@@ -1488,11 +1487,12 @@ function initColumnResize() {
 class OrganizationSearchManager {
     constructor(config = {}) {
         this.config = {
-            searchInputSelector: 'input[data-action="search-organization"]',
-            tableBodySelector: '#orgUserModal table[data-action="organization-table"] tbody',
-            selectedOrgInputSelector: 'input[data-action="selected-org"]',
-            submitButtonSelector: '#orgUserModal button[type="submit"]',
-            apiUrl: '/api/organizations',
+            searchInputSelector: 'input[data-action="search-organization"]',   // поле поиска
+            tableBodySelector: 'table[data-action="organization-table"] tbody', // tbody таблицы
+            selectedOrgInputSelector: 'input[data-action="selected-org"]',      // hidden input для id
+            submitButtonSelector: 'button[data-action="submit"]',               // кнопка регистрации
+            apiUrl: '/api/organizations',                                        // URL для запроса данных
+            debounceTime: 300, 
             ...config
         };
 
@@ -1512,6 +1512,7 @@ class OrganizationSearchManager {
 
         this.bindEvents();
         this.updateSubmitButtonState();
+        this.loadOrganizations();
     }
 
     bindEvents() {
@@ -1519,7 +1520,7 @@ class OrganizationSearchManager {
         this.searchInput.addEventListener('input', (e) => {
             clearTimeout(debounceTimer);
             const query = e.target.value.trim();
-            debounceTimer = setTimeout(() => this.loadOrganizations(query), 300);
+            debounceTimer = setTimeout(() => this.loadOrganizations(query), this.config.debounceTime);
         });
 
         this.tableBody.addEventListener('click', (e) => {
@@ -1553,11 +1554,7 @@ class OrganizationSearchManager {
         try {
             const url = `${this.config.apiUrl}?q=${encodeURIComponent(query)}`;
             const response = await fetch(url);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error: ${response.status}`);
-            }
-
+            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
             const data = await response.json();
             this.renderOrganizations(data.organizations);
         } catch (error) {
@@ -1568,13 +1565,8 @@ class OrganizationSearchManager {
 
     renderOrganizations(organizations) {
         this.tableBody.innerHTML = '';
-
         if (!organizations || organizations.length === 0) {
-            this.tableBody.innerHTML = `
-                <tr>
-                    <td colspan="3">Нет данных</td>
-                </tr>
-            `;
+            this.tableBody.innerHTML = `<tr><td colspan="3">Нет данных</td></tr>`;
             return;
         }
 
@@ -1593,24 +1585,18 @@ class OrganizationSearchManager {
     selectOrganization(row) {
         const orgId = row.dataset.id;
         this.selectedOrgInput.value = orgId;
-        
         this.highlightSelectedRow(row);
         this.updateSubmitButtonState(true);
         this.dispatchSelectionEvent(orgId, row);
     }
 
     highlightSelectedRow(selectedRow) {
-        const allRows = this.tableBody.querySelectorAll('tr');
-        allRows.forEach(row => {
-            row.classList.remove('selected');
-        });
-        
+        this.tableBody.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
         selectedRow.classList.add('selected');
     }
 
     updateSubmitButtonState(isActive = false) {
         if (!this.submitButton) return;
-
         if (isActive && this.selectedOrgInput.value) {
             this.submitButton.disabled = false;
             this.submitButton.classList.remove('disabled');
@@ -1633,11 +1619,7 @@ class OrganizationSearchManager {
     }
 
     showError(message) {
-        this.tableBody.innerHTML = `
-            <tr>
-                <td colspan="3">${message}</td>
-            </tr>
-        `;
+        this.tableBody.innerHTML = `<tr><td colspan="3">${message}</td></tr>`;
     }
 
     showNotification(message) {
@@ -1654,10 +1636,7 @@ class OrganizationSearchManager {
         `;
         notification.textContent = message;
         document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            document.body.removeChild(notification);
-        }, 3000);
+        setTimeout(() => document.body.removeChild(notification), 3000);
     }
 
     escapeHtml(text) {
@@ -1666,32 +1645,13 @@ class OrganizationSearchManager {
         div.textContent = text;
         return div.innerHTML;
     }
-
-    clearSearch() {
-        this.searchInput.value = '';
-        this.loadOrganizations();
-    }
-
-    clearSelection() {
-        this.selectedOrgInput.value = '';
-        this.updateSubmitButtonState(false);
-        
-        const allRows = this.tableBody.querySelectorAll('tr');
-        allRows.forEach(row => {
-            row.classList.remove('selected');
-        });
-    }
-
-    getSelectedOrganizationId() {
-        return this.selectedOrgInput.value;
-    }
-
-    destroy() {
-        this.searchInput.replaceWith(this.searchInput.cloneNode(true));
-        this.tableBody.replaceWith(this.tableBody.cloneNode(true));
-    }
 }
 
+function initOrganizationSearch(config) {
+    document.addEventListener('DOMContentLoaded', () => {
+        new OrganizationSearchManager(config);
+    });
+}
 
 const TableCollapseManager = (function() {
     let isInitialized = false;
@@ -1765,7 +1725,6 @@ const TableCollapseManager = (function() {
             }
             
             isInitialized = true;
-            // console.log('TableCollapseManager инициализирован');
         },
         
         initializeAll: function() {
@@ -1906,7 +1865,6 @@ function initConfirmModal(config) {
         });
     });
 
-    // подтвердить действие
     yesButton.addEventListener('click', function () {
         modalElement.classList.remove('active');
         if (modalElement._currentForm) {
@@ -1914,19 +1872,16 @@ function initConfirmModal(config) {
         }
     });
 
-    // отмена
     noButton.addEventListener('click', function () {
         modalElement.classList.remove('active');
     });
 
-    // клик мимо окна
     modalElement.addEventListener('click', function (event) {
         if (event.target === modalElement) {
             modalElement.classList.remove('active');
         }
     });
 
-    // закрытие по ESC
     document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape' && modalElement.classList.contains('active')) {
             modalElement.classList.remove('active');
@@ -1971,6 +1926,323 @@ function initConfirmModal(config) {
 
     window.initPlansFilter = initPlansFilter;
 })();
+
+class OrganizationsSearch {
+  constructor(options = {}) {
+    this.config = {
+      step1Selector: '.auth-step-1',
+      step2Selector: '.auth-step-2',
+      nextBtnId: 'next-btn',
+      prevBtnId: 'prev-btn',
+      searchInputId: 'organization-search',
+      dropdownId: 'organizations-dropdown',
+      listId: 'organizations-list',
+      loadingId: 'organizations-loading',
+      loadMoreBtnId: 'load-more-organizations',
+      organizationIdInputId: 'organization_id',
+      submitBtnId: 'submit-btn',
+      requiredFields: ['secondname', 'name', 'phone'],
+      apiEndpoint: '/api/organizations',
+      minSearchLength: 2,
+      debounceDelay: 300,
+      ...options
+    };
+
+    this.currentPage = 1;
+    this.hasMore = false;
+    this.currentSearchQuery = '';
+    this.debounceTimer = null;
+
+    this.init();
+  }
+
+  init() {
+    this.elements = {};
+    this.getElementReferences();
+    this.bindEvents();
+  }
+
+  getElementReferences() {
+    // Основные элементы
+    this.elements.step1 = document.querySelector(this.config.step1Selector);
+    this.elements.step2 = document.querySelector(this.config.step2Selector);
+    this.elements.nextBtn = document.getElementById(this.config.nextBtnId);
+    this.elements.prevBtn = document.getElementById(this.config.prevBtnId);
+    
+    // Элементы поиска организаций
+    this.elements.searchInput = document.getElementById(this.config.searchInputId);
+    this.elements.dropdown = document.getElementById(this.config.dropdownId);
+    this.elements.organizationsList = document.getElementById(this.config.listId);
+    this.elements.loadingIndicator = document.getElementById(this.config.loadingId);
+    this.elements.loadMoreBtn = document.getElementById(this.config.loadMoreBtnId);
+    this.elements.organizationIdInput = document.getElementById(this.config.organizationIdInputId);
+    this.elements.submitBtn = document.getElementById(this.config.submitBtnId);
+
+    // Проверка наличия всех необходимых элементов
+    this.validateRequiredElements();
+  }
+
+  validateRequiredElements() {
+    const requiredElements = [
+      'step1', 'step2', 'nextBtn', 'prevBtn', 'searchInput', 
+      'dropdown', 'organizationsList', 'loadingIndicator', 
+      'loadMoreBtn', 'organizationIdInput', 'submitBtn'
+    ];
+
+    // requiredElements.forEach(elementName => {
+    //   if (!this.elements[elementName]) {
+    //     console.warn(`Element ${elementName} not found`);
+    //   }
+    // });
+  }
+
+  bindEvents() {
+    // События для шагов формы
+    if (this.elements.nextBtn) {
+      this.elements.nextBtn.addEventListener('click', () => this.handleNextStep());
+    }
+    
+    if (this.elements.prevBtn) {
+      this.elements.prevBtn.addEventListener('click', () => this.handlePrevStep());
+    }
+
+    // События для поиска организаций
+    if (this.elements.searchInput) {
+      this.elements.searchInput.addEventListener('input', (e) => this.handleSearchInput(e));
+      this.elements.searchInput.addEventListener('focus', () => this.handleSearchFocus());
+      this.elements.searchInput.addEventListener('keydown', (e) => this.handleSearchKeydown(e));
+    }
+
+    if (this.elements.loadMoreBtn) {
+      this.elements.loadMoreBtn.addEventListener('click', () => this.handleLoadMore());
+    }
+
+    // Закрытие dropdown при клике вне области
+    document.addEventListener('click', (e) => this.handleDocumentClick(e));
+  }
+
+  handleNextStep() {
+    const isValid = this.validateRequiredFields();
+    
+    if (isValid) {
+      this.elements.step1.style.display = 'none';
+      this.elements.step2.style.display = 'block';
+    } else {
+      alert('Пожалуйста, заполните все обязательные поля');
+    }
+  }
+
+  handlePrevStep() {
+    this.elements.step2.style.display = 'none';
+    this.elements.step1.style.display = 'block';
+  }
+
+  validateRequiredFields() {
+    let isValid = true;
+    
+    this.config.requiredFields.forEach(field => {
+      const input = document.getElementById(field);
+      if (input && !input.value.trim()) {
+        isValid = false;
+        input.style.borderColor = 'red';
+      } else if (input) {
+        input.style.borderColor = '';
+      }
+    });
+
+    return isValid;
+  }
+
+  handleSearchInput(e) {
+    const query = e.target.value.trim();
+    this.currentSearchQuery = query;
+    
+    this.elements.organizationIdInput.value = '';
+    this.elements.submitBtn.disabled = true;
+    
+    clearTimeout(this.debounceTimer);
+    
+    if (query.length >= this.config.minSearchLength) {
+      this.debounceTimer = setTimeout(() => {
+        this.currentPage = 1;
+        this.searchOrganizations(query, 1, false);
+      }, this.config.debounceDelay);
+    } else {
+      this.elements.dropdown.style.display = 'none';
+      this.elements.organizationsList.innerHTML = '';
+    }
+  }
+
+  handleSearchFocus() {
+    if (this.currentSearchQuery && this.currentSearchQuery.length >= this.config.minSearchLength) {
+      this.elements.dropdown.style.display = 'block';
+    }
+  }
+
+  handleSearchKeydown(e) {
+    if (e.key === 'Escape') {
+      this.elements.dropdown.style.display = 'none';
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const firstItem = this.elements.organizationsList.querySelector('.organization-item');
+      if (firstItem) {
+        firstItem.click();
+      }
+    }
+  }
+
+  handleLoadMore() {
+    if (this.hasMore && this.currentSearchQuery) {
+      this.searchOrganizations(this.currentSearchQuery, this.currentPage + 1, true);
+    }
+  }
+
+  handleDocumentClick(e) {
+    if (!this.elements.searchInput.contains(e.target) && !this.elements.dropdown.contains(e.target)) {
+      this.elements.dropdown.style.display = 'none';
+    }
+  }
+
+  async searchOrganizations(query, page = 1, append = false) {
+    if (!append) {
+      this.elements.loadingIndicator.style.display = 'block';
+      this.elements.organizationsList.innerHTML = '';
+    }
+
+    try {
+      const response = await fetch(`${this.config.apiEndpoint}?q=${encodeURIComponent(query)}&page=${page}`);
+      
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      this.handleSearchResponse(data, append);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+      this.handleSearchError();
+    }
+  }
+
+  handleSearchResponse(data, append) {
+    this.elements.loadingIndicator.style.display = 'none';
+    
+    if (!append) {
+      this.elements.organizationsList.innerHTML = '';
+    }
+
+    if (data.organizations && data.organizations.length > 0) {
+      data.organizations.forEach(org => {
+        this.createOrganizationElement(org);
+      });
+
+      this.hasMore = data.has_next;
+      if (this.hasMore) {
+        this.elements.loadMoreBtn.style.display = 'block';
+        this.currentPage = data.page;
+      } else {
+        this.elements.loadMoreBtn.style.display = 'none';
+      }
+    } else {
+      this.elements.organizationsList.innerHTML = '<div class="organization-item">Организации не найдены</div>';
+      this.elements.loadMoreBtn.style.display = 'none';
+    }
+    
+    this.elements.dropdown.style.display = 'block';
+  }
+
+  handleSearchError() {
+    this.elements.loadingIndicator.style.display = 'none';
+    this.elements.organizationsList.innerHTML = '<div class="organization-item">Ошибка загрузки</div>';
+  }
+
+  createOrganizationElement(org) {
+    const orgElement = document.createElement('div');
+    orgElement.className = 'organization-item';
+    orgElement.innerHTML = `
+      <div class="organization-name">${this.escapeHtml(org.name)}</div>
+      <div class="organization-okpo">${this.escapeHtml(org.okpo)}</div>
+    `;
+    
+    orgElement.addEventListener('click', () => {
+      this.selectOrganization(org, orgElement);
+    });
+    
+    this.elements.organizationsList.appendChild(orgElement);
+  }
+
+  selectOrganization(org, element) {
+    document.querySelectorAll('.organization-item').forEach(item => {
+      item.classList.remove('selected');
+    });
+
+    element.classList.add('selected');
+
+    this.elements.searchInput.value = `${org.name} (ОКПО: ${org.okpo})`;
+    this.elements.organizationIdInput.value = org.id;
+    
+    this.elements.dropdown.style.display = 'none'; 
+    this.elements.submitBtn.disabled = false;
+  }
+
+  escapeHtml(unsafe) {
+    if (typeof unsafe !== 'string') return unsafe;
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  // Публичные методы для управления извне
+  destroy() {
+    // Очистка событий и таймеров
+    clearTimeout(this.debounceTimer);
+    
+    // Удаление всех привязанных событий
+    if (this.elements.nextBtn) {
+      this.elements.nextBtn.replaceWith(this.elements.nextBtn.cloneNode(true));
+    }
+    if (this.elements.prevBtn) {
+      this.elements.prevBtn.replaceWith(this.elements.prevBtn.cloneNode(true));
+    }
+    if (this.elements.searchInput) {
+      this.elements.searchInput.replaceWith(this.elements.searchInput.cloneNode(true));
+    }
+    if (this.elements.loadMoreBtn) {
+      this.elements.loadMoreBtn.replaceWith(this.elements.loadMoreBtn.cloneNode(true));
+    }
+    
+    document.removeEventListener('click', this.handleDocumentClick);
+  }
+
+  reset() {
+    this.currentPage = 1;
+    this.hasMore = false;
+    this.currentSearchQuery = '';
+    clearTimeout(this.debounceTimer);
+    
+    if (this.elements.searchInput) {
+      this.elements.searchInput.value = '';
+    }
+    if (this.elements.organizationIdInput) {
+      this.elements.organizationIdInput.value = '';
+    }
+    if (this.elements.organizationsList) {
+      this.elements.organizationsList.innerHTML = '';
+    }
+    if (this.elements.dropdown) {
+      this.elements.dropdown.style.display = 'none';
+    }
+    if (this.elements.submitBtn) {
+      this.elements.submitBtn.disabled = true;
+    }
+  }
+}
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('.toggle-password')) {
@@ -2368,10 +2640,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const triggerSideBar = document.getElementById("user-info-trigger");
     const sidebarUser = document.getElementById("user-sidebar");
 
-    triggerSideBar.addEventListener("click", (e) => {
-        e.stopPropagation();
-        sidebarUser.classList.add("show");
-    });
+    if (triggerSideBar && sidebarUser) {
+        triggerSideBar.addEventListener("click", (e) => {
+            e.stopPropagation();
+            sidebarUser.classList.add("show");
+        });
+    }
 
     document.addEventListener("click", (e) => {
         if (!sidebarUser.contains(e.target) && !triggerSideBar.contains(e.target)) {
@@ -2387,24 +2661,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.querySelectorAll('.plan-cont')) {
         initPlansFilter();
     }
- 
 
+    if (document.getElementById('notifBtn')) {
+        NotificationPopup.init({
+            button: "#notifBtn",
+            popup: "#notifPopup"
+        });
 
-    NotificationPopup.init({
-        button: "#notifBtn",
-        popup: "#notifPopup"
-    });
+    }
 
-    Notifications.init();
+    // Notifications.init();
     // setInterval(() => {
     //     Notifications.init();
     // }, 60000);
 
-    new OrganizationSearchManagerAuthStep({
-        searchInputSelector: 'input[data-action="search-organization"]',
-        tableBodySelector: '#orgUserModal table[data-action="organization-table"] tbody',
-        selectedOrgInputSelector: 'input[data-action="selected-org"]',
-        submitButtonSelector: '#orgUserModal button[type="submit"]'
-    });
+
+    if(document.getElementById('organization-search')){
+        try {
+            const organizationsSearch = new OrganizationsSearch();
+            console.log('OrganizationsSearch initialized successfully', organizationsSearch);
+            window.orgSearch = organizationsSearch;
+        } catch (error) {
+            console.error('Error initializing OrganizationsSearch:', error);
+        }
+    }
 
 });
+
