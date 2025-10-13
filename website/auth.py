@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import (
-    Blueprint, jsonify, render_template, request, flash, redirect, session,
+    Blueprint, current_app, jsonify, render_template, request, flash, redirect, session,
     url_for, send_file, Response, make_response
 )
 
@@ -13,6 +13,8 @@ from flask_login import (
 
 from sqlalchemy import func
 from werkzeug.security import check_password_hash, generate_password_hash
+
+from website.user.account import mes_on_email
 
 from .models import User, Organization, Plan, Ticket, Unit, Direction, Indicator, EconMeasure, EconExec, IndicatorUsage, current_utc_time
 from . import db
@@ -168,7 +170,6 @@ def param():
 
         from .user.account import add_param
         return add_param(first_name, last_name, patronymic_name, phone, organization_id, post)
-   
     
 @auth.route('/edit-param', methods=['POST'])
 def edit_param():
@@ -195,3 +196,89 @@ def logout():
     
     flash('Выполнен выход из аккаунта.', 'success')
     return redirect(url_for('auth.login'))
+
+
+from itsdangerous import URLSafeTimedSerializer
+from datetime import datetime, timedelta
+
+@auth.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'GET':
+        return render_template('forgot_password.html', 
+                            hide_header=True,
+                            show_circle_buttons=True)
+    
+    elif request.method == 'POST':
+        email = request.form.get('email')
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+            token = serializer.dumps(email, salt='password-reset-salt')
+
+            user.reset_password_token = token
+            user.reset_password_expires = datetime.utcnow() + timedelta(hours=1)
+            db.session.commit()
+            
+            reset_url = url_for('auth.reset_password', token=token, _external=True)
+            
+            mes_on_email(reset_url, email, 'reset_link')
+     
+        flash('Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.', 'success')
+        return redirect(url_for('auth.forgot_password'))
+    
+@auth.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if request.method == 'GET':
+        user = User.query.filter_by(reset_password_token=token).first()
+        
+        if not user:
+            flash('Ссылка для сброса пароля недействительна.', 'error')
+            return redirect(url_for('auth.forgot_password'))
+        
+        if user.reset_password_expires < datetime.utcnow():
+            flash('Ссылка для сброса пароля устарела. Запросите новую.', 'error')
+            return redirect(url_for('auth.forgot_password'))
+        
+        return render_template('reset_password.html', 
+                            token=token,
+                            hide_header=True,
+                            show_circle_buttons=True)
+    
+    elif request.method == 'POST':
+        password = request.form.get('password')
+        confirm_password = request.form.get('password1')
+        token_from_form = request.form.get('token')
+        
+        if token != token_from_form:
+            flash('Неверный токен сброса пароля.', 'error')
+            return redirect(url_for('auth.forgot_password'))
+        
+        if password != confirm_password:
+            flash('Пароли не совпадают', 'error')
+            return redirect(url_for('auth.reset_password', token=token))
+
+        user = User.query.filter_by(reset_password_token=token).first()
+        
+        if not user:
+            flash('Ссылка для сброса пароля недействительна.', 'error')
+            return redirect(url_for('auth.forgot_password'))
+        
+        if user.reset_password_expires < datetime.utcnow():
+            flash('Ссылка для сброса пароля устарела. Запросите новую.', 'error')
+            return redirect(url_for('auth.forgot_password'))
+        
+        try:
+            from werkzeug.security import generate_password_hash
+            user.password = generate_password_hash(password)
+            user.reset_password_token = None
+            user.reset_password_expires = None
+            db.session.commit()
+            
+            flash('Пароль успешно изменен. Теперь вы можете войти с новым паролем.', 'success')
+            return redirect(url_for('auth.login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Произошла ошибка при изменении пароля. Попробуйте еще раз.', 'error')
+            return redirect(url_for('auth.reset_password', token=token))

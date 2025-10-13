@@ -31,10 +31,15 @@ class User(db.Model, UserMixin):
     last_active = db.Column(db.DateTime, nullable=False, default=current_utc_time)
     begin_time = db.Column(db.DateTime, nullable=False, default=current_utc_time)
     
+    reset_password_token = db.Column(db.String(255), nullable=True)
+    reset_password_expires = db.Column(db.DateTime, nullable=True)
+    
     organization = db.relationship('Organization', backref='users')
     plans = db.relationship('Plan', backref='user', lazy=True, cascade="all, delete-orphan")
     notifications = db.relationship('Notification', backref='user', lazy=True, cascade="all, delete-orphan")
     
+    def __repr__(self):
+        return f'<User {self.email}>'
     
 class Organization(db.Model):
     __tablename__ = 'organizations'

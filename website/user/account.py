@@ -55,6 +55,21 @@ def mes_on_email(message_body, recipient_email, email_type):
             <div style='text-align:center; font-size:20px; font-weight:600; padding:10px; margin:15px 0; color:#000000; border:1px solid #000; border-radius:5px; display:inline-block;'>{message_body}</div>
         </div>
         """
+    elif email_type == "reset_link":
+        content = f"""
+        <div style='padding:20px 40px; color:#000000; font-size:15px;'>
+            <p style='margin:0 0 10px 0; color:#000000;'>Здравствуйте!</p>
+            <p style='margin:0 0 10px 0; color:#000000;'>Вы запросили сброс пароля для вашей учетной записи в <b>ErespondentS</b>.</p>
+            <p style='margin:0 0 15px 0; color:#000000;'>Для сброса пароля перейдите по ссылке ниже:</p>
+            <div style='text-align:center; margin:25px 0;'>
+                <a href='{message_body}' style='background-color:#4CAF50; color:white; padding:12px 30px; text-decoration:none; border-radius:5px; font-size:16px; font-weight:bold; display:inline-block;'>
+                    Сбросить пароль
+                </a>
+            </div>
+            <p style='margin:15px 0 5px 0; color:#666; font-size:13px;'>Ссылка действительна в течение 1 часа.</p>
+            <p style='margin:5px 0 0 0; color:#666; font-size:13px;'>Если вы не запрашивали сброс пароля, проигнорируйте это письмо.</p>
+        </div>
+        """
     else:
         content = f"<div style='padding:20px 40px; color:#000000; font-size:15px;'>{message_body}</div>"
 
@@ -84,8 +99,12 @@ def mes_on_email(message_body, recipient_email, email_type):
         msg = MIMEMultipart()
         msg["From"] = sender
         msg["To"] = recipient_email
-        msg["Subject"] = "Оповещение"
-
+        # Обновляем тему письма в зависимости от типа
+        if email_type == "reset_link":
+            msg["Subject"] = "Сброс пароля - ErespondentS"
+        else:
+            msg["Subject"] = "Оповещение"
+        
         msg.attach(MIMEText(html_template, "html"))
         server.sendmail(sender, recipient_email, msg.as_string())
         return "Email sent successfully"
