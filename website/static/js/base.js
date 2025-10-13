@@ -1,5 +1,3 @@
-
-
 // toggle password
 const togglePassword = {
   init: function() {
@@ -300,6 +298,206 @@ const activationCode = {
         });
   }
 };
+
+// resend cod
+class CodeVerificationTimer {
+    constructor(options = {}) {
+        this.resendBtn = document.getElementById(options.resendBtnId || 'resend-code-btn');
+        this.resendForm = document.getElementById(options.resendFormId || 'resend-form');
+        this.countdownElement = document.getElementById(options.countdownElementId || 'countdown');
+        this.countdownDuration = options.duration || 60;
+        this.countdown = this.countdownDuration;
+        this.timer = null;
+        
+        this.init();
+    }
+    
+    init() {
+        if (!this.resendBtn || !this.resendForm || !this.countdownElement) {
+            console.error('Required elements not found');
+            return;
+        }
+        
+        this.setupEventListeners();
+        this.startCountdown();
+    }
+    
+    getSavedCountdown() {
+        const savedEndTime = localStorage.getItem('codeResendEndTime');
+        if (savedEndTime) {
+            const now = Date.now();
+            const endTime = parseInt(savedEndTime);
+            const remaining = Math.max(0, Math.ceil((endTime - now) / 1000));
+            
+            if (remaining > 0) {
+                return remaining;
+            } else {
+                localStorage.removeItem('codeResendEndTime');
+            }
+        }
+        return this.countdownDuration;
+    }
+    
+    saveCountdownEndTime() {
+        const endTime = Date.now() + (this.countdown * 1000);
+        localStorage.setItem('codeResendEndTime', endTime.toString());
+    }
+    
+    startCountdown() {
+        this.countdown = this.getSavedCountdown();
+        
+        this.resendBtn.classList.add('disabled');
+        this.resendBtn.style.cursor = 'not-allowed';
+        this.resendBtn.style.opacity = '0.5';
+        
+        this.countdownElement.textContent = this.countdown;
+        
+        if (this.countdown <= 0) {
+            this.activateButton();
+            return;
+        }
+        
+        this.saveCountdownEndTime();
+        
+        this.timer = setInterval(() => {
+            this.countdown--;
+            this.countdownElement.textContent = this.countdown;
+            
+            if (this.countdown <= 0) {
+                this.clearTimer();
+                this.activateButton();
+                localStorage.removeItem('codeResendEndTime');
+            } else {
+                this.saveCountdownEndTime();
+            }
+        }, 1000);
+    }
+    
+    activateButton() {
+        this.resendBtn.classList.remove('disabled');
+        this.resendBtn.style.cursor = 'pointer';
+        this.resendBtn.style.opacity = '1';
+        this.countdownElement.textContent = '';
+    }
+    
+    clearTimer() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+        }
+    }
+    
+    resetCountdown() {
+        this.clearTimer();
+        this.countdown = this.countdownDuration;
+        localStorage.removeItem('codeResendEndTime');
+        this.startCountdown();
+    }
+    
+    setupCodeInputs() {
+        const inputs = document.querySelectorAll('.activation_code_input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                if (input.value.length === 1 && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+    }
+    
+    setupEventListeners() {
+        // Обработчик отправки формы повторной отправки кода
+        this.resendForm.addEventListener('submit', (e) => {
+            if (this.resendBtn.classList.contains('disabled')) {
+                e.preventDefault();
+                return;
+            }
+        });
+        
+        // Настройка автоперехода между полями ввода кода
+        this.setupCodeInputs();
+        
+        // Очищаем localStorage при успешной отправке основной формы
+        const mainForm = document.querySelector('.auth-form');
+        if (mainForm) {
+            mainForm.addEventListener('submit', () => {
+                localStorage.removeItem('codeResendEndTime');
+            });
+        }
+    }
+    
+    // Публичные методы для внешнего управления
+    destroy() {
+        this.clearTimer();
+        localStorage.removeItem('codeResendEndTime');
+        
+        // Удаляем все обработчики событий
+        this.resendForm.removeEventListener('submit', this.handleResendSubmit);
+        
+        // Восстанавливаем исходное состояние кнопки
+        this.resendBtn.classList.remove('disabled');
+        this.resendBtn.style.cursor = 'pointer';
+        this.resendBtn.style.opacity = '1';
+        this.countdownElement.textContent = '';
+    }
+    
+    getRemainingTime() {
+        return this.countdown;
+    }
+    
+    isActive() {
+        return this.timer !== null;
+    }
+}
+
+// Класс для управления несколькими экземплярами таймеров
+class CodeVerificationManager {
+    constructor() {
+        this.instances = new Map();
+    }
+    
+    createInstance(containerId, options = {}) {
+        const defaultOptions = {
+            resendBtnId: 'resend-code-btn',
+            resendFormId: 'resend-form', 
+            countdownElementId: 'countdown',
+            duration: 60,
+            ...options
+        };
+        
+        const instance = new CodeVerificationTimer(defaultOptions);
+        this.instances.set(containerId, instance);
+        return instance;
+    }
+    
+    getInstance(containerId) {
+        return this.instances.get(containerId);
+    }
+    
+    destroyInstance(containerId) {
+        const instance = this.instances.get(containerId);
+        if (instance) {
+            instance.destroy();
+            this.instances.delete(containerId);
+        }
+    }
+    
+    destroyAll() {
+        this.instances.forEach(instance => instance.destroy());
+        this.instances.clear();
+    }
+}
+
+
+function createCodeVerification(options = {}) {
+    return new CodeVerificationTimer(options);
+}
 
 // steps in forms
 const formSteps = {
@@ -2253,6 +2451,13 @@ document.addEventListener('DOMContentLoaded', () => {
     activationCode.init();
   }
 
+    if (document.getElementById('resend-code-btn') && 
+        document.getElementById('resend-form') && 
+        document.getElementById('countdown')) {
+        
+        window.codeVerification = createCodeVerification();
+    }
+
   if (document.querySelector('.auth-step-1') && document.querySelector('.auth-step-2')) {
     formSteps.init();
   }
@@ -2667,14 +2872,12 @@ document.addEventListener('DOMContentLoaded', () => {
             button: "#notifBtn",
             popup: "#notifPopup"
         });
+        Notifications.init();
+        // setInterval(() => {
+        //     Notifications.init();
+        // }, 60000);
 
     }
-
-    // Notifications.init();
-    // setInterval(() => {
-    //     Notifications.init();
-    // }, 60000);
-
 
     if(document.getElementById('organization-search')){
         try {

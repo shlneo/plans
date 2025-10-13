@@ -3130,7 +3130,17 @@ button[disabled] {
     cursor: not-allowed !important;
 }
 
+.disabled {
+    pointer-events: none;
+}
 
+#resend-code-btn {
+    transition: all 0.3s ease;
+}
+
+#resend-code-btn:not(.disabled):hover {
+    text-decoration: underline;
+}
 
 /* Мобильные (до 768px) */
 @media (max-width: 767px) {

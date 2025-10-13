@@ -6,7 +6,7 @@ from werkzeug.security import generate_password_hash
 def create_database(app, db):
     from .models import User, Organization, Plan, Ticket, Unit, Direction, Indicator, EconExec, EconMeasure
     with app.app_context():
-        db.drop_all()
+        # db.drop_all()
         db.create_all()
         add_data_in_db(db)
         

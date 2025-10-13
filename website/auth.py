@@ -128,6 +128,27 @@ def code():
         from .user.account import activate_account
     return activate_account()
 
+@auth.route('/resend-code', methods=['POST'])
+def resend_code():
+    from .user.account import gener_password, send_activation_email
+    try:
+        session.pop('activation_code', None)
+        
+        new_code = gener_password()
+        session['activation_code'] = new_code
+        
+        email = session.get('temp_user', {}).get('email')
+        if email:
+            send_activation_email(email)
+            flash('Новый код подтверждения отправлен на вашу почту.', 'success')
+        else:
+            flash('Ошибка: email не найден', 'error')
+    
+    except Exception as e:
+        flash(f'Ошибка при отправке кода: {str(e)}', 'error')
+    
+    return redirect(url_for('auth.code'))
+
 @auth.route('/param', methods=['GET', 'POST'])
 @login_required
 @user_without_param()

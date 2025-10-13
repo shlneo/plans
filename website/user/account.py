@@ -151,16 +151,32 @@ def activate_account():
         return redirect(url_for('auth.code'))      
 
 def add_param(first_name, last_name, patronymic_name, phone, organization_id, post = None):
-
-
+    if not phone or len(phone.strip()) < 5:
+        flash('Номер телефона должен содержать не менее 5 символов!', 'error')
+        return redirect(url_for('views.profile'))
+    
+    normalized_phone = phone.strip()
+    if normalized_phone.startswith('+'):
+        plus = '+'
+        digits = ''.join(filter(str.isdigit, normalized_phone[1:]))
+        normalized_phone = plus + digits
+    else:
+        normalized_phone = ''.join(filter(str.isdigit, normalized_phone))
+    
+    existing_user = User.query.filter_by(phone=normalized_phone).first()
+    
+    if existing_user and existing_user.id != current_user.id:
+        flash('Пользователь с таким номером телефона уже зарегистрирован!', 'error')
+        return redirect(url_for('auth.param'))
+    
     current_user.first_name = first_name
     current_user.last_name = last_name
     current_user.patronymic_name = patronymic_name
-    current_user.phone = phone
+    current_user.phone = normalized_phone
     current_user.organization_id = organization_id
     current_user.post = post
 
     db.session.commit()
-    flash('Вы успешно зарегистрировались!', 'succes')
+    flash('Регистрация прошла успешно!', 'success')
 
-    return redirect(url_for('views.profile'))      
+    return redirect(url_for('views.profile'))
