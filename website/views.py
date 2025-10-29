@@ -488,6 +488,7 @@ def plan_review(id):
                         plan=current_plan,     
                         hide_header=False,
                         plan_header=True,
+                        sentmodalecp=True,
                         active_plan_tab='review')
     
 @views.route('/plans/plan-audit/<int:id>', methods=['GET', 'POST'])
@@ -1224,6 +1225,9 @@ status_handlers = {
     'approved': handle_approved_status
 }
 
+
+
+
 @views.route('/api/change-plan-status/<int:id>', methods=['POST'])
 @user_with_all_params()
 @login_required
@@ -1236,6 +1240,15 @@ def api_change_plan_status(id):
         status = data.get('status')
     else:
         status = request.form.get('status')
+        if status == 'sent':
+            uploaded_file = request.files.get('certificate')
+            from .plans.ecp import validate_certificate_for_sending
+            is_valid, error_message = validate_certificate_for_sending(uploaded_file)
+            if not is_valid:
+                flash(error_message, 'error')
+                return redirect(request.referrer)
+            else:
+                flash('Сертификат успешно прошел проверку.', 'succes')
     
     if not status:
         if request.is_json:

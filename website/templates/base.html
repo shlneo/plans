@@ -132,10 +132,10 @@
                 <a>{{ _('Создать план') }}</a>
             </li>
           {% endif %}
-          <li class="second-header-auth-tab {% if active_tab == 'stats' %} active{% endif %}" onclick="window.location.href=''">
-              <img src="/static/img/Stats.svg" style = "width: 14px; height: auto;" alt="">
-              <a>{{ _('Статистика') }}</a>
-          </li>
+            <li class="second-header-auth-tab {% if active_tab == 'stats' %} active{% endif %}" onclick="window.location.href=''" style="opacity: 0.5; pointer-events: none; cursor: not-allowed;">
+                <img src="/static/img/Stats.svg" style="width: 14px; height: auto;" alt="">
+                <a>{{ _('Статистика') }}</a>
+            </li>
           <li class="second-header-auth-tab {% if active_tab == 'export' %} active{% endif %}" onclick="window.location.href='/export'">
               <img src="/static/img/Export.svg" alt="">
               <a>{{ _('Экспорт') }}</a>
@@ -217,6 +217,49 @@
       </div>
     </div>    
     {% endif %}
+
+
+    {% if sentmodalecp %}
+    <div id="sentmodalecp" class="modal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <a id="modal-title">{{ _('Отправка плана') }}</a>
+                <img src="/static/img/Close.svg"  class="close" alt="Закрыть">
+            </div>
+            <div class="modal-subtext">
+                <p class="first-child">{{ _('Вы действительно хотите отправить план?') }}</p>
+                <p>
+                    {{ _('Для отправки плана необходим сертификат цифровой подписи. Подробней об этом') }} 
+                    <a href="#" class="link-word" id="certificate-help-link">{{ _('тут') }}</a>.
+                </p>
+            </div>
+            <form id="sentForm" class="sent-form" action="/api/change-plan-status/{{ plan.id }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <input type="hidden" name="status" value="sent">
+                <div class="file-upload-section">
+                    <div id="drop-area" class="drop-area" role="button" tabindex="0" aria-labelledby="file-upload-label">
+                        <p id="file-upload-label">
+                            {{ _('Перетащите файл сертификата сюда или') }} 
+                            <label for="certificate_to_check" class="file-input-label">{{ _('нажмите для выбора') }}</label>
+                        </p>
+                        <input type="file" id="certificate_to_check" name="certificate" accept=".cer,.pem,.der" hidden 
+                            aria-describedby="file-format-hint">
+                    </div>
+                    <!-- <div id="file-error-message" class="error-message" hidden></div> -->
+                </div>
+                
+                <div class="modal-buttons-area">
+                    <button type="submit" class="submit-button delete" id="submit_sent_button" disabled>
+                        <img src="/static/img/Submit-Progress-wh.svg" alt="" class="btn-icon">
+                        <span class="btn-text">{{ _('Да. отправить план') }}</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+
 
     <div id="confirmModal2" class="modal">
       <div class="modal-content" style = "max-width: 450px;">

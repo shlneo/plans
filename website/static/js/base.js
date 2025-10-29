@@ -2440,7 +2440,182 @@ class OrganizationsSearch {
   }
 }
 
+class CertificateUploadHandler {
+    constructor() {
+        this.form = document.getElementById('sentForm');
+        this.dropArea = document.getElementById('drop-area');
+        this.fileInput = document.getElementById('certificate_to_check');
+        this.submitButton = document.getElementById('submit_sent_button');
+        
+        this.init();
+    }
 
+    init() {
+        if (!this.form || !this.dropArea || !this.fileInput || !this.submitButton) {
+            console.error('Required elements not found');
+            return;
+        }
+
+        this.bindEvents();
+        this.updateSubmitButtonState();
+    }
+
+    bindEvents() {
+        // Drag and drop events
+        this.dropArea.addEventListener('dragover', this.handleDragOver.bind(this));
+        this.dropArea.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        this.dropArea.addEventListener('drop', this.handleDrop.bind(this));
+
+        // File input change
+        this.fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+        
+        // Убираем клик по всей области, оставляем только на label
+        this.removeDropAreaClick();
+    }
+
+    removeDropAreaClick() {
+        // Удаляем обработчик клика со всей области drop-area
+        this.dropArea.style.cursor = 'default';
+        
+        // Находим label внутри drop-area и добавляем ему курсор pointer
+        const fileInputLabel = this.dropArea.querySelector('.file-input-label');
+        if (fileInputLabel) {
+            fileInputLabel.style.cursor = 'pointer';
+            fileInputLabel.addEventListener('click', (e) => {
+                e.stopPropagation(); // Предотвращаем всплытие события
+            });
+        }
+    }
+
+    handleDragOver(e) {
+        e.preventDefault();
+        this.dropArea.classList.add('drag-over');
+    }
+
+    handleDragLeave(e) {
+        e.preventDefault();
+        this.dropArea.classList.remove('drag-over');
+    }
+
+    handleDrop(e) {
+        e.preventDefault();
+        this.dropArea.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            this.processFile(files[0]);
+            
+            // Создаем DataTransfer object и устанавливаем файл в input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(files[0]);
+            this.fileInput.files = dataTransfer.files;
+        }
+    }
+
+    handleFileSelect(e) {
+        const file = e.target.files[0];
+        if (file) {
+            this.processFile(file);
+        }
+    }
+
+    processFile(file) {
+        this.clearError();
+
+        // Проверка формата файла
+        if (!this.isValidFile(file)) {
+            this.showError('Неверный формат файла. Разрешены только файлы .cer');
+            this.fileInput.value = '';
+            return;
+        }
+
+        // Показываем имя файла и активируем кнопку
+        this.showFileName(file.name);
+        this.updateSubmitButtonState(true);
+    }
+
+    isValidFile(file) {
+        // Проверяем, что файл имеет расширение .cer
+        const fileName = file.name.toLowerCase();
+        return fileName.endsWith('.cer');
+    }
+
+    showFileName(fileName) {
+        const label = this.dropArea.querySelector('p');
+        if (label) {
+            label.innerHTML = `<strong>${this.escapeHtml(fileName)}</strong>`;
+        }
+    }
+
+    updateSubmitButtonState(isEnabled = false) {
+        this.submitButton.disabled = !isEnabled;
+        
+        if (isEnabled) {
+            this.submitButton.classList.remove('disabled');
+        } else {
+            this.submitButton.classList.add('disabled');
+        }
+    }
+
+    showError(message) {
+        this.updateSubmitButtonState(false);
+    }
+
+    clearError() {
+        // this.errorMessage.textContent = '';
+        // this.errorMessage.hidden = true;
+    }
+
+    escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+}
+
+function initCertificateUpload() {
+    document.addEventListener('DOMContentLoaded', function() {
+        const sentModal = document.getElementById('sentmodalecp');
+        if (sentModal) {
+            new CertificateUploadHandler();
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                .drop-area {
+                    cursor: default;
+                }
+                
+                .drop-area.drag-over {
+                    border-color: #007bff;
+                    background-color: #f8f9fa;
+                }
+                
+                .file-input-label {
+                    cursor: pointer;
+                    color: #007bff;
+                    text-decoration: underline;
+                }
+                
+                .submit-button:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
+                }
+                
+                .error-message {
+                    color: #dc3545;
+                    font-size: 14px;
+                    margin-top: 8px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    });
+}
+
+initCertificateUpload();
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('.toggle-password')) {
@@ -2732,17 +2907,45 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     //sent plan
+    // if (document.getElementById('sentPlanButton')) {
+    //     initConfirmModal({
+    //         triggerId: 'sentPlanButton',
+    //         formId: 'sentPlanForm',
+    //         modalId: 'confirmModal2',
+    //         yesId: 'confirmYes',
+    //         noId: 'confirmNo',
+    //         textId: 'modal-text',
+    //         modalText: 'Вы действительно хотите отправить план на проверку?',
+    //         textSecondId: 'modal-text-second',
+    //         modalTextSecond: 'План сменит статус и на время проверки его нельзя будет редактировать.'
+    //     });
+    // }    
+
+    const sentPlanButton = document.getElementById('sentPlanButton');
+    const sentmodalecp = document.getElementById('sentmodalecp');
+    if (sentmodalecp) {
+        handleModal(
+            sentmodalecp, 
+            sentPlanButton, 
+            sentmodalecp.querySelector('.close')
+        );
+    }
+
+
+
+
+    //cancel sent plan
     if (document.getElementById('sentPlanButton')) {
         initConfirmModal({
-            triggerId: 'sentPlanButton',
-            formId: 'sentPlanForm',
+            triggerId: 'cancelsentPlanButton',
+            formId: 'cancelsentPlanForm',
             modalId: 'confirmModal2',
             yesId: 'confirmYes',
             noId: 'confirmNo',
             textId: 'modal-text',
-            modalText: 'Вы действительно хотите отправить план на проверку?',
+            modalText: 'Вы действительно хотите отменить отправку?',
             textSecondId: 'modal-text-second',
-            modalTextSecond: 'План сменит статус и на время проверки его нельзя будет редактировать.'
+            modalTextSecond: 'План сменит статус обратно на "В редакции".'
         });
     }
 
@@ -2889,5 +3092,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+   
 });
+
+
 

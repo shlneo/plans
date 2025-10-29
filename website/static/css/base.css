@@ -1677,6 +1677,7 @@ input[type="checkbox"]:focus {
   align-items: center;  
   justify-content: center;
   gap: 11px;        
+  white-space: nowrap;
   min-width: fit-content;
   height: fit-content;
   padding: 8px 20px;
@@ -3122,7 +3123,11 @@ button[disabled] {
   height: 15px;
 }
 
-
+.link-word{
+    text-decoration: underline;
+    color: blue;
+    cursor: pointer;
+}
 
 .btn-disabled {
     opacity: 0.5 !important;
@@ -3141,6 +3146,228 @@ button[disabled] {
 #resend-code-btn:not(.disabled):hover {
     text-decoration: underline;
 }
+
+
+/**/
+
+.file-upload-section {
+    margin: 1.5rem 0;
+    width: 100%;
+}
+
+.drop-area {
+    border: 2px dashed #d1d5db;
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    background-color: #f9fafb;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-area:hover {
+    border-color: #3b82f6;
+    background-color: #f0f7ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+}
+
+.drop-area:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.drop-area.highlight {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    border-style: solid;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.2);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+}
+
+.drop-area.success {
+    border-color: #10b981;
+    background-color: #f0fdf9;
+}
+
+.drop-area.error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+}
+
+#file-upload-label {
+    margin: 0;
+    font-size: 1rem;
+    color: #374151;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.file-input-label {
+    color: #3b82f6;
+    cursor: pointer;
+    font-weight: 600;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    position: relative;
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+.file-input-label:hover {
+    color: #2563eb;
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.file-input-label:active {
+    color: #1d4ed8;
+    transform: scale(0.98);
+}
+
+.drop-area::before {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' /%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: center;
+    transition: all 0.3s ease;
+}
+
+.drop-area:hover::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%233b82f6'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12' /%3E%3C/svg%3E");
+}
+
+.drop-area.success::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' /%3E%3C/svg%3E");
+}
+
+.drop-area.error::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%23ef4444'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' /%3E%3C/svg%3E");
+}
+
+.drop-area.has-file::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2310b981'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' /%3E%3C/svg%3E");
+}
+
+.file-name {
+    font-weight: 600;
+    color: #10b981;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    word-break: break-all;
+    padding: 0.5rem 1rem;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 8px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.error-message {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: slideDown 0.3s ease;
+}
+
+.error-message::before {
+    content: '⚠';
+    font-size: 1rem;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.file-format-hint {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #f8fafc;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+
+@media (max-width: 640px) {
+    .drop-area {
+        padding: 2rem 1rem;
+        min-height: 100px;
+    }
+    
+    #file-upload-label {
+        font-size: 0.9rem;
+    }
+    
+    .drop-area::before {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 0.75rem;
+    }
+}
+
+.drop-area.loading {
+    pointer-events: none;
+}
+
+.drop-area.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.drop-area.loading::before {
+    content: '⌛';
+    font-size: 1.5rem;
+    z-index: 1;
+    position: relative;
+    background: none;
+}
+
+/**/
+
 
 /* Мобильные (до 768px) */
 @media (max-width: 767px) {
