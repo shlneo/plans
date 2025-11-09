@@ -20,9 +20,9 @@
 
 ### Database Settings
 
-1. Make a user `...` and give him pass `...`.
+1. Make a user `kyrator` and give him pass `palletenjoer`.
 
-2. Create database `...` with superuser `...`.
+2. Create database `eres` with superuser `kyrator`.
 
 ### Installation app
 
