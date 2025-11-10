@@ -585,7 +585,10 @@ def delete_econmeasure(id):
 
     db.session.delete(econ_measure)
     db.session.commit()
+    
+    other_data_indicatorUpdate(id)
     update_ChangeTimePlan(id_plan)
+
     flash('Направление успешно удалено!', 'success')
     return redirect(url_for('views.plan_directions', id=id_plan))
 
@@ -738,8 +741,8 @@ def create_econexeces(id):
 
     Volume_value = request.form.get('Volume')
     ExpectedQuarter_value = request.form.get('ExpectedQuarter')
-    Payback_value = request.form.get('Payback')
 
+    Payback = to_decimal_3(request.form.get('Payback'))
 
     EffTut = to_decimal_3(request.form.get('EffTut'))
     EffRub = to_decimal_3(request.form.get('EffRub'))
@@ -756,7 +759,6 @@ def create_econexeces(id):
 
     Volume = int(float(Volume_value)) if Volume_value else None
     ExpectedQuarter = int(float(ExpectedQuarter_value)) if ExpectedQuarter_value else None
-    Payback = int(float(Payback_value)) if Payback_value else None
 
     measure = EconMeasure.query.get(id_measure)
     if not measure:
@@ -817,7 +819,7 @@ def edit_econexeces(id):
 
     Volume_value = request.form.get('Volume')
     ExpectedQuarter_value = request.form.get('ExpectedQuarter')
-    Payback_value = request.form.get('Payback')
+    Payback = to_decimal_3(request.form.get('Payback'))
 
     EffTut = to_decimal_3(request.form.get('EffTut'))
     EffRub = to_decimal_3(request.form.get('EffRub'))
@@ -834,7 +836,6 @@ def edit_econexeces(id):
 
     Volume = int(float(Volume_value)) if Volume_value else None
     ExpectedQuarter = int(float(ExpectedQuarter_value)) if ExpectedQuarter_value else None
-    Payback = int(float(Payback_value)) if Payback_value else None
     
 
     current_EconExec = EconExec.query.get(id)
@@ -1152,8 +1153,8 @@ def other_data_indicatorUpdate(id):
 
     first_title()
     four_title()
-    seven_title()
     econom_ter()
+    seven_title()
 
 def handle_draft_status(plan):
     plan.is_draft = True
@@ -1162,11 +1163,19 @@ def handle_draft_status(plan):
     return "Статус переведен в редактирование."
 
 def handle_control_status(plan):
-    plan.is_control = True
-    plan.is_draft = plan.is_sent = plan.is_error = plan.is_approved = False
-    plan.afch = False
-    return "План прошел проверку на контроль."
-
+    indicator_usage = next(
+        (iu for iu in plan.indicators_usage if iu.id_indicator == 41), 
+        None
+    ) # № п/п = 5
+    
+    if indicator_usage and indicator_usage.QYearNext != 0:
+        plan.is_control = True
+        plan.is_draft = plan.is_sent = plan.is_error = plan.is_approved = False
+        plan.afch = False
+        return "План прошел проверку на контроль."
+    else:
+        return {"error": "Ожидаемая экономия ТЭР от внедрения в текущем году не может быть равна 0."}
+ 
 def handle_sent_status(plan):
     if plan.audit_time and (current_utc_time() - plan.audit_time) > timedelta(hours=1):
         return {"error": "Нельзя изменить статус: прошло больше допустимого времени."}
@@ -1216,16 +1225,6 @@ status_handlers = {
     'error': handle_error_status,
     'approved': handle_approved_status
 }
-
-status_handlers = {
-    'draft': handle_draft_status,
-    'control': handle_control_status,
-    'sent': handle_sent_status,
-    'error': handle_error_status,
-    'approved': handle_approved_status
-}
-
-
 
 
 @views.route('/api/change-plan-status/<int:id>', methods=['POST'])

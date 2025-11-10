@@ -23,15 +23,33 @@
 
         </div>   
         <div class = "table-container">
-            <table class="directions-table" id="directionTable">
-                <thead class="directions-table-titles">
+            <table class="main-table" id="directionTable">
+                <thead class="main-table-titels">
                     <tr>
-                        <th>№</th>
-                        <th><a>{{ _('Код основных направлений энергосбережения в соостветствии с формой 4-энергосбережения (Госстандарт)') }}</a></th>
-                        <th><a>{{ _('Наименование направлений в соответствии с формой 4-энергосбережение (Госстандарт)') }}</a></th>
-                        <th><a>{{ _('Условно-годовой экономический эффект, т у.т.') }}</a></th>
-                        <th><a>{{ _('Ожидаемая экономия ТЭР от внедрения мероприятий в') }} 2025 г., {{ _('т у. т.') }}</a></th>
-                        <th><a>{{ _('Местные ТЭР') }}</a></th>
+                        <th class="resizable" style="min-width: 50px;">
+                            <a>№</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th class="resizable" style="min-width: 300px;">
+                            <a>{{ _('Код основных направлений энергосбережения в соостветствии с формой 4-энергосбережения (Госстандарт)') }}</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th class="resizable" style="min-width: 600px;">
+                            <a>{{ _('Наименование направлений в соответствии с формой 4-энергосбережение (Госстандарт)') }}</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th class="resizable" style="min-width: 300px;">
+                            <a>{{ _('Условно-годовой экономический эффект, т у.т.') }}</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th class="resizable" style="min-width: 300px;">
+                            <a>{{ _('Ожидаемая экономия ТЭР от внедрения мероприятий в') }} {{plan.year}} г., {{ _('т у. т.') }}</a>
+                            <div class="resizer"></div>
+                        </th>
+                        <th class="resizable">
+                            <a>{{ _('Местные ТЭР') }}</a>
+                            <div class="resizer"></div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody class = "rows">
@@ -43,15 +61,15 @@
                             <td>{{ row.direction.name }}</td>
                             <td>{{ row.year_econ }}</td>
                             <td>{{ row.estim_econ }}</td>
-                            <td>
+                            <td style="text-align: center;">
                                 <input type="checkbox" {% if row.direction.is_local %} checked {% endif %} onclick="return false;">
-                            </td>  
+                            </td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                    <tr class="no_info-conteiner">
-                        <td style = "text-align: left; padding-left: 60px; padding-bottom: 15px;">{{ _('Нет активных направлений') }}</td>
-                    </tr>
+                        <tr class="no-results-row">
+                            <td colspan="6">{{ _('Нет активных направлений') }}</td>
+                        </tr>
                     {% endif %}
                 </tbody>
             </table>

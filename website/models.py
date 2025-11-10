@@ -154,7 +154,7 @@ class EconExec(db.Model):
     EffRub = db.Column(Numeric(scale=3))
     ExpectedQuarter = db.Column(db.Integer)
     EffCurrYear = db.Column(Numeric(scale=3))
-    Payback = db.Column(db.Integer)
+    Payback = db.Column(Numeric(scale=3))
     VolumeFin = db.Column(Numeric(scale=3))
     BudgetState = db.Column(Numeric(scale=3))
     BudgetRep = db.Column(Numeric(scale=3))

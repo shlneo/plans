@@ -50,7 +50,7 @@
                             <a>Ожидаемый срок внедрения мероприятия, квартал</a>
                             <div class="resizer"></div>
                         </th>
-                        <th rowspan="3" class="resizable vertical-text">
+                        <th rowspan="3" class="resizable vertical-text" style = "min-width: 125px;">
                             <a>Ожидаемый экономический эффект от внедрения мероприятия в текущем году, т у.т.</a>
                             <div class="resizer"></div>
                         </th>
@@ -165,7 +165,7 @@
                                 <td>{{ row.MoneyLoan }}</td>
                                 <td>{{ row.MoneyOther }}</td>
                             </tr>
-                        {% endfor %}   
+                        {% endfor %}  
                         <tr class="total-row" >
                             <td style="text-align: left; padding-left: 60px;" colspan="4">Итого по разделу:</td>
                             <td style = "text-align: end;">{{ non_local_econ_execes|sum(attribute='Volume')|default(0)|round(3)}}</td>
@@ -183,6 +183,10 @@
                             <td>{{ non_local_econ_execes|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
                             <td>{{ non_local_econ_execes|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
                         </tr>
+                    {% else %}  
+                    <tr class="no-results-row">
+                        <td colspan="18">Отсутствуют мероприятия по экономии ТЭР</td>
+                    </tr>
                     {% endif %} 
                 </tbody>
                 <tr class="group-header" data-target="local-content">
@@ -236,6 +240,10 @@
                             <td>{{ local_econ_execes|sum(attribute='MoneyLoan')|default(0)|round(3)}}</td>
                             <td>{{ local_econ_execes|sum(attribute='MoneyOther')|default(0)|round(3)}}</td>
                         </tr>
+                    {% else %}
+                    <tr class="no-results-row">
+                        <td colspan="18">Отсутствуют мероприятия по увеличению использования местных ТЭР</td>
+                    </tr>
                     {% endif %}
                 </tbody>
                 <tr class="group-header" data-target="other-content">

@@ -1001,6 +1001,10 @@ class DirectionsTable {
 
         if (!this.searchInput || !this.table) return;
 
+        this.noInfoRow = this.createNoInfoRow();
+        this.table.appendChild(this.noInfoRow);
+        this.noInfoRow.style.display = "none";
+
         this.initSearch();
         this.initSelection();
 
@@ -1009,23 +1013,46 @@ class DirectionsTable {
         }
     }
 
+    createNoInfoRow() {
+        const noResultsRow = document.createElement("tr");
+        noResultsRow.className = "no-results-row";
+        const cell = document.createElement("td");
+        cell.colSpan = 6;
+        cell.textContent = "Нет похожей информации";
+        cell.style.textAlign = "center";
+        cell.style.padding = "20px";
+        cell.style.paddingLeft = "70px";
+        noResultsRow.appendChild(cell);
+        return noResultsRow;
+    }
+
     initSearch() {
         this.searchInput.addEventListener("input", () => {
             const filter = this.searchInput.value.toLowerCase();
-            const rows = this.table.querySelectorAll("tr");
+            const rows = this.table.querySelectorAll("tr:not(.no-results-row)");
+            let visibleCount = 0;
 
             rows.forEach(row => {
-                const code = row.cells[1].textContent.toLowerCase();
-                const name = row.cells[2].textContent.toLowerCase();
-                row.style.display = (code.includes(filter) || name.includes(filter)) ? "" : "none";
+                const code = row.cells[1]?.textContent.toLowerCase() || "";
+                const name = row.cells[2]?.textContent.toLowerCase() || "";
+                const isVisible = code.includes(filter) || name.includes(filter);
+                
+                row.style.display = isVisible ? "" : "none";
+                if (isVisible) visibleCount++;
             });
+
+            if (visibleCount === 0 && filter !== "") {
+                this.noInfoRow.style.display = "";
+            } else {
+                this.noInfoRow.style.display = "none";
+            }
         });
     }
 
     initSelection() {
         this.table.addEventListener("click", (e) => {
             const row = e.target.closest("tr");
-            if (!row) return;
+            if (!row || row.classList.contains("no-results-row")) return;
 
             this.table.querySelectorAll("tr").forEach(r => r.classList.remove("selected"));
             row.classList.add("selected");

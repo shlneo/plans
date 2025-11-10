@@ -79,7 +79,7 @@
                 <img src="/static/img/Account.svg" alt="" class="btn-icon">
                 <span class="btn-text">Профиль</span>
             </button>
-            <button type="button" class="button-grey-border" onclick="window.location.href=''">
+            <button type="button" class="button-grey-border" onclick="window.location.href='/FAQ'">
                 <img src="/static/img/FAQ.svg" alt="" class="btn-icon">
                 <span class="btn-text">FAQ</span>
             </button>
@@ -312,22 +312,23 @@
                               <th style="display: none;">id</th>
                               <th>{{ _('Код') }}</th>
                               <th>{{ _('Наименование') }}</th>
-                              <th>{{ _('Ед. изм.') }}</th>
-                              <th>{{ _('Местные ТЭР') }}</th>
+                              <th style="text-align: center;">{{ _('Ед. изм.') }}</th>
+                              <th style="text-align: center;">{{ _('Местные ТЭР') }}</th>
                           </tr>
                       </thead>
                       <tbody>
                           {% for row in directions %}
                             <tr>
-                              <th style="display: none;">{{ row.id }}</th>
+                              <td style="display: none;">{{ row.id }}</td>
                               <td>{{ row.code }}</td>
                               <td>{{ row.name }}</td>
                               <td>{{ row.unit.name }}</td>
-                              <td>
+                              <td style="text-align: center;">
                                   <input type="checkbox" {% if row.is_local %} checked {% endif %} onclick="return false;">
                               </td>
                             </tr>
-                          {% endfor %}
+                          {% endfor %}    
+   
                       </tbody>
                   </table>
                 </div>
@@ -429,7 +430,7 @@
     <div id="AddEventModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <a id="modal-title">{{ _('') }}</a>
+                <a id="modal-title">{{ _('Добавление мероприятия') }}</a>
                 <img class="close" src="/static/img/Close.svg" alt="">  
             </div>
             <div class="progress-modal-bar-container">
@@ -453,7 +454,7 @@
                                 <th style="display: none;">id</th>
                                 <th>{{ _('Код') }}</th>
                                 <th>{{ _('Наименование') }}</th>
-                                <th>{{ _('Местные ТЭР') }}</th>
+                                <th style="text-align: center;">{{ _('Местные ТЭР') }}</th>
                                 <th>{{ _('Эффект (т.у.т.)') }}</th>
                                 <th>{{ _('Экономия') }}</th>
                             </tr>
@@ -464,7 +465,7 @@
                                 <td style="display: none;">{{ row.id }}</td>
                                 <td>{{ row.direction.code }}</td>
                                 <td>{{ row.direction.name }}</td>
-                                <td>
+                                <td style="text-align: center;">
                                     <input type="checkbox" {% if row.direction.is_local %} checked {% endif %} onclick="return false;">
                                 </td>
                                 <td>{{ row.year_econ }}</td>
@@ -544,13 +545,9 @@
                     <div class="app-group">
                         <label>[10] {{ _('Срок окупаемости, лет') }}</label>
                         <div class="input-with-icon">
-                            <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
-                            <input type="number" name="Payback" min="1" max="99" 
-                                inputmode="numeric" placeholder="Количество лет" 
-                                class="app-input"  value="5" required
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2); 
-                                            if (this.value > 99) this.value = 99; 
-                                            if (this.value < 1) this.value = '';">    
+                            <img src="/static/img/Half_gray.svg" alt="" class="input-icon">
+                            <input type="text" id="" maxlength="" value="0.000"  name = "Payback"
+                                placeholder="0.000" class="app-numeric-input" required>
                         </div>
                     </div>
                     <div class="app-group">
@@ -745,13 +742,9 @@
                   <div class="app-group">
                       <label>[10] {{ _('Срок окупаемости, лет') }}</label>
                       <div class="input-with-icon">
-                          <img src="/static/img/Calendar_grey.svg" class="input-icon">
-                        <input type="number" name="Payback" id="change-Payback-edit-model" min="1" max="99" 
-                            inputmode="numeric" placeholder="Количество лет" 
-                            class="app-input" required
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2); 
-                                        if (this.value > 99) this.value = 99; 
-                                        if (this.value < 1) this.value = '';">
+                          <img src="/static/img/Half_gray.svg" class="input-icon">
+                          <input type="text" id="change-Payback-edit-model" name = "Payback"
+                              placeholder="0.000" class="app-numeric-input" required>
                       </div>
                   </div>
                   <div class="app-group">
@@ -878,7 +871,7 @@
                             <th style="display: none;">id</th>
                             <th>Код</th>
                             <th>Наименование</th>
-                            <th>Ед. изм.</th>
+                            <th style="text-align: center;">Ед. изм.</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1047,7 +1040,7 @@
                           <tr>
                               <th style="display: none;">id</th>           
                               <th>{{ _('Наименование') }}</th>
-                               <th>{{ _('ОКПО') }}</th>
+                              <th style = "text-align: center;">{{ _('ОКПО') }}</th>
                           </tr>
                       </thead>
                       <tbody>
