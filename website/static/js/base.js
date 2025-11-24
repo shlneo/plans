@@ -1712,15 +1712,22 @@ function initColumnResize() {
 class OrganizationSearchManager {
     constructor(config = {}) {
         this.config = {
-            searchInputSelector: 'input[data-action="search-organization"]',   // поле поиска
-            tableBodySelector: 'table[data-action="organization-table"] tbody', // tbody таблицы
-            selectedOrgInputSelector: 'input[data-action="selected-org"]',      // hidden input для id
-            submitButtonSelector: 'button[data-action="submit"]',               // кнопка регистрации
-            apiUrl: '/api/organizations',                                        // URL для запроса данных
-            debounceTime: 300, 
+            searchInputSelector: 'input[data-action="search-organization"]',
+            tableBodySelector: 'table[data-action="organization-table"] tbody',
+            selectedOrgInputSelector: 'input[data-action="selected-org"]',
+            submitButtonSelector: 'button[data-action="submit"]',
+            paginationContainerSelector: '.pagination-container[data-action="pagination-container"]',
+            prevPageButtonSelector: 'button[data-action="prev-page"]',
+            nextPageButtonSelector: 'button[data-action="next-page"]',
+            pageInfoSelector: '.pagination-info[data-action="page-info"]',
+            apiUrl: '/api/organizations',
+            debounceTime: 300,
             ...config
         };
 
+        this.currentPage = 1;
+        this.currentQuery = '';
+        this.hasNextPage = false;
         this.init();
     }
 
@@ -1729,6 +1736,10 @@ class OrganizationSearchManager {
         this.tableBody = document.querySelector(this.config.tableBodySelector);
         this.selectedOrgInput = document.querySelector(this.config.selectedOrgInputSelector);
         this.submitButton = document.querySelector(this.config.submitButtonSelector);
+        this.paginationContainer = document.querySelector(this.config.paginationContainerSelector);
+        this.prevPageButton = document.querySelector(this.config.prevPageButtonSelector);
+        this.nextPageButton = document.querySelector(this.config.nextPageButtonSelector);
+        this.pageInfo = document.querySelector(this.config.pageInfoSelector);
 
         if (!this.searchInput || !this.tableBody || !this.selectedOrgInput) {
             console.error('OrganizationSearchManager: Не найдены необходимые элементы');
@@ -1745,7 +1756,11 @@ class OrganizationSearchManager {
         this.searchInput.addEventListener('input', (e) => {
             clearTimeout(debounceTimer);
             const query = e.target.value.trim();
-            debounceTimer = setTimeout(() => this.loadOrganizations(query), this.config.debounceTime);
+            debounceTimer = setTimeout(() => {
+                this.currentPage = 1; // Сбрасываем на первую страницу при новом поиске
+                this.currentQuery = query;
+                this.loadOrganizations(query);
+            }, this.config.debounceTime);
         });
 
         this.tableBody.addEventListener('click', (e) => {
@@ -1754,6 +1769,25 @@ class OrganizationSearchManager {
                 this.selectOrganization(row);
             }
         });
+
+        // Обработчики для пагинации
+        if (this.prevPageButton) {
+            this.prevPageButton.addEventListener('click', () => {
+                if (this.currentPage > 1) {
+                    this.currentPage--;
+                    this.loadOrganizations(this.currentQuery);
+                }
+            });
+        }
+
+        if (this.nextPageButton) {
+            this.nextPageButton.addEventListener('click', () => {
+                if (this.hasNextPage) {
+                    this.currentPage++;
+                    this.loadOrganizations(this.currentQuery);
+                }
+            });
+        }
 
         if (this.submitButton) {
             this.submitButton.addEventListener('click', (e) => {
@@ -1777,14 +1811,18 @@ class OrganizationSearchManager {
 
     async loadOrganizations(query = '') {
         try {
-            const url = `${this.config.apiUrl}?q=${encodeURIComponent(query)}`;
+            const url = `${this.config.apiUrl}?q=${encodeURIComponent(query)}&page=${this.currentPage}`;
             const response = await fetch(url);
             if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
             const data = await response.json();
+            
             this.renderOrganizations(data.organizations);
+            this.updatePagination(data);
+            
         } catch (error) {
             console.error('OrganizationSearchManager: Ошибка загрузки организаций:', error);
             this.showError('Ошибка загрузки данных');
+            this.hidePagination();
         }
     }
 
@@ -1805,6 +1843,39 @@ class OrganizationSearchManager {
             `;
             this.tableBody.appendChild(row);
         });
+    }
+
+    updatePagination(data) {
+        if (!this.paginationContainer) return;
+
+        this.hasNextPage = data.has_next;
+        
+        // Показываем пагинацию только если есть больше одной страницы или есть данные
+        if (data.organizations && data.organizations.length > 0) {
+            this.paginationContainer.style.display = 'flex';
+            
+            // Обновляем информацию о странице
+            if (this.pageInfo) {
+                this.pageInfo.textContent = `Страница ${this.currentPage}`;
+            }
+            
+            // Обновляем состояние кнопок
+            if (this.prevPageButton) {
+                this.prevPageButton.disabled = this.currentPage === 1;
+            }
+            
+            if (this.nextPageButton) {
+                this.nextPageButton.disabled = !this.hasNextPage;
+            }
+        } else {
+            this.hidePagination();
+        }
+    }
+
+    hidePagination() {
+        if (this.paginationContainer) {
+            this.paginationContainer.style.display = 'none';
+        }
     }
 
     selectOrganization(row) {
@@ -1845,6 +1916,7 @@ class OrganizationSearchManager {
 
     showError(message) {
         this.tableBody.innerHTML = `<tr><td colspan="3">${message}</td></tr>`;
+        this.hidePagination();
     }
 
     showNotification(message) {
@@ -2641,8 +2713,36 @@ function initCertificateUpload() {
         }
     });
 }
+function initSections() {
+    const sections = document.querySelectorAll('.user-info-section:not([data-initialized])');
+    
+    sections.forEach(section => {
+        const action = section.getAttribute('data-action');
+        const toggleIcon = section.querySelector('.toggle-icon');
+        
+        if (action === 'close') {
+            section.classList.add('collapsed');
+            toggleIcon.textContent = '+';
+        } else {
+            section.classList.remove('collapsed');
+            toggleIcon.textContent = '−';
+        }
+        
+        const header = section.querySelector('.section-header');
+        header.addEventListener('click', function() {
+            section.classList.toggle('collapsed');
+            toggleIcon.textContent = section.classList.contains('collapsed') ? '+' : '−';
+        });
+        
+        section.setAttribute('data-initialized', 'true');
+    });
+}
 
+
+document.addEventListener('DOMContentLoaded', initSections);
+window.reinitSections = initSections;
 initCertificateUpload();
+
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('.toggle-password')) {
@@ -3119,51 +3219,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-   
 });
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализация секций на основе data-action
-    const sections = document.querySelectorAll('.user-info-section');
-    
-    sections.forEach(section => {
-        const action = section.getAttribute('data-action');
-        const toggleIcon = section.querySelector('.toggle-icon');
-        
-        if (action === 'close') {
-            section.classList.add('collapsed');
-            toggleIcon.textContent = '+';
-        } else {
-            section.classList.remove('collapsed');
-            toggleIcon.textContent = '−';
-        }
-        
-        // Обработчик клика на заголовок
-        const header = section.querySelector('.section-header');
-        header.addEventListener('click', function() {
-            section.classList.toggle('collapsed');
-            
-            if (section.classList.contains('collapsed')) {
-                toggleIcon.textContent = '+';
-            } else {
-                toggleIcon.textContent = '−';
-            }
-        });
-    });
-    
-    // Кнопки управления
-    document.getElementById('expand-all').addEventListener('click', function() {
-        sections.forEach(section => {
-            section.classList.remove('collapsed');
-            section.querySelector('.toggle-icon').textContent = '−';
-        });
-    });
-    
-    document.getElementById('collapse-all').addEventListener('click', function() {
-        sections.forEach(section => {
-            section.classList.add('collapsed');
-            section.querySelector('.toggle-icon').textContent = '+';
-        });
-    });
-});
-

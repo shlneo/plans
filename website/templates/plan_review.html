@@ -119,7 +119,6 @@
             {% endif %}
         </form>
         <hr>
-
         <div class="user-info-section" data-action="close">
             <div class="section-header" id="section-header">
                 <div class="section-title">
@@ -259,22 +258,7 @@ function checkExistingPlan(year) {
         });
 }
 
-document.getElementById('plan-form').addEventListener('submit', function(event) {
-    const yearInput = document.getElementById('year');
-    const errorElement = document.getElementById('year-error');
-    
-    if (errorElement.style.display === 'block') {
-        event.preventDefault();
-        alert('{{ _("У вас уже есть план на этот год! Пожалуйста, выберите другой год.") }}');
-    }
-});
 
-document.addEventListener('DOMContentLoaded', function() {
-    const yearInput = document.getElementById('year');
-    if (yearInput.value) {
-        checkExistingPlan(yearInput.value);
-    }
-});
 
 
 

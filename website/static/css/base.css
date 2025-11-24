@@ -82,7 +82,7 @@
     --text-subtitle2: #5d6566;
 
     --body-background: #fafafa;
-    --background-grey: rgba(113, 113, 130, 0.1);
+    --background-grey: rgb(238, 238, 238);
     --background-grey1: rgba(66, 66, 66, 0.1);
 
     --background-grewhi:#f8f8f8;
@@ -183,7 +183,7 @@ body {
 .notif-popup {
   position: absolute;
   top: 60px;
-  right: 220px;
+  right: 10%;
   width: 210px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.25);
@@ -322,10 +322,11 @@ body {
   justify-content: flex-start;
   padding: 16px 40px 16px 60px;
   border-radius: 15px;
-  width: 320px;
-  max-width: 90vw;
+  max-width: 320px;
+  width: fit-content;
   font-size: 14px;
   color: #000;
+  bottom: 40px;
   font-weight: 500;
   position: relative;
   background: rgba(255, 255, 255, 0.25);
@@ -571,7 +572,7 @@ header nav{
   justify-content: start;
   border: none;
   padding: 9px 14px;
-  color: black;
+  color: black !important;
 }
 
 .sidebar-content .button-grey-border{
@@ -616,7 +617,7 @@ header nav{
   gap: 11px;            
   padding: 5px 8px;
   background: #ffffff00;
-  color: rgb(0, 0, 0);
+  color: rgb(0, 0, 0) !important;
   font-weight: 500;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -651,7 +652,7 @@ header nav{
 }
 
 main{
-  width: 100%; 
+  width: 100%;
   min-height: 100vh;
 }
 
@@ -1208,11 +1209,20 @@ input::placeholder {
 /*/login-reg-pages*/
 /*personal page-pages*/
 
+.header-cont{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+}
+
 .pers-page{
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  height: auto;
 
 }
 
@@ -1284,7 +1294,7 @@ input::placeholder {
 
 .personal-acc-conteiner .header-content{
   font-weight: 500;
-  font-size: 17px;
+  font-size: 16px;
   display: flex;
   justify-content: space-between;
   margin-bottom: 20px;
@@ -1343,13 +1353,19 @@ input::placeholder {
 }
 
 .employee-card{
-    display: flex;
-    flex-direction: column;
-    gap: 11px;
-    justify-content: center;
-    overflow-x: auto;
-    width: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  justify-content: center;
+  overflow-x: auto;
+  width: fit-content;
+  scrollbar-width: none; /* Скрыть для Firefox */
 }
+
+.employee-card::-webkit-scrollbar {
+    height: 1px;
+}
+
 
 .employee-name{
   font-weight: 500;
@@ -1704,6 +1720,7 @@ input[type="checkbox"]:focus {
 
 .submit-button.delete{
   padding: 7px 15px;
+  color: white !important;
   background: linear-gradient(135deg, #8f0000 0%, #ff0000 100%) !important;
 }
 
@@ -1886,24 +1903,6 @@ input[type="checkbox"]:focus {
 
 .submit-button {
   animation: buttonPop 0.4s ease-out;
-}
-
-/* Адаптивность для мобильных */
-@media (max-width: 768px) {
-  .submit-button {
-    padding: 14px 28px;
-    font-size: 15px;
-    width: 100%;
-    max-width: 300px;
-  }
-  
-  .submit-button:hover {
-    transform: none;
-  }
-  
-  .submit-button:active {
-    transform: scale(0.96);
-  }
 }
 
 .no-submit-button {
@@ -2948,6 +2947,36 @@ th .resizer::before {
 }
 
 
+.pagination-container{
+  margin-top: 15px; 
+  text-align: center; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.pagination-container span{
+  font-size: 14px;
+}
+
+.pagination-container button{
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  gap: 11px;            
+  padding: 5px 8px;
+  background: #ffffff00;
+  color: rgb(0, 0, 0);
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  background-color: white;
+  font-size: 13px;
+  transition: all 0.3s ease-in-out;
+}
+
 
 .directions-table {  
   width: 100%;
@@ -3440,11 +3469,6 @@ button[disabled] {
     transform: rotate(180deg);
 }
 
-.row-app-group {
-    display: flex;
-    gap: 20px;
-    margin-bottom: 20px;
-}
 
 .app-group {
     flex: 1;
@@ -3460,18 +3484,70 @@ label {
 
 
 @media (max-width: 768px) {
-    .row-app-group {
-        flex-direction: column;
-        gap: 15px;
-    }
+  .row-app-group {
+      flex-direction: column;
+      gap: 0;
+      margin: 0 !important;
+  }
+  
 }
 
 
 /* Мобильные (до 768px) */
 @media (max-width: 767px) {
-  .second-header{
-    margin: 20px 0;
-    width: calc(100% - 8px);
+  body{
+    background-color: white;
+  }
+
+  .submit-button {
+    padding: 10px 14px;
+    font-size: 14px;
+    max-width: 300px;
+  }
+  
+  .submit-button:hover {
+    transform: none;
+  }
+  
+  .submit-button:active {
+    transform: scale(0.96);
+  }
+
+  .header {   
+    width: calc(100% - 80px);
+    height: 40px;
+    border-bottom: 1px solid var(--border-color);
+    color: rgb(0, 0, 0);
+    display: flex;
+    justify-content: center;
+    background-color: white;
+    gap: 2px;
+    padding: 15px 40px;
+  }
+
+  .header-aside-text .title{
+    display: none;
+  }
+
+  .second-header {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: calc(100% - 20px);
+      z-index: 1000;
+      border-top: 1px solid var(--border-color);
+      padding: 10px;
+      margin: 0 !important; 
+      border-radius: 0;
+  }
+
+  .second-header-auth-tab{
+    padding: 12px 25px;
+  }
+
+  .second-header-auth-tab img {
+    width: 24px;
+    height: auto;
   }
 
   .second-header a{
@@ -3487,9 +3563,10 @@ label {
   }
 
   .personal-acc-conteiner{
-    width: calc(100% - 30px);
-    padding: 15px;
+    width: calc(100% - 40px);
+    padding: 30px 20px;
     border: none;
+    min-height: calc(100vh - 60px);
   }
 
   .stat{

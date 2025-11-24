@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">    
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style">
+    
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/eres.svg')}}">
     <title>{% block title %}{{ _('ErespondentS - Система представления планов энергосберегающих мероприятий') }}{% endblock %}</title>
   </head>
@@ -120,7 +122,7 @@
     {% endif %}
 
     {% if second_header %}
-    <div class="pers-page">
+    <div class="header-cont">
       <nav class = "second-header">
           <li class="second-header-auth-tab {% if active_tab == 'plans' %} active{% endif %}" onclick="window.location.href='/plans'">
               <img src="/static/img/Plan.svg" alt="">
@@ -1048,6 +1050,11 @@
                           
                       </tbody>
                   </table>
+                </div>             
+                <div class="pagination-container" data-action="pagination-container">
+                    <button class="pagination-btn" data-action="prev-page" disabled>← Назад</button>
+                    <span class="pagination-info" data-action="page-info">Страница 1</span>
+                    <button class="pagination-btn" data-action="next-page">Вперед →</button>
                 </div>
                 <form method="POST" action="{{ url_for('views.edit_user_org') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
