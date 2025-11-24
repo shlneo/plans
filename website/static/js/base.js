@@ -3122,5 +3122,48 @@ document.addEventListener('DOMContentLoaded', () => {
    
 });
 
-
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация секций на основе data-action
+    const sections = document.querySelectorAll('.user-info-section');
+    
+    sections.forEach(section => {
+        const action = section.getAttribute('data-action');
+        const toggleIcon = section.querySelector('.toggle-icon');
+        
+        if (action === 'close') {
+            section.classList.add('collapsed');
+            toggleIcon.textContent = '+';
+        } else {
+            section.classList.remove('collapsed');
+            toggleIcon.textContent = '−';
+        }
+        
+        // Обработчик клика на заголовок
+        const header = section.querySelector('.section-header');
+        header.addEventListener('click', function() {
+            section.classList.toggle('collapsed');
+            
+            if (section.classList.contains('collapsed')) {
+                toggleIcon.textContent = '+';
+            } else {
+                toggleIcon.textContent = '−';
+            }
+        });
+    });
+    
+    // Кнопки управления
+    document.getElementById('expand-all').addEventListener('click', function() {
+        sections.forEach(section => {
+            section.classList.remove('collapsed');
+            section.querySelector('.toggle-icon').textContent = '−';
+        });
+    });
+    
+    document.getElementById('collapse-all').addEventListener('click', function() {
+        sections.forEach(section => {
+            section.classList.add('collapsed');
+            section.querySelector('.toggle-icon').textContent = '+';
+        });
+    });
+});
 

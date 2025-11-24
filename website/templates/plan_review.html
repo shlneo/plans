@@ -119,55 +119,66 @@
             {% endif %}
         </form>
         <hr>
-        <a class="sername">{{ _('Персональные данные') }}</a>
-        <div class="row-app-group">
-            <div class="app-group">
-                <label>{{ _('Организация') }}</label>
-                <div class="input-with-icon">
-                    <img src="/static/img/Organization.svg" alt="" class="input-icon">
-                    <input type="text" value="{{ plan.name_org }}"  readonly class="app-input">
-                    <div class="input-mes" title = "{{ _('Не изм.') }}">
-                        <img src="/static/img/Edit_off.svg">
-                        <a>{{ _('Не изм.') }}</a>
+
+        <div class="user-info-section" data-action="close">
+            <div class="section-header" id="section-header">
+                <div class="section-title">
+                    <span>{{ _('Персональные данные') }}</span>
+                </div>
+                <div class="toggle-icon">−</div>
+            </div>
+            <div class="section-content">
+
+                <div class="row-app-group">
+                    <div class="app-group">
+                        <label>{{ _('Организация') }}</label>
+                        <div class="input-with-icon">
+                            <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                            <input type="text" value="{{ plan.name_org }}"  readonly class="app-input">
+                            <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                <img src="/static/img/Edit_off.svg">
+                                
+                            </div>
+                        </div>
+                    </div>
+                    <div class="app-group">
+                        <label>{{ _('ФИО') }}</label>
+                        <div class="input-with-icon">
+                            <img src="/static/img/Account.svg" alt="" class="input-icon">
+                            <input type="text" id="secondname" maxlength="15" value="{{ plan.fio }}" 
+                                placeholder="{{ _('Иванов') }}" class="app-input" readonly>
+                            <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                <img src="/static/img/Edit_off.svg">
+                                
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="app-group">
-                <label>{{ _('ФИО') }}</label>
-                <div class="input-with-icon">
-                    <img src="/static/img/Account.svg" alt="" class="input-icon">
-                    <input type="text" id="secondname" maxlength="15" value="{{ plan.fio }}" 
-                        placeholder="{{ _('Иванов') }}" class="app-input" readonly>
-                    <div class="input-mes" title = "{{ _('Не изм.') }}">
-                        <img src="/static/img/Edit_off.svg">
-                        <a>{{ _('Не изм.') }}</a>
+                <div class="row-app-group">
+                    <div class="app-group">
+                        <label>{{ _('Email') }}</label>
+                        <div class="input-with-icon">
+                            <img src="/static/img/Email.svg" alt="" class="input-icon">
+                            <input type="text" maxlength="15" value="{{ plan.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
+                            <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                <img src="/static/img/Edit_off.svg">
+                                
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="row-app-group">
-            <div class="app-group">
-                <label>{{ _('Email') }}</label>
-                <div class="input-with-icon">
-                    <img src="/static/img/Email.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="15" value="{{ plan.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
-                    <div class="input-mes" title = "{{ _('Не изм.') }}">
-                        <img src="/static/img/Edit_off.svg">
-                        <a>{{ _('Не изм.') }}</a>
+                    <div class="app-group">
+                        <label>{{ _('Телефон') }}</label>
+                        <div class="input-with-icon">
+                            <img src="/static/img/Phone.svg" alt="" class="input-icon">
+                            <input type="text" maxlength="15" value="{{ plan.phone }}" placeholder="+375.." readonly class="app-input">
+                            <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                <img src="/static/img/Edit_off.svg">
+                                
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-            <div class="app-group">
-                <label>{{ _('Телефон') }}</label>
-                <div class="input-with-icon">
-                    <img src="/static/img/Phone.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="15" value="{{ plan.phone }}" placeholder="+375.." readonly class="app-input">
-                    <div class="input-mes" title = "{{ _('Не изм.') }}">
-                        <img src="/static/img/Edit_off.svg">
-                        <a>{{ _('Не изм.') }}</a>
-                    </div>
-                </div>
-            </div>
+                </div>   
+            </div> 
         </div>
         {% if current_user.is_auditor != true %}
             <hr>

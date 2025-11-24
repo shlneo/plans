@@ -69,57 +69,68 @@
             </div>
             <hr>
 
+            <div class="user-info-section" data-action="close">
+                <div class="section-header" id="section-header">
+                    <div class="section-title">
+                        <span>Информация о пользователе</span>
+                    </div>
+                    <div class="toggle-icon">−</div>
+                </div>
+                <div class="section-content">
 
-            <div class="row-app-group">
-                <div class="app-group">
-                    <label>{{ _('Организация') }}</label>
-                    <div class="input-with-icon">
-                        <img src="/static/img/Organization.svg" alt="" class="input-icon">
-                        <input type="text" value="{{ current_user.organization.name }}"  readonly class="app-input">
-                        <div class="input-mes" title = "{{ _('Не изм.') }}">
-                            <img src="/static/img/Edit_off.svg">
-                            <a>{{ _('Не изм.') }}</a>
+                    <div class="row-app-group">
+                        <div class="app-group">
+                            <label>{{ _('Организация') }}</label>
+                            <div class="input-with-icon">
+                                <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                                <input type="text" value="{{ current_user.organization.name }}"  readonly class="app-input">
+                                <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                    <img src="/static/img/Edit_off.svg">
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <div class="app-group">
+                            <label>{{ _('ФИО') }}</label>
+                            <div class="input-with-icon">
+                                <img src="/static/img/Account.svg" alt="" class="input-icon">
+                                <input type="text" id="secondname" maxlength="15" value="{{ current_user.last_name + ' ' + current_user.first_name + ' ' + current_user.patronymic_name}}" 
+                                    placeholder="{{ _('Иванов') }}" class="app-input" readonly>
+                                <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                    <img src="/static/img/Edit_off.svg">
+                                    
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="app-group">
-                    <label>{{ _('ФИО') }}</label>
-                    <div class="input-with-icon">
-                        <img src="/static/img/Account.svg" alt="" class="input-icon">
-                        <input type="text" id="secondname" maxlength="15" value="{{ current_user.last_name + ' ' + current_user.first_name + ' ' + current_user.patronymic_name}}" 
-                            placeholder="{{ _('Иванов') }}" class="app-input" readonly>
-                        <div class="input-mes" title = "{{ _('Не изм.') }}">
-                            <img src="/static/img/Edit_off.svg">
-                            <a>{{ _('Не изм.') }}</a>
+                    <div class="row-app-group">
+                        <div class="app-group">
+                            <label>{{ _('Email') }}</label>
+                            <div class="input-with-icon">
+                                <img src="/static/img/Email.svg" alt="" class="input-icon">
+                                <input type="text" maxlength="15" value="{{ current_user.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
+                                <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                    <img src="/static/img/Edit_off.svg">
+                                    
+                                </div>
+                            </div>
+                        </div>
+                        <div class="app-group">
+                            <label>{{ _('Телефон') }}</label>
+                            <div class="input-with-icon">
+                                <img src="/static/img/Phone.svg" alt="" class="input-icon">
+                                <input type="text" maxlength="15" value="{{ current_user.phone }}" placeholder="+375.." readonly class="app-input">
+                                <div class="input-mes" title = "{{ _('Не изм.') }}">
+                                    <img src="/static/img/Edit_off.svg">
+                                    
+                                </div> 
+                            </div>
                         </div>
                     </div>
+            
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 </div>
             </div>
-            <div class="row-app-group">
-                <div class="app-group">
-                    <label>{{ _('Email') }}</label>
-                    <div class="input-with-icon">
-                        <img src="/static/img/Email.svg" alt="" class="input-icon">
-                        <input type="text" maxlength="15" value="{{ current_user.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
-                        <div class="input-mes" title = "{{ _('Не изм.') }}">
-                            <img src="/static/img/Edit_off.svg">
-                            <a>{{ _('Не изм.') }}</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="app-group">
-                    <label>{{ _('Телефон') }}</label>
-                    <div class="input-with-icon">
-                        <img src="/static/img/Phone.svg" alt="" class="input-icon">
-                        <input type="text" maxlength="15" value="{{ current_user.phone }}" placeholder="+375.." readonly class="app-input">
-                        <div class="input-mes" title = "{{ _('Не изм.') }}">
-                            <img src="/static/img/Edit_off.svg">
-                            <a>{{ _('Не изм.') }}</a>
-                        </div> 
-                    </div>
-                </div>
-            </div>
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="button-area">
                 <button type="submit" id="submit-btn" class="submit-button">
                     <img src="/static/img/Add_wh.svg" alt="" class="btn-icon">
