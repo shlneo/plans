@@ -2,35 +2,54 @@
 {% block title %}{{ _('Общее') }} - ErespondentS{% endblock %}
 {% block content %}
 
+
 <div class="pers-page">
     <div class="personal-acc-conteiner">
         <div class="header-content">
-            <div class="header-content-left"> 
-                <a class="name" style = "padding-bottom: 0;">{{ _('План энергосбережения на') }} {{ plan.year }} {{ _('год') }}</a>
+            <div class="header-content-left">
+                <a class="name" style="padding-bottom: 0;">
+                    <span class="mobile-hide">{{ _('План энергосбережения на') }} {{ plan.year }} {{ _('год') }}</span>
+                    <span class="mobile-show">{{ _('План') }} {{ plan.year }}</span>
+                </a>
+                
                 <a class="status-plan">
-                    {% if plan.is_draft %}В редакции
-                    {% elif plan.is_error %}Есть ошибки
-                    {% elif plan.is_control %}Контроль пройден
-                    {% elif plan.is_sent %}{% if current_user.is_auditor != true %}Отправлен{%else%}Не просмотрен{%endif%}
-                    {% elif plan.is_approved %}Одобрен
+                    {% if plan.is_draft %}{{ _('В редакции') }}
+                    {% elif plan.is_error %}{{ _('Есть ошибки') }}
+                    {% elif plan.is_control %}{{ _('Контроль пройден') }}
+                    {% elif plan.is_sent %}
+                        {% if current_user.is_auditor != true %}{{ _('Отправлен') }}{% else %}{{ _('Не просмотрен') }}{% endif %}
+                    {% elif plan.is_approved %}{{ _('Одобрен') }}
                     {% endif %}
-                </a>  
-            </div> 
-            <div class="header-content-right"> 
+                </a>
+            </div>
+            
+            <div class="header-content-right">
                 {% if current_user.is_auditor != true %}
-                    <form id = "sentPlanForm" action="{{ url_for('views.api_change_plan_status', id=plan.id) }}" method="POST" class="button-area" style="text-align: left;">
+                    <form id="sentPlanForm" 
+                        action="{{ url_for('views.api_change_plan_status', id=plan.id) }}" 
+                        method="POST" 
+                        class="button-area">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden" name="status" value="sent">
-                        <button id = "sentPlanButton" type="submit" class="submit-button sent" 
-                                {% if plan.is_sent or plan.is_approved or plan.is_draft or plan.is_error%}disabled{% endif %}>
+                        <button id="sentPlanButton" 
+                                type="submit" 
+                                class="submit-button sent"
+                                {% if plan.is_sent or plan.is_approved or plan.is_draft or plan.is_error %}disabled{% endif %}
+                                aria-label="{{ _('Отправить план') }}">
                             <img src="/static/img/Send.svg" alt="" class="btn-icon">
                             <span class="btn-text">{{ _('Отправить') }}</span>
                         </button>
                     </form>
-                    <form data-modal-form="deletePlan" action="{{ url_for('views.delete_plan', id=plan.id) }}" method="POST" class="button-area" style="text-align: left;">
+                    <form data-modal-form="deletePlan" 
+                        action="{{ url_for('views.delete_plan', id=plan.id) }}" 
+                        method="POST" 
+                        class="button-area">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" data-modal-trigger="deletePlan" class="submit-button delete" 
-                                {% if plan.is_sent or plan.is_approved %}disabled{% endif %}>
+                        <button type="submit" 
+                                data-modal-trigger="deletePlan" 
+                                class="submit-button delete"
+                                {% if plan.is_sent or plan.is_approved %}disabled{% endif %}
+                                aria-label="{{ _('Удалить план') }}">
                             <img src="/static/img/Delete_white.svg" alt="{{ _('Удалить') }}" class="btn-icon">
                             <span class="btn-text">{{ _('Удалить') }}</span>
                         </button>

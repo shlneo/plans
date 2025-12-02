@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">    
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
-    <link rel="preload" href="{{ url_for('static', filename='css/style.css') }}" as="style">
-    
+ 
     <link rel="shortcut icon" href="{{ url_for('static', filename='img/eres.svg')}}">
     <title>{% block title %}{{ _('ErespondentS - Система представления планов энергосберегающих мероприятий') }}{% endblock %}</title>
   </head>
@@ -123,76 +122,130 @@
 
     {% if second_header %}
     <div class="header-cont">
-      <nav class = "second-header">
-          <li class="second-header-auth-tab {% if active_tab == 'plans' %} active{% endif %}" onclick="window.location.href='/plans'">
-              <img src="/static/img/Plan.svg" alt="">
-              <a>{{ _('Планы мероприятий') }}</a>
-          </li>
-          {%if current_user.is_auditor == false%}
-            <li class="second-header-auth-tab {% if active_tab == 'create' %} active{% endif %}" onclick="window.location.href='/create-plan'">
-                <img src="/static/img/Add.svg" alt="">
-                <a>{{ _('Создать план') }}</a>
-            </li>
-          {% endif %}
-            <li class="second-header-auth-tab {% if active_tab == 'stats' %} active{% endif %}" onclick="window.location.href=''" style="opacity: 0.5; pointer-events: none; cursor: not-allowed;">
-                <img src="/static/img/Stats.svg" style="width: 14px; height: auto;" alt="">
-                <a>{{ _('Статистика') }}</a>
-            </li>
-          <li class="second-header-auth-tab {% if active_tab == 'export' %} active{% endif %}" onclick="window.location.href='/export'">
-              <img src="/static/img/Export.svg" alt="">
-              <a>{{ _('Экспорт') }}</a>
-          </li>
-          <li class="second-header-auth-tab {% if active_tab == 'account' %} active{% endif %}" onclick="window.location.href='/profile'">
-              <img src="/static/img/Account.svg" alt="">
-              <a>{{ _('Личный кабинет') }}</a>
-          </li>
-      </nav>
+        <nav class="navigation-container">
+            <div class="nav-item {% if active_tab == 'plans' %} active{% endif %}" onclick="window.location.href='/plans'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Plan.svg" alt="{{ _('Планы мероприятий') }}" class="nav-icon">
+                    {% if active_tab == 'plans' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Планы') }}</span>
+                <span class="nav-text-mobile">{{ _('Планы') }}</span>
+            </div>
+            
+            {%if current_user.is_auditor == false%}
+            <div class="nav-item {% if active_tab == 'create' %} active{% endif %}" onclick="window.location.href='/create-plan'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Add.svg" alt="{{ _('Создать план') }}" class="nav-icon">
+                    {% if active_tab == 'create' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Создать') }}</span>
+                <span class="nav-text-mobile">{{ _('Создать') }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="nav-item disabled-tab">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Stats.svg" alt="{{ _('Статистика') }}" class="nav-icon">
+                </div>
+                <span class="nav-text">{{ _('Статистика') }}</span>
+                <span class="nav-text-mobile">{{ _('Статистика') }}</span>
+            </div>
+            
+            <div class="nav-item {% if active_tab == 'export' %} active{% endif %}" onclick="window.location.href='/export'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Export.svg" alt="{{ _('Экспорт') }}" class="nav-icon">
+                    {% if active_tab == 'export' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Экспорт') }}</span>
+                <span class="nav-text-mobile">{{ _('Экспорт') }}</span>
+            </div>
+            
+            <div class="nav-item {% if active_tab == 'account' %} active{% endif %}" onclick="window.location.href='/profile'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Account.svg" alt="{{ _('Личный кабинет') }}" class="nav-icon">
+                    {% if active_tab == 'account' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Кабинет') }}</span>
+                <span class="nav-text-mobile">{{ _('Кабинет') }}</span>
+            </div>
+            
+            <div class="active-drop"></div>
+        </nav>
     </div>
     {% endif %}
 
-    {% if plan_header %}
-    <div class="pers-page">
-      <div class="plan-back-header">
-          <button type="button" class="auth-next-button"  onclick="window.location.href='/plans'">
-              <img src="/static/img/Back.svg" alt="" class="btn-icon">
-              <span class="btn-text">{{ _('Назад') }}</span>
-          </button>
-          <a class="name-plan">{{ _('План энергосбережения на') }} <span style="font-weight: 600;">{{ plan.year }} {{ _('год') }}</span></a>
-          <a class="status-plan"> {% if plan.is_draft %}В редакции
-                                  {% elif plan.is_error %}Есть ошибки
-                                  {% elif plan.is_control %}Контроль пройден
-                                  {% elif plan.is_sent %}{% if current_user.is_auditor != true %}Отправлен{%else%}Не просмотрен{%endif%}
-                                  {% elif plan.is_approved %}Одобрен
-                                  {% endif %}</a>
-      </div>
+    {% if plan_back_header %}
+        <div class="header-cont-for-back">
+            <div class="plan-back-header">
+                <button type="button" class="auth-next-button" onclick="window.location.href='/plans'">
+                    <img src="/static/img/Back.svg" alt="" class="btn-icon">
+                    <span class="btn-text">{{ _('Назад') }}</span>
+                </button>
+                <a class="name-plan">{{ _('План энергосбережения на') }} <span style="font-weight: 600;">{{ plan.year }} {{ _('год') }}</span></a>
+                <a class="status-plan"> 
+                    {% if plan.is_draft %}В редакции
+                    {% elif plan.is_error %}Есть ошибки
+                    {% elif plan.is_control %}Контроль пройден
+                    {% elif plan.is_sent %}{% if current_user.is_auditor != true %}Отправлен{%else%}Не просмотрен{%endif%}
+                    {% elif plan.is_approved %}Одобрен
+                    {% endif %}
+                </a>
+            </div> 
+        </div>
+    {% endif %}
 
-      <nav class = "second-header">
-          <li class="second-header-auth-tab {% if active_plan_tab == 'review' %} active{% endif %}" onclick="window.location.href='/plans/plan-review/{{plan.id}}'">
-              <img src="/static/img/Review.svg" alt="">
-              <a>{{ _('Обзор') }}</a>
-          </li>
-            {%if current_user.is_auditor == True%}
-          <li class="second-header-auth-tab {% if active_plan_tab == 'audit' %} active{% endif %}" onclick="window.location.href='/plans/plan-audit/{{plan.id}}'">
-              <img src="/static/img/Email.svg" style = "width: 14px; height: auto;" alt="">
-              <a>{{ _('Аудит') }}</a>
-          </li>
-          {% endif %}   
-          <li class="second-header-auth-tab {% if active_plan_tab == 'directions' %} active{% endif %}" onclick="window.location.href='/plans/plan-directions/{{plan.id}}'">
-              <img src="/static/img/Directions.svg" alt="">
-              <a>{{ _('Направления') }}</a>
-          </li>
-          <li class="second-header-auth-tab {% if active_plan_tab == 'events' %} active{% endif %}" onclick="window.location.href='/plans/plan-events/{{plan.id}}'">
-              <img src="/static/img/Events.svg" alt="">
-              <a>{{ _('Мероприятия') }}</a>
-          </li>
-          <li class="second-header-auth-tab {% if active_plan_tab == 'indicators' %} active{% endif %}" onclick="window.location.href='/plans/plan-indicators/{{plan.id}}'">
-              <img src="/static/img/Stats.svg" style = "width: 14px; height: auto;" alt="">
-              <a>{{ _('Показатели') }}</a>
-          </li>
- 
- 
-        
-      </nav>
+    {% if plan_header %}
+    <div class="header-cont">
+        <nav class="navigation-container">
+            <div class="nav-item {% if active_plan_tab == 'review' %} active{% endif %}" onclick="window.location.href='/plans/plan-review/{{plan.id}}'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Review.svg" alt="{{ _('Обзор') }}" class="nav-icon">
+                    {% if active_plan_tab == 'review' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Обзор') }}</span>
+                <span class="nav-text-mobile">{{ _('Обзор') }}</span>
+            </div>
+            
+            {% if current_user.is_auditor == True %}
+            <div class="nav-item {% if active_plan_tab == 'audit' %} active{% endif %}" onclick="window.location.href='/plans/plan-audit/{{plan.id}}'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Email.svg" alt="{{ _('Аудит') }}" class="nav-icon">
+                    {% if active_plan_tab == 'audit' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Аудит') }}</span>
+                <span class="nav-text-mobile">{{ _('Аудит') }}</span>
+            </div>
+            {% endif %}
+            
+            <div class="nav-item {% if active_plan_tab == 'directions' %} active{% endif %}" onclick="window.location.href='/plans/plan-directions/{{plan.id}}'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Directions.svg" alt="{{ _('Направления') }}" class="nav-icon">
+                    {% if active_plan_tab == 'directions' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Направления') }}</span>
+                <span class="nav-text-mobile">{{ _('Напр.') }}</span>
+            </div>
+            
+            <div class="nav-item {% if active_plan_tab == 'events' %} active{% endif %}" onclick="window.location.href='/plans/plan-events/{{plan.id}}'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Events.svg" alt="{{ _('Мероприятия') }}" class="nav-icon">
+                    {% if active_plan_tab == 'events' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Мероприятия') }}</span>
+                <span class="nav-text-mobile">{{ _('Меропр.') }}</span>
+            </div>
+            
+            <div class="nav-item {% if active_plan_tab == 'indicators' %} active{% endif %}" onclick="window.location.href='/plans/plan-indicators/{{plan.id}}'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Stats.svg" alt="{{ _('Показатели') }}" class="nav-icon">
+                    {% if active_plan_tab == 'indicators' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('Показатели') }}</span>
+                <span class="nav-text-mobile">{{ _('Показ.') }}</span>
+            </div>
+            
+            <div class="active-drop"></div>
+        </nav>
     </div>
     {% endif %}
 

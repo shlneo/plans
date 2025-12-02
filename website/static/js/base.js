@@ -2744,6 +2744,7 @@ window.reinitSections = initSections;
 initCertificateUpload();
 
 
+
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('.toggle-password')) {
     togglePassword.init();
@@ -3219,4 +3220,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    new DropNavigation();
 });
+ 

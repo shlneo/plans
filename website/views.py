@@ -490,6 +490,7 @@ def plan_review(id):
                         plan=current_plan,     
                         hide_header=False,
                         plan_header=True,
+                        plan_back_header=True,
                         sentmodalecp=True,
                         active_plan_tab='review')
     
@@ -506,6 +507,7 @@ def plan_audit(id):
                         plan=current_plan,     
                         hide_header=False,
                         plan_header=True,
+                        plan_back_header=True,
                         active_plan_tab='audit')
 
 @views.route('/plans/plan-directions/<int:id>', methods=['GET', 'POST'])
@@ -533,6 +535,7 @@ def plan_directions(id):
                         plan=current_plan,  
                         hide_header=False,
                         plan_header=True,
+                        plan_back_header=True,
                         active_plan_tab='directions',
                         add_direction_modal=True,
                         confirmModal=True,
@@ -726,6 +729,7 @@ def plan_events(id):
                         plan=current_plan, 
                         hide_header=False,
                         plan_header=True,
+                        plan_back_header=True,
                         active_plan_tab='events',
                         add_event_modal=True,
                         confirmModal=True,
@@ -913,7 +917,8 @@ def plan_indicators(id):
                         indicators_non_madatory=indicators_non_mandatory,
                         indicators=indicators,
                         hide_header=False,
-                        plan_header = True,
+                        plan_header=True,
+                        plan_back_header=True,
                         active_plan_tab='indicators',
                         add_indicator_modal=True,
                         edit_indicator_modal=True,
