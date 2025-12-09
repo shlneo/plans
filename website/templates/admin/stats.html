@@ -1,0 +1,88 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container-fluid">
+    <h1>Панель управления</h1>
+    
+    <!-- Карточки со статистикой -->
+    <div class="row mt-4">
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Пользователи</h5>
+                    <h2 class="display-4">{{ user_data }}</h2>
+                    <p class="card-text">
+                        Активных: {{ active_users }}<br>
+                        Новых: {{ new_users }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Организации</h5>
+                    <h2 class="display-4">{{ organization_data }}</h2>
+                    <p class="card-text">С пользователями: {{ orgs_with_users }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Планы</h5>
+                    <h2 class="display-4">{{ plan_data }}</h2>
+                    <p class="card-text">
+                        Черновики: {{ draft_plans }}<br>
+                        Утвержденные: {{ approved_plans }}
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3 mb-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Роли пользователей</h5>
+                    <p class="card-text">
+                        Администраторы: {{ admins_count }}<br>
+                        Аудиторы: {{ auditors_count }}<br>
+                        Респонденты: {{ respondents_count }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Быстрые ссылки -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Быстрый доступ</h5>
+                </div>
+                <div class="card-body">
+                    <div class="btn-group" role="group">
+                        <!-- Проверьте правильные имена endpoint'ов -->
+                        {% if 'user.index_view' in url_for_map %}
+                        <a href="{{ url_for('user.index_view') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-users"></i> Управление пользователями
+                        </a>
+                        {% endif %}
+                        
+                        {% if 'organizationview.index_view' in url_for_map %}
+                        <a href="{{ url_for('organizationview.index_view') }}" class="btn btn-outline-success">
+                            <i class="fas fa-building"></i> Управление организациями
+                        </a>
+                        {% endif %}
+                        
+    
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

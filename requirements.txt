@@ -1,9 +1,10 @@
 flask
 Flask-Admin==1.6.1
-Flask-SQLAlchemy
+WTForms==2.3.3 
+Flask-SQLAlchemy==3.0.5
 Flask-Login
 flask-socketio
-SQLAlchemy
+SQLAlchemy==1.4.48 
 dotenv
 psycopg2
 flask-babel
@@ -16,3 +17,4 @@ Flask-WTF
 openpyxl
 cryptography
 flask_talisman
+email_validator

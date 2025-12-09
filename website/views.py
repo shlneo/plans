@@ -1331,6 +1331,17 @@ def FAQ_page():
             hide_header=True,
             show_circle_buttons=True)
 
+@views.route('/', methods=['GET'])
+def begin_page():    
+    user_data = User.query.count()
+    organization_data = Organization.query.count()
+    plan_data = Plan.query.count()
+    return render_template('begin.html',
+            user_data=user_data,
+            organization_data=organization_data,
+            plan_data=plan_data,
+            hide_header=True,
+            show_circle_buttons=True)
 
 @views.route('/api/notifications', methods=['GET'])
 @user_with_all_params()

@@ -13,7 +13,7 @@
     {% if not hide_header %}
     <header>
         <nav>
-            <div class="header-aside" onclick="window.location.href='/plans'">
+            <div class="header-aside" onclick="window.location.href='/'">
                 <img src="{{ url_for('static', filename='img/Logo-black.svg') }}">
                 <div class="header-aside-text">
                     <a class="title">ErespondentS</a>
@@ -84,6 +84,14 @@
                 <img src="/static/img/FAQ.svg" alt="" class="btn-icon">
                 <span class="btn-text">FAQ</span>
             </button>
+            <button type="button" class="button-grey-border" onclick="window.location.href='/'">
+                <img src="/static/img/Logo-black.svg" alt="" class="btn-icon">
+                <span class="btn-text">Обзор</span>
+            </button>
+            <button type="button" class="button-grey-border" onclick="window.location.href='/#contacts-cont'">
+                <img src="/static/img/Phone.svg" alt="" class="btn-icon">
+                <span class="btn-text">Контакты</span>
+            </button>
             <hr>
             <div class = "user-sidebar-buttons-area">
                 <form id = "logout_form" action="{{ url_for('auth.logout') }}" method="POST">
@@ -100,11 +108,14 @@
 
     {% if show_circle_buttons %}
     <div class="circle-buttons-container">
-      <button class="circle-button" onclick="window.location.href='/FAQ'">
-        <img src="{{ url_for('static', filename='img/FAQ.svg') }}" alt="{{ _('FAQ') }}" class="circle-button-icon">
+      <button class="circle-button" onclick="window.location.href='/'">
+        <img src="{{ url_for('static', filename='img/Logo-black.svg') }}" alt="{{ _('Начальная страница') }}" class="circle-button-icon">
       </button>
       <button class="circle-button" onclick="window.location.href='/profile'">
         <img src="{{ url_for('static', filename='img/Account.svg') }}" alt="{{ _('Аккаунт') }}" class="circle-button-icon">
+      </button>
+      <button class="circle-button" onclick="window.location.href='/FAQ'">
+        <img src="{{ url_for('static', filename='img/FAQ.svg') }}" alt="{{ _('FAQ') }}" class="circle-button-icon">
       </button>
       <div class="language-dropdown">
         <button class="circle-button language-button">
@@ -167,6 +178,15 @@
                 </div>
                 <span class="nav-text">{{ _('Кабинет') }}</span>
                 <span class="nav-text-mobile">{{ _('Кабинет') }}</span>
+            </div>            
+            
+            <div class="nav-item {% if active_tab == 'admin' %} active{% endif %}" onclick="window.location.href='/admin'">
+                <div class="nav-icon-wrapper">
+                    <img src="/static/img/Logo-black.svg" alt="{{ _('Администрирование') }}" class="nav-icon">
+                    {% if active_tab == 'admin' %}<div class="active-indicator"></div>{% endif %}
+                </div>
+                <span class="nav-text">{{ _('А-панель') }}</span>
+                <span class="nav-text-mobile">{{ _('А-панель') }}</span>
             </div>
             
             <div class="active-drop"></div>
