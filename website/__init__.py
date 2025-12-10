@@ -1,9 +1,9 @@
-from flask import Flask, render_template, session, request, g, redirect, url_for
+from flask import Flask, flash, render_template, session, request, g, redirect, url_for
 from flask_babel import Babel
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 from flask_bcrypt import Bcrypt
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_migrate import Migrate
 from flask_babel import Babel, format_date
 from .completion_db import create_database
@@ -90,13 +90,29 @@ def create_app():
         db.create_all()
         create_database(app, db)
 
-    from website.admin.admin_views import MyMainView, UserView
-    from .models import User, Organization, Plan, Ticket, Unit
+    from .admin_views import (
+        MyMainView, UserView, OrganizationView, PlanView, TicketView, 
+        UnitView, DirectionView, EconMeasureView, EconExecView, 
+        IndicatorView, IndicatorUsageView, NotificationView
+    )
+    from .models import (
+        User, Organization, Plan, Ticket, Unit, Direction, 
+        EconMeasure, EconExec, Indicator, IndicatorUsage, Notification
+    )
 
-    admin = Admin(app, 'Вернуться', index_view=MyMainView(), template_mode='bootstrap4', url='/profile')
-    admin.add_view(UserView(User, db.session))
+    admin = Admin(app, 'Админ-панель', index_view=MyMainView(), template_mode='bootstrap4')
     
-    
+    admin.add_view(UserView(User, db.session, name='Пользователи', category='Основные'))
+    admin.add_view(OrganizationView(Organization, db.session, name='Организации', category='Основные'))
+    admin.add_view(PlanView(Plan, db.session, name='Планы', category='Основные'))
+    admin.add_view(TicketView(Ticket, db.session, name='Тикеты', category='Вспомогательные'))
+    admin.add_view(UnitView(Unit, db.session, name='Единицы измерения', category='Справочники'))
+    admin.add_view(DirectionView(Direction, db.session, name='Направления', category='Справочники'))
+    admin.add_view(EconMeasureView(EconMeasure, db.session, name='Экономические меры', category='Данные'))
+    admin.add_view(EconExecView(EconExec, db.session, name='Исполнения мер', category='Данные'))
+    admin.add_view(IndicatorView(Indicator, db.session, name='Показатели', category='Справочники'))
+    admin.add_view(IndicatorUsageView(IndicatorUsage, db.session, name='Использование показателей', category='Данные'))
+    admin.add_view(NotificationView(Notification, db.session, name='Уведомления', category='Вспомогательные'))
     
     login_manager.init_app(app)
     login_manager.login_message = "Пожалуйста, авторизуйтесь для доступа к этой странице"
@@ -129,5 +145,19 @@ def create_app():
     @app.errorhandler(404)
     def page_not_found(e):
         return render_template('404.html', hide_header=True), 404
-
+    
+    @app.before_request
+    def check_admin_access():
+        if request.path.startswith('/admin/'):
+            if not current_user.is_authenticated:
+                flash('Необходимо авторизоваться для доступа к админ-панели', 'error')
+                return redirect(url_for('auth.login'))
+            
+            is_admin = False
+            if hasattr(current_user, 'is_admin'):
+                is_admin = getattr(current_user, 'is_admin', False)
+            
+            if not is_admin:
+                flash('Недостаточно прав для доступа к админ-панели', 'error')
+                return redirect(url_for('views.begin_page'))
     return app

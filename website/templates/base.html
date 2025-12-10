@@ -14,7 +14,13 @@
     <header>
         <nav>
             <div class="header-aside" onclick="window.location.href='/'">
-                <img src="{{ url_for('static', filename='img/Logo-black.svg') }}">
+                <div class="logo-wrapper 
+                    {% if current_user.is_admin %}red-shadow
+                    {% elif current_user.is_auditor %}green-shadow
+                    {% endif %}">
+                <img src="{{ url_for('static', filename='img/Logo-black.svg') }}"
+                    class="header-aside-logo">
+                </div>
                 <div class="header-aside-text">
                     <a class="title">ErespondentS</a>
                     <a class="description">{{ _('Система представления планов энергосберегающих мероприятий') }}</a>
@@ -179,7 +185,7 @@
                 <span class="nav-text">{{ _('Кабинет') }}</span>
                 <span class="nav-text-mobile">{{ _('Кабинет') }}</span>
             </div>            
-            
+            {%if current_user.is_admin== true%}
             <div class="nav-item {% if active_tab == 'admin' %} active{% endif %}" onclick="window.location.href='/admin'">
                 <div class="nav-icon-wrapper">
                     <img src="/static/img/Logo-black.svg" alt="{{ _('Администрирование') }}" class="nav-icon">
@@ -188,7 +194,7 @@
                 <span class="nav-text">{{ _('А-панель') }}</span>
                 <span class="nav-text-mobile">{{ _('А-панель') }}</span>
             </div>
-            
+            {% endif %}
             <div class="active-drop"></div>
         </nav>
     </div>

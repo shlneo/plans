@@ -2,18 +2,24 @@
 
 {% block body %}
 <div class="container-fluid">
-    <h1>Панель управления</h1>
+    <!-- Заголовок с кнопкой выхода -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chart-line"></i> Панель управления</h1>
+        <a href="{{ profile_url if profile_url else '/profile' }}" class="btn btn-danger">
+            <i class="fas fa-sign-out-alt"></i> Выйти из админ-панели
+        </a>
+    </div>
     
     <!-- Карточки со статистикой -->
     <div class="row mt-4">
         <div class="col-md-3 mb-4">
             <div class="card text-white bg-primary">
                 <div class="card-body">
-                    <h5 class="card-title">Пользователи</h5>
+                    <h5 class="card-title"><i class="fas fa-users"></i> Пользователи</h5>
                     <h2 class="display-4">{{ user_data }}</h2>
                     <p class="card-text">
-                        Активных: {{ active_users }}<br>
-                        Новых: {{ new_users }}
+                        <i class="fas fa-user-check"></i> Активных: {{ active_users }}<br>
+                        <i class="fas fa-user-plus"></i> Новых: {{ new_users }}
                     </p>
                 </div>
             </div>
@@ -22,9 +28,9 @@
         <div class="col-md-3 mb-4">
             <div class="card text-white bg-success">
                 <div class="card-body">
-                    <h5 class="card-title">Организации</h5>
+                    <h5 class="card-title"><i class="fas fa-building"></i> Организации</h5>
                     <h2 class="display-4">{{ organization_data }}</h2>
-                    <p class="card-text">С пользователями: {{ orgs_with_users }}</p>
+                    <p class="card-text"><i class="fas fa-link"></i> С пользователями: {{ orgs_with_users }}</p>
                 </div>
             </div>
         </div>
@@ -32,11 +38,11 @@
         <div class="col-md-3 mb-4">
             <div class="card text-white bg-info">
                 <div class="card-body">
-                    <h5 class="card-title">Планы</h5>
+                    <h5 class="card-title"><i class="fas fa-file-alt"></i> Планы</h5>
                     <h2 class="display-4">{{ plan_data }}</h2>
                     <p class="card-text">
-                        Черновики: {{ draft_plans }}<br>
-                        Утвержденные: {{ approved_plans }}
+                        <i class="fas fa-edit"></i> Черновики: {{ draft_plans }}<br>
+                        <i class="fas fa-check-circle"></i> Утвержденные: {{ approved_plans }}
                     </p>
                 </div>
             </div>
@@ -45,12 +51,12 @@
         <div class="col-md-3 mb-4">
             <div class="card text-white bg-warning">
                 <div class="card-body">
-                    <h5 class="card-title">Роли пользователей</h5>
-                    <p class="card-text">
-                        Администраторы: {{ admins_count }}<br>
-                        Аудиторы: {{ auditors_count }}<br>
-                        Респонденты: {{ respondents_count }}
-                    </p>
+                    <h5 class="card-title"><i class="fas fa-user-tag"></i> Роли пользователей</h5>
+                    <div class="mt-3">
+                        <p><i class="fas fa-user-shield"></i> Администраторы: {{ admins_count }}</p>
+                        <p><i class="fas fa-user-check"></i> Аудиторы: {{ auditors_count }}</p>
+                        <p><i class="fas fa-user"></i> Респонденты: {{ respondents_count }}</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -61,28 +67,219 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h5>Быстрый доступ</h5>
+                    <h5><i class="fas fa-bolt"></i> Быстрый доступ</h5>
                 </div>
                 <div class="card-body">
-                    <div class="btn-group" role="group">
-                        <!-- Проверьте правильные имена endpoint'ов -->
-                        {% if 'user.index_view' in url_for_map %}
-                        <a href="{{ url_for('user.index_view') }}" class="btn btn-outline-primary">
-                            <i class="fas fa-users"></i> Управление пользователями
-                        </a>
-                        {% endif %}
+                    <!-- Основные разделы -->
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.users) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-users"></i> Пользователи
+                                </a>
+                            </div>
+                        </div>
                         
-                        {% if 'organizationview.index_view' in url_for_map %}
-                        <a href="{{ url_for('organizationview.index_view') }}" class="btn btn-outline-success">
-                            <i class="fas fa-building"></i> Управление организациями
-                        </a>
-                        {% endif %}
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.organizations) }}" class="btn btn-outline-success">
+                                    <i class="fas fa-building"></i> Организации
+                                </a>
+                            </div>
+                        </div>
                         
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.plans) }}" class="btn btn-outline-info">
+                                    <i class="fas fa-file-alt"></i> Планы
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.tickets) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-ticket-alt"></i> Тикеты
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Справочники -->
+                    <div class="row mt-3">
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.units) }}" class="btn btn-outline-dark">
+                                    <i class="fas fa-ruler"></i> Единицы измерения
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.directions) }}" class="btn btn-outline-warning">
+                                    <i class="fas fa-directions"></i> Направления
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.indicators) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-chart-line"></i> Показатели
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.notifications) }}" class="btn btn-outline-warning">
+                                    <i class="fas fa-bell"></i> Уведомления
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Экономические данные -->
+                    <div class="row mt-3">
+                        <div class="col-md-4 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.econ_measures) }}" class="btn btn-outline-success">
+                                    <i class="fas fa-chart-pie"></i> Экономические меры
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.econ_execs) }}" class="btn btn-outline-info">
+                                    <i class="fas fa-cogs"></i> Исполнения мер
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for(endpoints.indicator_usages) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-database"></i> Использование показателей
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Дополнительные ссылки -->
+                    <div class="row mt-3">
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ url_for('admin.index') }}" class="btn btn-outline-dark">
+                                    <i class="fas fa-home"></i> Главная админ-панели
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <div class="d-grid">
+                                <a href="{{ profile_url if profile_url else '/profile' }}" class="btn btn-outline-danger">
+                                    <i class="fas fa-sign-out-alt"></i> Выйти в профиль
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
+    <!-- Дополнительная статистика -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5><i class="fas fa-chart-bar"></i> Дополнительная статистика</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-2 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted"><i class="fas fa-ticket-alt"></i> Тикеты</h6>
+                                <h4>{{ tickets_count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted"><i class="fas fa-ruler"></i> Единицы измерения</h6>
+                                <h4>{{ units_count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted"><i class="fas fa-directions"></i> Направления</h6>
+                                <h4>{{ directions_count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted"><i class="fas fa-chart-pie"></i> Экономические меры</h6>
+                                <h4>{{ measures_count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted"><i class="fas fa-bell"></i> Уведомления</h6>
+                                <h4>{{ notifications_count }}</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-2 text-center mb-3">
+                            <div class="bg-light p-3 rounded">
+                                <h6 class="text-muted"><i class="fas fa-chart-line"></i> Показатели</h6>
+                                <h4>{{ indicators_count }}</h4>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block tail %}
+<script>
+    // Автоматическое обновление статистики каждые 5 минут
+    setTimeout(function() {
+        window.location.reload();
+    }, 300000); // 5 минут = 300000 миллисекунд
+
+    // Добавляем обработчик для проверки доступности ссылок
+    document.addEventListener('DOMContentLoaded', function() {
+        // Добавляем эффект наведения на кнопки
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(function(button) {
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-2px)';
+                this.style.transition = 'transform 0.2s';
+            });
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0)';
+            });
+        });
+    });
+</script>
+<style>
+    .btn {
+        transition: all 0.3s ease;
+        padding: 10px 15px;
+        border-width: 2px;
+    }
+    .btn:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    .card {
+        transition: transform 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+</style>
 {% endblock %}
