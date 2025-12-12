@@ -1,15 +1,11 @@
 import io
-from ..models import Plan
 import xml.etree.ElementTree as ET
-from openpyxl.styles import Font, Alignment, Border, Side
-from openpyxl.utils import get_column_letter
 from ..models import Plan, EconMeasure, EconExec
 from sqlalchemy.orm import joinedload
 from ..views import get_cumulative_econ_metrics
-
-
-
-
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment
+        
 def export_xml_single(plan: Plan):
     """Экспорт одного плана в XML с тремя разделами и титульными данными."""
 
@@ -171,13 +167,12 @@ def export_xml_single(plan: Plan):
     filename = f"{plan.okpo}_{plan.year}.xml"
     return file_stream, "application/xml", filename
     
+def export_pdf_single(plan: Plan):
+    pass
+
 def export_xlsx_single(plan: Plan):
     from openpyxl import Workbook
-    
     def title_xlsx(wb, plan):
-        from openpyxl.utils import get_column_letter
-        from openpyxl.styles import Font, Alignment
-        
         ws_title = wb.create_sheet("Титульный лист", 0)
 
         for col in range(1, 10):
@@ -195,12 +190,12 @@ def export_xlsx_single(plan: Plan):
         cell = ws_title["B4"]
         cell.value = (
             "СОГЛАСОВАНО:\n"
-            "Департамент по энергоэффективности\n"
-            "Госстандарта\n"
+            "(должность)\n"
+            "областного (городского)\n"
+            "управление по надзору за рациональным использованием ТЭР\n"
             "\n"
-            "\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г."
+            "(подпись, инициалы и фамилия)\n"
+            "«___» _____ 20__ г."
         )
         cell.font = regular_font
         cell.alignment = left
@@ -256,7 +251,10 @@ def export_xlsx_single(plan: Plan):
         ws_title.page_setup.paperSize = ws_title.PAPERSIZE_A4
         ws_title.page_setup.fitToWidth = 1
         ws_title.page_setup.fitToHeight = 1
-
+        
+        # Центрирование по горизонтали
+        ws_title.page_setup.horizontalCentered = True
+        
         return ws_title
 
     def signatures_indicators_xlsx(ws, start_row, plan):
@@ -409,6 +407,10 @@ def export_xlsx_single(plan: Plan):
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 0
+        
+        # Центрирование по горизонтали
+        ws.page_setup.horizontalCentered = True
+        
         return ws
 
     def derections_xlsx(wb, plan):
@@ -484,6 +486,9 @@ def export_xlsx_single(plan: Plan):
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 0
+        
+        # Центрирование по горизонтали
+        ws.page_setup.horizontalCentered = True
 
         return ws
 
@@ -557,6 +562,9 @@ def export_xlsx_single(plan: Plan):
         )
 
     def events_xlsx(wb, plan):
+        from openpyxl.utils import get_column_letter
+        from openpyxl.styles import Font, Alignment, Border, Side
+        
         ws = wb.create_sheet("Часть 3")
 
         bold_font = Font(name="Times New Roman", size=11, bold=True)
@@ -611,7 +619,7 @@ def export_xlsx_single(plan: Plan):
                     cell.alignment = center
                 cell.font = bold_font
 
-        ws.row_dimensions[3].height = 55
+        # ws.row_dimensions[3].height = 55
 
         row_index = 6
         for col in range(1, 19):
@@ -752,6 +760,9 @@ def export_xlsx_single(plan: Plan):
         ws.page_setup.paperSize = ws.PAPERSIZE_A4
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 0
+        
+        # Центрирование по горизонтали
+        ws.page_setup.horizontalCentered = True
 
         return ws
 
@@ -769,7 +780,3 @@ def export_xlsx_single(plan: Plan):
     file_stream.seek(0)
     filename = f"{plan.okpo}_{plan.year}.xlsx"
     return file_stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename
-
-def export_pdf_single(plan: Plan):
-    pass
-
