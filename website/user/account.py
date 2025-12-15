@@ -169,7 +169,7 @@ def activate_account():
         flash('Некорректный код активации.', 'error')
         return redirect(url_for('auth.code'))      
 
-def add_param(first_name, last_name, patronymic_name, phone, organization_id, post = None):
+def add_param(first_name, last_name, patronymic_name, phone, organization_id = None, ministry_id = None, region_id = None, post = None):
     if not phone or len(phone.strip()) < 5:
         flash('Номер телефона должен содержать не менее 5 символов!', 'error')
         return redirect(url_for('views.profile'))
@@ -193,6 +193,8 @@ def add_param(first_name, last_name, patronymic_name, phone, organization_id, po
     current_user.patronymic_name = patronymic_name
     current_user.phone = normalized_phone
     current_user.organization_id = organization_id
+    current_user.ministry_id = ministry_id
+    current_user.region_id = region_id
     current_user.post = post
 
     db.session.commit()

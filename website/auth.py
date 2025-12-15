@@ -166,10 +166,13 @@ def param():
         patronymic_name = request.form.get('patronymic_name')
         phone = request.form.get('phone')
         post = request.form.get('post')
+        
         organization_id = request.form.get('organization_id')
+        ministry_id = request.form.get('ministry_id')
+        region_id = request.form.get('region_id')
 
         from .user.account import add_param
-        return add_param(first_name, last_name, patronymic_name, phone, organization_id, post)
+        return add_param(first_name, last_name, patronymic_name, phone, organization_id, ministry_id, region_id, post)
     
 @auth.route('/edit-param', methods=['POST'])
 def edit_param():

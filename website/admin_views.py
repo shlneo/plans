@@ -343,7 +343,7 @@ class UserView(SecureModelView):
 class OrganizationView(SecureModelView):
     """Админ-панель для управления организациями"""
     
-    column_list = ['id', 'name', 'okpo', 'ynp', 'ministry', 'is_active', 'users']
+    column_list = ['id', 'name', 'okpo', 'ynp', 'ministry_id', 'is_active', 'users']
     column_default_sort = ('id', True)
     column_sortable_list = ('id', 'name', 'okpo', 'is_active')
     
@@ -352,7 +352,7 @@ class OrganizationView(SecureModelView):
     can_edit = True
     can_export = True
     
-    form_columns = ['name', 'okpo', 'ynp', 'ministry', 'is_active']
+    form_columns = ['name', 'okpo', 'ynp', 'ministry_id', 'is_active']
     
     form_args = {
         'name': {
@@ -370,7 +370,7 @@ class OrganizationView(SecureModelView):
             'validators': [Length(max=20)],
             'description': 'Учетный номер плательщика'
         },
-        'ministry': {
+        'ministry_id': {
             'label': 'Министерство',
             'validators': [Length(max=500)],
             'description': 'Вышестоящее министерство'
@@ -381,8 +381,8 @@ class OrganizationView(SecureModelView):
         }
     }
     
-    column_searchable_list = ['name', 'okpo', 'ynp', 'ministry']
-    column_filters = ['id', 'is_active', 'ministry']
+    column_searchable_list = ['name', 'okpo', 'ynp', 'ministry_id']
+    column_filters = ['id', 'is_active', 'ministry_id']
     
     column_formatters = {
         'is_active': lambda v, c, m, p: '✅ Да' if m.is_active else '❌ Нет',

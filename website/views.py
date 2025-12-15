@@ -12,7 +12,7 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy import func, asc, or_
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from .models import User, Organization, Plan, Ticket, Unit, Direction, Indicator, EconMeasure, EconExec, IndicatorUsage, Notification, current_utc_time
+from .models import Ministry, User, Organization, Plan, Ticket, Unit, Direction, Indicator, EconMeasure, EconExec, IndicatorUsage, Notification, current_utc_time
 from . import db
 
 from functools import wraps
@@ -109,7 +109,7 @@ def edit_user_org():
 
 @views.route('/api/organizations')
 @login_required
-def get_organizations():
+def get_organizations_api():
     try:
         page = request.args.get("page", 1, type=int)
         search_query = request.args.get("q", "", type=str).strip()
@@ -131,9 +131,9 @@ def get_organizations():
                 {
                     "id": org.id,
                     "name": org.name,
-                    "okpo": org.okpo,
-                    "ynp": org.ynp,
-                    "ministry": org.ministry,
+                    "okpo": org.okpo or "",
+                    "ynp": org.ynp or "",
+                    "ministry": org.ministry.name if org.ministry else "",
                 }
                 for org in pagination.items
             ],
@@ -145,6 +145,75 @@ def get_organizations():
     except Exception as e:
         logging.error(f"Error fetching organizations: {str(e)}")
         return jsonify({"error": "Internal server error"}), 500
+
+@views.route('/api/ministries')
+@login_required
+def get_ministries_api():
+    try:
+        page = request.args.get("page", 1, type=int)
+        search_query = request.args.get("q", "", type=str).strip()
+
+        query = Ministry.query
+        if search_query:
+            query = query.filter(Ministry.name.ilike(f"%{search_query}%"))
+
+        per_page = 10
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        return jsonify({
+            "ministries": [
+                {
+                    "id": ministry.id,
+                    "name": ministry.name,
+                }
+                for ministry in pagination.items
+            ],
+            "page": pagination.page,
+            "has_next": pagination.has_next,
+            "total_pages": pagination.pages,
+            "total_items": pagination.total
+        })
+    except Exception as e:
+        logging.error(f"Error fetching ministries: {str(e)}")
+        return jsonify({"error": "Internal server error"}), 500
+
+# @views.route('/api/regions')
+# @login_required
+# def get_regions_api():
+#     try:
+#         page = request.args.get("page", 1, type=int)
+#         search_query = request.args.get("q", "", type=str).strip()
+
+#         query = Region.query
+#         if search_query:
+#             query = query.filter(
+#                 db.or_(
+#                     Region.name.ilike(f"%{search_query}%"),
+#                     Region.code.ilike(f"%{search_query}%")
+#                 )
+#             )
+
+#         per_page = 10
+#         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+#         return jsonify({
+#             "regions": [
+#                 {
+#                     "id": region.id,
+#                     "name": region.name,
+#                     "code": region.code or "",
+#                 }
+#                 for region in pagination.items
+#             ],
+#             "page": pagination.page,
+#             "has_next": pagination.has_next,
+#             "total_pages": pagination.pages,
+#             "total_items": pagination.total
+#         })
+#     except Exception as e:
+#         logging.error(f"Error fetching regions: {str(e)}")
+#         return jsonify({"error": "Internal server error"}), 500
+
 
 
 def get_plans_by_okpo():

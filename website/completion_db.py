@@ -31,12 +31,13 @@ def read_dbf(file_path, columns):
         
 def add_data_in_db(db):
     if is_db_empty():
-        from .models import User, Organization, Unit, Direction, Indicator
+        from .models import User, Organization, Unit, Direction, Indicator, Ministry
+        from sqlalchemy.exc import IntegrityError
         print('Filling is in progress...')
         
         ### ORGANIZATION DATA ###
-        website_path = os.path.dirname(os.path.abspath(__file__)) 
-        
+        website_path = os.path.dirname(os.path.abspath(__file__))
+    
         Brest_org_data_path = os.path.join(website_path, 'static/files/organizations', 'Брест.dbf')
         Vitebsk_org_data_path = os.path.join(website_path, 'static/files/organizations', 'Витебск.dbf')
         Gomel_org_data_path = os.path.join(website_path, 'static/files/organizations', 'Гомель.dbf')
@@ -45,7 +46,7 @@ def add_data_in_db(db):
         MinskRegion_org_data_path = os.path.join(website_path, 'static/files/organizations', 'Минск_область.dbf')
         Migilev_org_data_path = os.path.join(website_path, 'static/files/organizations', 'Могилев.dbf')
 
-        columns_org = ['OKPO', 'NAME1', 'NAME2', 'NAME3', 'NAME4', 'NAME5', 'NAME6', 'MIN', 'UNP']
+        columns_org = ['OKPO', 'NAME', 'MIN', 'UNP']
 
         Brest_org_data = read_dbf(Brest_org_data_path, columns_org)
         Vitebsk_org_data = read_dbf(Vitebsk_org_data_path, columns_org)
@@ -70,21 +71,48 @@ def add_data_in_db(db):
         MinskRegion_min_data = read_dbf(MinskRegion_min_data_path, columns_min)
 
         min_all_data = pd.DataFrame(MinskRegion_min_data, columns=columns_min)
-        merged_data = city_all_data.merge(min_all_data, on='MIN', how='left')
 
-        merged_data['MIN'] = merged_data['NAME']
-        merged_data = merged_data.drop(columns=['NAME'])
+        ministries_dict = {}
 
+        for _, row in min_all_data.drop_duplicates('MIN').iterrows():
+            ministry = Ministry.query.filter_by(id=row['MIN']).first()
+            
+            if not ministry:
+                ministry = Ministry(
+                    id=row['MIN'],
+                    name=row['NAME']
+                )
+                db.session.add(ministry)
+            
+            ministries_dict[row['MIN']] = ministry
 
-        for _, row in merged_data.iterrows():
-            organization = Organization(
-                okpo=row['OKPO'],
-                name=' '.join(filter(None, [row['NAME1'], row['NAME2'], row['NAME3'], row['NAME4'], row['NAME5'], row['NAME6']])),
-                ministry=row['MIN'],
-                ynp=row['UNP'] 
-            )
-            db.session.add(organization)
         db.session.commit()
+
+        for _, row in city_all_data.iterrows():
+            organization_name = ' '.join(filter(None, [
+                row['NAME']
+            ]))
+            
+            existing_org = Organization.query.filter_by(okpo=row['OKPO']).first()
+            
+            if not existing_org:
+                organization = Organization(
+                    okpo=row['OKPO'],
+                    name=organization_name,
+                    ministry_id=row['MIN'], 
+                    ynp=row['UNP']
+                )
+                db.session.add(organization)
+
+        try:
+            db.session.commit()
+            print("Данные успешно добавлены в базу данных")
+        except IntegrityError as e:
+            db.session.rollback()
+            print(f"Ошибка целостности данных: {e}")
+        except Exception as e:
+            db.session.rollback()
+            print(f"Произошла ошибка: {e}")
 
         dop_org_data = [
             ('Брестское областное управление', '100000001000'),

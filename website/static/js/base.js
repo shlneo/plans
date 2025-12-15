@@ -2224,320 +2224,1059 @@ function initConfirmModal(config) {
     window.initPlansFilter = initPlansFilter;
 })();
 
-class OrganizationsSearch {
-  constructor(options = {}) {
-    this.config = {
-      step1Selector: '.auth-step-1',
-      step2Selector: '.auth-step-2',
-      nextBtnId: 'next-btn',
-      prevBtnId: 'prev-btn',
-      searchInputId: 'organization-search',
-      dropdownId: 'organizations-dropdown',
-      listId: 'organizations-list',
-      loadingId: 'organizations-loading',
-      loadMoreBtnId: 'load-more-organizations',
-      organizationIdInputId: 'organization_id',
-      submitBtnId: 'submit-btn',
-      requiredFields: ['secondname', 'name', 'phone'],
-      apiEndpoint: '/api/organizations',
-      minSearchLength: 2,
-      debounceDelay: 300,
-      ...options
-    };
+// class OrganizationsSearch {
+//   constructor(options = {}) {
+//     this.config = {
+//       step1Selector: '.auth-step-1',
+//       step2Selector: '.auth-step-2',
+//       nextBtnId: 'next-btn',
+//       prevBtnId: 'prev-btn',
+//       searchInputId: 'organization-search',
+//       dropdownId: 'organizations-dropdown',
+//       listId: 'organizations-list',
+//       loadingId: 'organizations-loading',
+//       loadMoreBtnId: 'load-more-organizations',
+//       organizationIdInputId: 'organization_id',
+//       submitBtnId: 'submit-btn',
+//       requiredFields: ['secondname', 'name', 'phone'],
+//       apiEndpoint: '/api/organizations',
+//       minSearchLength: 2,
+//       debounceDelay: 300,
+//       ...options
+//     };
 
-    this.currentPage = 1;
-    this.hasMore = false;
-    this.currentSearchQuery = '';
-    this.debounceTimer = null;
+//     this.currentPage = 1;
+//     this.hasMore = false;
+//     this.currentSearchQuery = '';
+//     this.debounceTimer = null;
 
-    this.init();
-  }
+//     this.init();
+//   }
 
-  init() {
-    this.elements = {};
-    this.getElementReferences();
-    this.bindEvents();
-  }
+//   init() {
+//     this.elements = {};
+//     this.getElementReferences();
+//     this.bindEvents();
+//   }
 
-  getElementReferences() {
-    // Основные элементы
-    this.elements.step1 = document.querySelector(this.config.step1Selector);
-    this.elements.step2 = document.querySelector(this.config.step2Selector);
-    this.elements.nextBtn = document.getElementById(this.config.nextBtnId);
-    this.elements.prevBtn = document.getElementById(this.config.prevBtnId);
+//   getElementReferences() {
+//     // Основные элементы
+//     this.elements.step1 = document.querySelector(this.config.step1Selector);
+//     this.elements.step2 = document.querySelector(this.config.step2Selector);
+//     this.elements.nextBtn = document.getElementById(this.config.nextBtnId);
+//     this.elements.prevBtn = document.getElementById(this.config.prevBtnId);
     
-    // Элементы поиска организаций
-    this.elements.searchInput = document.getElementById(this.config.searchInputId);
-    this.elements.dropdown = document.getElementById(this.config.dropdownId);
-    this.elements.organizationsList = document.getElementById(this.config.listId);
-    this.elements.loadingIndicator = document.getElementById(this.config.loadingId);
-    this.elements.loadMoreBtn = document.getElementById(this.config.loadMoreBtnId);
-    this.elements.organizationIdInput = document.getElementById(this.config.organizationIdInputId);
-    this.elements.submitBtn = document.getElementById(this.config.submitBtnId);
+//     // Элементы поиска организаций
+//     this.elements.searchInput = document.getElementById(this.config.searchInputId);
+//     this.elements.dropdown = document.getElementById(this.config.dropdownId);
+//     this.elements.organizationsList = document.getElementById(this.config.listId);
+//     this.elements.loadingIndicator = document.getElementById(this.config.loadingId);
+//     this.elements.loadMoreBtn = document.getElementById(this.config.loadMoreBtnId);
+//     this.elements.organizationIdInput = document.getElementById(this.config.organizationIdInputId);
+//     this.elements.submitBtn = document.getElementById(this.config.submitBtnId);
 
-    // Проверка наличия всех необходимых элементов
-    this.validateRequiredElements();
-  }
+//     // Проверка наличия всех необходимых элементов
+//     this.validateRequiredElements();
+//   }
 
-  validateRequiredElements() {
-    const requiredElements = [
-      'step1', 'step2', 'nextBtn', 'prevBtn', 'searchInput', 
-      'dropdown', 'organizationsList', 'loadingIndicator', 
-      'loadMoreBtn', 'organizationIdInput', 'submitBtn'
-    ];
+//   validateRequiredElements() {
+//     const requiredElements = [
+//       'step1', 'step2', 'nextBtn', 'prevBtn', 'searchInput', 
+//       'dropdown', 'organizationsList', 'loadingIndicator', 
+//       'loadMoreBtn', 'organizationIdInput', 'submitBtn'
+//     ];
 
-    // requiredElements.forEach(elementName => {
-    //   if (!this.elements[elementName]) {
-    //     console.warn(`Element ${elementName} not found`);
-    //   }
-    // });
-  }
+//     // requiredElements.forEach(elementName => {
+//     //   if (!this.elements[elementName]) {
+//     //     console.warn(`Element ${elementName} not found`);
+//     //   }
+//     // });
+//   }
 
-  bindEvents() {
-    // События для шагов формы
-    if (this.elements.nextBtn) {
-      this.elements.nextBtn.addEventListener('click', () => this.handleNextStep());
-    }
+//   bindEvents() {
+//     // События для шагов формы
+//     if (this.elements.nextBtn) {
+//       this.elements.nextBtn.addEventListener('click', () => this.handleNextStep());
+//     }
     
-    if (this.elements.prevBtn) {
-      this.elements.prevBtn.addEventListener('click', () => this.handlePrevStep());
-    }
+//     if (this.elements.prevBtn) {
+//       this.elements.prevBtn.addEventListener('click', () => this.handlePrevStep());
+//     }
 
-    // События для поиска организаций
-    if (this.elements.searchInput) {
-      this.elements.searchInput.addEventListener('input', (e) => this.handleSearchInput(e));
-      this.elements.searchInput.addEventListener('focus', () => this.handleSearchFocus());
-      this.elements.searchInput.addEventListener('keydown', (e) => this.handleSearchKeydown(e));
-    }
+//     // События для поиска организаций
+//     if (this.elements.searchInput) {
+//       this.elements.searchInput.addEventListener('input', (e) => this.handleSearchInput(e));
+//       this.elements.searchInput.addEventListener('focus', () => this.handleSearchFocus());
+//       this.elements.searchInput.addEventListener('keydown', (e) => this.handleSearchKeydown(e));
+//     }
 
-    if (this.elements.loadMoreBtn) {
-      this.elements.loadMoreBtn.addEventListener('click', () => this.handleLoadMore());
-    }
+//     if (this.elements.loadMoreBtn) {
+//       this.elements.loadMoreBtn.addEventListener('click', () => this.handleLoadMore());
+//     }
 
-    // Закрытие dropdown при клике вне области
-    document.addEventListener('click', (e) => this.handleDocumentClick(e));
-  }
+//     // Закрытие dropdown при клике вне области
+//     document.addEventListener('click', (e) => this.handleDocumentClick(e));
+//   }
 
-  handleNextStep() {
-    const isValid = this.validateRequiredFields();
+//   handleNextStep() {
+//     const isValid = this.validateRequiredFields();
     
-    if (isValid) {
-      this.elements.step1.style.display = 'none';
-      this.elements.step2.style.display = 'block';
-    } else {
-      alert('Пожалуйста, заполните все обязательные поля');
-    }
-  }
+//     if (isValid) {
+//       this.elements.step1.style.display = 'none';
+//       this.elements.step2.style.display = 'block';
+//     } else {
+//       alert('Пожалуйста, заполните все обязательные поля');
+//     }
+//   }
 
-  handlePrevStep() {
-    this.elements.step2.style.display = 'none';
-    this.elements.step1.style.display = 'block';
-  }
+//   handlePrevStep() {
+//     this.elements.step2.style.display = 'none';
+//     this.elements.step1.style.display = 'block';
+//   }
 
-  validateRequiredFields() {
-    let isValid = true;
+//   validateRequiredFields() {
+//     let isValid = true;
     
-    this.config.requiredFields.forEach(field => {
-      const input = document.getElementById(field);
-      if (input && !input.value.trim()) {
-        isValid = false;
-        input.style.borderColor = 'red';
-      } else if (input) {
-        input.style.borderColor = '';
-      }
-    });
+//     this.config.requiredFields.forEach(field => {
+//       const input = document.getElementById(field);
+//       if (input && !input.value.trim()) {
+//         isValid = false;
+//         input.style.borderColor = 'red';
+//       } else if (input) {
+//         input.style.borderColor = '';
+//       }
+//     });
 
-    return isValid;
-  }
+//     return isValid;
+//   }
 
-  handleSearchInput(e) {
-    const query = e.target.value.trim();
-    this.currentSearchQuery = query;
+//   handleSearchInput(e) {
+//     const query = e.target.value.trim();
+//     this.currentSearchQuery = query;
     
-    this.elements.organizationIdInput.value = '';
-    this.elements.submitBtn.disabled = true;
+//     this.elements.organizationIdInput.value = '';
+//     this.elements.submitBtn.disabled = true;
     
-    clearTimeout(this.debounceTimer);
+//     clearTimeout(this.debounceTimer);
     
-    if (query.length >= this.config.minSearchLength) {
-      this.debounceTimer = setTimeout(() => {
-        this.currentPage = 1;
-        this.searchOrganizations(query, 1, false);
-      }, this.config.debounceDelay);
-    } else {
-      this.elements.dropdown.style.display = 'none';
-      this.elements.organizationsList.innerHTML = '';
-    }
-  }
+//     if (query.length >= this.config.minSearchLength) {
+//       this.debounceTimer = setTimeout(() => {
+//         this.currentPage = 1;
+//         this.searchOrganizations(query, 1, false);
+//       }, this.config.debounceDelay);
+//     } else {
+//       this.elements.dropdown.style.display = 'none';
+//       this.elements.organizationsList.innerHTML = '';
+//     }
+//   }
 
-  handleSearchFocus() {
-    if (this.currentSearchQuery && this.currentSearchQuery.length >= this.config.minSearchLength) {
-      this.elements.dropdown.style.display = 'block';
-    }
-  }
+//   handleSearchFocus() {
+//     if (this.currentSearchQuery && this.currentSearchQuery.length >= this.config.minSearchLength) {
+//       this.elements.dropdown.style.display = 'block';
+//     }
+//   }
 
-  handleSearchKeydown(e) {
-    if (e.key === 'Escape') {
-      this.elements.dropdown.style.display = 'none';
-    }
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const firstItem = this.elements.organizationsList.querySelector('.organization-item');
-      if (firstItem) {
-        firstItem.click();
-      }
-    }
-  }
+//   handleSearchKeydown(e) {
+//     if (e.key === 'Escape') {
+//       this.elements.dropdown.style.display = 'none';
+//     }
+//     if (e.key === 'Enter') {
+//       e.preventDefault();
+//       const firstItem = this.elements.organizationsList.querySelector('.organization-item');
+//       if (firstItem) {
+//         firstItem.click();
+//       }
+//     }
+//   }
 
-  handleLoadMore() {
-    if (this.hasMore && this.currentSearchQuery) {
-      this.searchOrganizations(this.currentSearchQuery, this.currentPage + 1, true);
-    }
-  }
+//   handleLoadMore() {
+//     if (this.hasMore && this.currentSearchQuery) {
+//       this.searchOrganizations(this.currentSearchQuery, this.currentPage + 1, true);
+//     }
+//   }
 
-  handleDocumentClick(e) {
-    if (!this.elements.searchInput.contains(e.target) && !this.elements.dropdown.contains(e.target)) {
-      this.elements.dropdown.style.display = 'none';
-    }
-  }
+//   handleDocumentClick(e) {
+//     if (!this.elements.searchInput.contains(e.target) && !this.elements.dropdown.contains(e.target)) {
+//       this.elements.dropdown.style.display = 'none';
+//     }
+//   }
 
-  async searchOrganizations(query, page = 1, append = false) {
-    if (!append) {
-      this.elements.loadingIndicator.style.display = 'block';
-      this.elements.organizationsList.innerHTML = '';
-    }
+//   async searchOrganizations(query, page = 1, append = false) {
+//     if (!append) {
+//       this.elements.loadingIndicator.style.display = 'block';
+//       this.elements.organizationsList.innerHTML = '';
+//     }
 
-    try {
-      const response = await fetch(`${this.config.apiEndpoint}?q=${encodeURIComponent(query)}&page=${page}`);
+//     try {
+//       const response = await fetch(`${this.config.apiEndpoint}?q=${encodeURIComponent(query)}&page=${page}`);
       
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
+//       if (!response.ok) {
+//         throw new Error('Network response was not ok');
+//       }
 
-      const data = await response.json();
-      this.handleSearchResponse(data, append);
-    } catch (error) {
-      console.error('Error fetching organizations:', error);
-      this.handleSearchError();
-    }
-  }
+//       const data = await response.json();
+//       this.handleSearchResponse(data, append);
+//     } catch (error) {
+//       console.error('Error fetching organizations:', error);
+//       this.handleSearchError();
+//     }
+//   }
 
-  handleSearchResponse(data, append) {
-    this.elements.loadingIndicator.style.display = 'none';
+//   handleSearchResponse(data, append) {
+//     this.elements.loadingIndicator.style.display = 'none';
     
-    if (!append) {
-      this.elements.organizationsList.innerHTML = '';
-    }
+//     if (!append) {
+//       this.elements.organizationsList.innerHTML = '';
+//     }
 
-    if (data.organizations && data.organizations.length > 0) {
-      data.organizations.forEach(org => {
-        this.createOrganizationElement(org);
-      });
+//     if (data.organizations && data.organizations.length > 0) {
+//       data.organizations.forEach(org => {
+//         this.createOrganizationElement(org);
+//       });
 
-      this.hasMore = data.has_next;
-      if (this.hasMore) {
-        this.elements.loadMoreBtn.style.display = 'block';
-        this.currentPage = data.page;
-      } else {
-        this.elements.loadMoreBtn.style.display = 'none';
-      }
-    } else {
-      this.elements.organizationsList.innerHTML = '<div class="organization-item">Организации не найдены</div>';
-      this.elements.loadMoreBtn.style.display = 'none';
-    }
+//       this.hasMore = data.has_next;
+//       if (this.hasMore) {
+//         this.elements.loadMoreBtn.style.display = 'block';
+//         this.currentPage = data.page;
+//       } else {
+//         this.elements.loadMoreBtn.style.display = 'none';
+//       }
+//     } else {
+//       this.elements.organizationsList.innerHTML = '<div class="organization-item">Организации не найдены</div>';
+//       this.elements.loadMoreBtn.style.display = 'none';
+//     }
     
-    this.elements.dropdown.style.display = 'block';
-  }
+//     this.elements.dropdown.style.display = 'block';
+//   }
 
-  handleSearchError() {
-    this.elements.loadingIndicator.style.display = 'none';
-    this.elements.organizationsList.innerHTML = '<div class="organization-item">Ошибка загрузки</div>';
-  }
+//   handleSearchError() {
+//     this.elements.loadingIndicator.style.display = 'none';
+//     this.elements.organizationsList.innerHTML = '<div class="organization-item">Ошибка загрузки</div>';
+//   }
 
-  createOrganizationElement(org) {
-    const orgElement = document.createElement('div');
-    orgElement.className = 'organization-item';
-    orgElement.innerHTML = `
-      <div class="organization-name">${this.escapeHtml(org.name)}</div>
-      <div class="organization-okpo">${this.escapeHtml(org.okpo)}</div>
-    `;
+//   createOrganizationElement(org) {
+//     const orgElement = document.createElement('div');
+//     orgElement.className = 'organization-item';
+//     orgElement.innerHTML = `
+//       <div class="organization-name">${this.escapeHtml(org.name)}</div>
+//       <div class="organization-okpo">${this.escapeHtml(org.okpo)}</div>
+//     `;
     
-    orgElement.addEventListener('click', () => {
-      this.selectOrganization(org, orgElement);
-    });
+//     orgElement.addEventListener('click', () => {
+//       this.selectOrganization(org, orgElement);
+//     });
     
-    this.elements.organizationsList.appendChild(orgElement);
-  }
+//     this.elements.organizationsList.appendChild(orgElement);
+//   }
 
-  selectOrganization(org, element) {
-    document.querySelectorAll('.organization-item').forEach(item => {
-      item.classList.remove('selected');
-    });
+//   selectOrganization(org, element) {
+//     document.querySelectorAll('.organization-item').forEach(item => {
+//       item.classList.remove('selected');
+//     });
 
-    element.classList.add('selected');
+//     element.classList.add('selected');
 
-    this.elements.searchInput.value = `${org.name} (ОКПО: ${org.okpo})`;
-    this.elements.organizationIdInput.value = org.id;
+//     this.elements.searchInput.value = `${org.name} (ОКПО: ${org.okpo})`;
+//     this.elements.organizationIdInput.value = org.id;
     
-    this.elements.dropdown.style.display = 'none'; 
-    this.elements.submitBtn.disabled = false;
-  }
+//     this.elements.dropdown.style.display = 'none'; 
+//     this.elements.submitBtn.disabled = false;
+//   }
 
-  escapeHtml(unsafe) {
-    if (typeof unsafe !== 'string') return unsafe;
-    return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+//   escapeHtml(unsafe) {
+//     if (typeof unsafe !== 'string') return unsafe;
+//     return unsafe
+//       .replace(/&/g, "&amp;")
+//       .replace(/</g, "&lt;")
+//       .replace(/>/g, "&gt;")
+//       .replace(/"/g, "&quot;")
+//       .replace(/'/g, "&#039;");
+//   }
 
-  // Публичные методы для управления извне
-  destroy() {
-    // Очистка событий и таймеров
-    clearTimeout(this.debounceTimer);
+//   // Публичные методы для управления извне
+//   destroy() {
+//     // Очистка событий и таймеров
+//     clearTimeout(this.debounceTimer);
     
-    // Удаление всех привязанных событий
-    if (this.elements.nextBtn) {
-      this.elements.nextBtn.replaceWith(this.elements.nextBtn.cloneNode(true));
-    }
-    if (this.elements.prevBtn) {
-      this.elements.prevBtn.replaceWith(this.elements.prevBtn.cloneNode(true));
-    }
-    if (this.elements.searchInput) {
-      this.elements.searchInput.replaceWith(this.elements.searchInput.cloneNode(true));
-    }
-    if (this.elements.loadMoreBtn) {
-      this.elements.loadMoreBtn.replaceWith(this.elements.loadMoreBtn.cloneNode(true));
-    }
+//     // Удаление всех привязанных событий
+//     if (this.elements.nextBtn) {
+//       this.elements.nextBtn.replaceWith(this.elements.nextBtn.cloneNode(true));
+//     }
+//     if (this.elements.prevBtn) {
+//       this.elements.prevBtn.replaceWith(this.elements.prevBtn.cloneNode(true));
+//     }
+//     if (this.elements.searchInput) {
+//       this.elements.searchInput.replaceWith(this.elements.searchInput.cloneNode(true));
+//     }
+//     if (this.elements.loadMoreBtn) {
+//       this.elements.loadMoreBtn.replaceWith(this.elements.loadMoreBtn.cloneNode(true));
+//     }
     
-    document.removeEventListener('click', this.handleDocumentClick);
-  }
+//     document.removeEventListener('click', this.handleDocumentClick);
+//   }
 
-  reset() {
-    this.currentPage = 1;
-    this.hasMore = false;
-    this.currentSearchQuery = '';
-    clearTimeout(this.debounceTimer);
+//   reset() {
+//     this.currentPage = 1;
+//     this.hasMore = false;
+//     this.currentSearchQuery = '';
+//     clearTimeout(this.debounceTimer);
     
-    if (this.elements.searchInput) {
-      this.elements.searchInput.value = '';
+//     if (this.elements.searchInput) {
+//       this.elements.searchInput.value = '';
+//     }
+//     if (this.elements.organizationIdInput) {
+//       this.elements.organizationIdInput.value = '';
+//     }
+//     if (this.elements.organizationsList) {
+//       this.elements.organizationsList.innerHTML = '';
+//     }
+//     if (this.elements.dropdown) {
+//       this.elements.dropdown.style.display = 'none';
+//     }
+//     if (this.elements.submitBtn) {
+//       this.elements.submitBtn.disabled = true;
+//     }
+//   }
+// }
+
+class MultiStepForm {
+    constructor(options = {}) {
+        this.config = {
+            step1Selector: '.auth-step-1',
+            step2Selector: '.auth-step-2',
+            step3Selector: '.auth-step-3',
+            formSelector: '#registration-form',
+            
+            nextBtn1Id: 'next-btn-1',
+            nextBtn2Id: 'next-btn-2',
+            prevBtn2Id: 'prev-btn-2',
+            prevBtn3Id: 'prev-btn-3',
+            submitBtnId: 'submit-btn',
+            
+            minSearchLength: 2,
+            debounceDelay: 300,
+            perPage: 10,
+            
+            endpoints: {
+                organization: '/api/organizations',
+                ministry: '/api/ministries',
+                region: '/api/regions'
+            },
+            
+            ...options
+        };
+
+        this.currentEntityType = 'organization';
+        this.selectedItem = null;
+        this.searchData = {
+            organization: { page: 1, query: '', hasMore: false, loading: false },
+            ministry: { page: 1, query: '', hasMore: false, loading: false },
+            region: { page: 1, query: '', hasMore: false, loading: false }
+        };
+        this.debounceTimers = {};
+        this.init();
     }
-    if (this.elements.organizationIdInput) {
-      this.elements.organizationIdInput.value = '';
+
+    init() {
+        this.elements = {};
+        this.getElementReferences();
+        this.bindEvents();
+        console.log('MultiStepForm initialized');
     }
-    if (this.elements.organizationsList) {
-      this.elements.organizationsList.innerHTML = '';
+
+    getElementReferences() {
+        this.elements.step1 = document.querySelector(this.config.step1Selector);
+        this.elements.step2 = document.querySelector(this.config.step2Selector);
+        this.elements.step3 = document.querySelector(this.config.step3Selector);
+        this.elements.form = document.querySelector(this.config.formSelector);
+        
+        this.elements.nextBtn1 = document.getElementById(this.config.nextBtn1Id);
+        this.elements.nextBtn2 = document.getElementById(this.config.nextBtn2Id);
+        this.elements.prevBtn2 = document.getElementById(this.config.prevBtn2Id);
+        this.elements.prevBtn3 = document.getElementById(this.config.prevBtn3Id);
+        this.elements.submitBtn = document.getElementById(this.config.submitBtnId);
+        this.elements.entityTypeInput = document.getElementById('entity_type');
+
+        this.elements.entityTypeRadioInputs = document.querySelectorAll('input[name="entity_type"]');
+        
+        this.elements.entityBlocks = {
+            organization: document.getElementById('organization-block'),
+            ministry: document.getElementById('ministry-block'),
+            region: document.getElementById('region-block')
+        };
+        
+        this.elements.searchInputs = {
+            organization: document.getElementById('organization-search'),
+            ministry: document.getElementById('ministry-search'),
+            region: document.getElementById('region-search')
+        };
+        
+        this.elements.hiddenInputs = {
+            organization: document.getElementById('organization_id'),
+            ministry: document.getElementById('ministry_id'),
+            region: document.getElementById('region_id')
+        };
+        
+        this.elements.dropdowns = {
+            organization: document.getElementById('organization-dropdown'),
+            ministry: document.getElementById('ministry-dropdown'),
+            region: document.getElementById('region-dropdown')
+        };
+        
+        this.elements.lists = {
+            organization: document.getElementById('organization-list'),
+            ministry: document.getElementById('ministry-list'),
+            region: document.getElementById('region-list')
+        };
+        
+        this.elements.loadings = {
+            organization: document.getElementById('organization-loading'),
+            ministry: document.getElementById('ministry-loading'),
+            region: document.getElementById('region-loading')
+        };
+        
+        this.elements.moreButtons = {
+            organization: document.getElementById('organization-more'),
+            ministry: document.getElementById('ministry-more'),
+            region: document.getElementById('region-more')
+        };
     }
-    if (this.elements.dropdown) {
-      this.elements.dropdown.style.display = 'none';
+
+    bindEvents() {
+        if (this.elements.nextBtn1) {
+            this.elements.nextBtn1.addEventListener('click', () => this.goToStep(2));
+        }
+        
+        if (this.elements.nextBtn2) {
+            this.elements.nextBtn2.addEventListener('click', () => this.goToStep(3));
+        }
+        
+        if (this.elements.prevBtn2) {
+            this.elements.prevBtn2.addEventListener('click', () => this.goToStep(1));
+        }
+        
+        if (this.elements.prevBtn3) {
+            this.elements.prevBtn3.addEventListener('click', () => this.goToStep(2));
+        }
+        
+        if (this.elements.entityTypeRadioInputs) {
+            this.elements.entityTypeRadioInputs.forEach(input => {
+                input.addEventListener('change', (e) => this.handleEntityTypeChange(e));
+            });
+        }
+        
+        Object.keys(this.elements.searchInputs).forEach(type => {
+            const input = this.elements.searchInputs[type];
+            if (input) {
+                input.addEventListener('input', (e) => this.handleSearchInput(e, type));
+                input.addEventListener('focus', () => this.handleSearchFocus(type));
+                input.addEventListener('blur', () => setTimeout(() => this.hideDropdown(type), 200));
+                input.addEventListener('keydown', (e) => this.handleSearchKeydown(e, type));
+            }
+        });
+        
+        Object.keys(this.elements.moreButtons).forEach(type => {
+            const button = this.elements.moreButtons[type];
+            if (button) {
+                const loadMoreBtn = button.querySelector('.load-more-btn');
+                if (loadMoreBtn) {
+                    loadMoreBtn.addEventListener('click', () => this.handleLoadMore(type));
+                }
+            }
+        });
+        
+        if (this.elements.form) {
+            this.elements.form.addEventListener('submit', (e) => this.handleFormSubmit(e));
+        }
+        
+        document.addEventListener('click', (e) => this.handleDocumentClick(e));
+        
+        this.setupStep1Validation();
+        
+        console.log('All events bound');
     }
-    if (this.elements.submitBtn) {
-      this.elements.submitBtn.disabled = true;
+
+    handleEntityTypeChange(e) {
+        this.currentEntityType = e.target.value;
+        console.log('Entity type changed to:', this.currentEntityType);
+        
+        // Обновляем скрытое поле entity_type
+        if (this.elements.entityTypeInput) {
+            this.elements.entityTypeInput.value = this.currentEntityType;
+        }
+        
+        this.updateStep3Content();
     }
-  }
+
+    updateStep3Content() {
+        Object.values(this.elements.entityBlocks).forEach(block => {
+            if (block) block.style.display = 'none';
+        });
+        
+        const currentBlock = this.elements.entityBlocks[this.currentEntityType];
+        if (currentBlock) {
+            currentBlock.style.display = 'block';
+        }
+        
+        this.selectedItem = null;
+        this.resetHiddenFields();
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = true;
+        }
+        
+        this.clearSearchResults(this.currentEntityType);
+        
+        const searchInput = this.elements.searchInputs[this.currentEntityType];
+        if (searchInput) {
+            setTimeout(() => {
+                searchInput.value = '';
+                searchInput.focus();
+            }, 100);
+        }
+    }
+
+    selectItem(item, type) {
+        document.querySelectorAll('.search-item').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        const clickedElement = document.querySelector(`.search-item[data-id="${item.id}"]`);
+        if (clickedElement) {
+            clickedElement.classList.add('selected');
+        }
+        
+        const input = this.elements.searchInputs[type];
+        if (input) {
+            input.value = item.name;
+        }
+        
+        const hiddenInput = this.elements.hiddenInputs[type];
+        if (hiddenInput) {
+            hiddenInput.value = item.id;
+        }
+        
+        // Устанавливаем скрытое поле entity_type
+        if (this.elements.entityTypeInput) {
+            this.elements.entityTypeInput.value = this.currentEntityType;
+        }
+        
+        this.hideDropdown(type);
+        
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = false;
+        }
+        this.selectedItem = item;
+        
+        console.log(`Selected ${type}:`, item);
+        console.log(`Entity type: ${this.currentEntityType}`);
+    }
+
+    handleFormSubmit(e) {
+        e.preventDefault();
+        
+        // Проверяем, что все обязательные поля заполнены
+        if (!this.validateForm()) {
+            alert('Пожалуйста, заполните все обязательные поля и выберите структуру');
+            return;
+        }
+        
+        // Показываем loading на кнопке
+        const originalText = this.elements.submitBtn.querySelector('.btn-text').textContent;
+        this.elements.submitBtn.querySelector('.btn-text').textContent = 'Отправка...';
+        this.elements.submitBtn.disabled = true;
+        
+        // Собираем данные формы
+        const formData = new FormData(this.elements.form);
+        
+        // Добавляем логирование данных
+        console.log('Form data to submit:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+        
+        // Отправляем форму
+        fetch(this.elements.form.action, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                return response.json().then(data => {
+                    console.log('Response data:', data);
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else if (data.success) {
+                        alert('Регистрация успешно завершена!');
+                        window.location.reload();
+                    } else {
+                        throw new Error(data.error || 'Неизвестная ошибка');
+                    }
+                });
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Form submission error:', error);
+            alert(`Ошибка при отправке формы: ${error.message}`);
+        })
+        .finally(() => {
+            // Восстанавливаем кнопку
+            this.elements.submitBtn.querySelector('.btn-text').textContent = originalText;
+            this.elements.submitBtn.disabled = false;
+        });
+    }
+
+    validateForm() {
+        // Проверяем поля шага 1
+        const step1Valid = this.validateStep1();
+        if (!step1Valid) {
+            console.error('Step 1 validation failed');
+            return false;
+        }
+        
+        // Проверяем выбран ли тип структуры
+        const entityType = this.currentEntityType;
+        if (!entityType) {
+            console.error('Entity type not selected');
+            return false;
+        }
+        
+        // Проверяем выбрана ли конкретная структура
+        const hiddenInput = this.elements.hiddenInputs[entityType];
+        if (!hiddenInput || !hiddenInput.value) {
+            console.error(`${entityType} not selected`);
+            return false;
+        }
+        
+        console.log('Form validation passed');
+        return true;
+    }
+
+    // Остальные методы без изменений...
+    setupStep1Validation() {
+        const requiredFields = ['#name', '#secondname', '#phone'];
+        requiredFields.forEach(selector => {
+            const input = document.querySelector(selector);
+            if (input) {
+                input.addEventListener('input', () => this.updateNextButtonState());
+                input.addEventListener('change', () => this.updateNextButtonState());
+            }
+        });
+        this.updateNextButtonState();
+    }
+
+    updateNextButtonState() {
+        const isStep1Valid = this.validateStep1();
+        if (this.elements.nextBtn1) {
+            this.elements.nextBtn1.disabled = !isStep1Valid;
+            if (isStep1Valid) {
+                this.elements.nextBtn1.classList.remove('disabled');
+            } else {
+                this.elements.nextBtn1.classList.add('disabled');
+            }
+        }
+    }
+
+    validateStep1() {
+        const requiredFields = ['secondname', 'name', 'phone'];
+        return requiredFields.every(fieldId => {
+            const input = document.getElementById(fieldId);
+            return input && input.value.trim() !== '';
+        });
+    }
+
+    goToStep(stepNumber) {
+        [this.elements.step1, this.elements.step2, this.elements.step3].forEach(step => {
+            if (step) step.style.display = 'none';
+        });
+        
+        switch(stepNumber) {
+            case 1:
+                if (this.elements.step1) {
+                    this.elements.step1.style.display = 'block';
+                    this.elements.step1.classList.add('active');
+                    this.elements.step2.classList.remove('active');
+                    this.elements.step3.classList.remove('active');
+                }
+                break;
+            case 2:
+                if (this.validateStep1()) {
+                    if (this.elements.step2) {
+                        this.elements.step2.style.display = 'block';
+                        this.elements.step1.classList.remove('active');
+                        this.elements.step2.classList.add('active');
+                        this.elements.step3.classList.remove('active');
+                    }
+                } else {
+                    alert('Пожалуйста, заполните все обязательные поля');
+                    if (this.elements.step1) {
+                        this.elements.step1.style.display = 'block';
+                    }
+                }
+                break;
+            case 3:
+                this.updateStep3Content();
+                if (this.elements.step3) {
+                    this.elements.step3.style.display = 'block';
+                    this.elements.step1.classList.remove('active');
+                    this.elements.step2.classList.remove('active');
+                    this.elements.step3.classList.add('active');
+                }
+                break;
+        }
+    }
+
+    handleEntityTypeChange(e) {
+        this.currentEntityType = e.target.value;
+        console.log('Entity type changed to:', this.currentEntityType);
+        this.updateStep3Content();
+    }
+
+    updateStep3Content() {
+        Object.values(this.elements.entityBlocks).forEach(block => {
+            if (block) block.style.display = 'none';
+        });
+        
+        const currentBlock = this.elements.entityBlocks[this.currentEntityType];
+        if (currentBlock) {
+            currentBlock.style.display = 'block';
+        }
+        
+        this.selectedItem = null;
+        this.resetHiddenFields();
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = true;
+        }
+        
+        this.clearSearchResults(this.currentEntityType);
+        
+        const searchInput = this.elements.searchInputs[this.currentEntityType];
+        if (searchInput) {
+            setTimeout(() => {
+                searchInput.value = '';
+                searchInput.focus();
+            }, 100);
+        }
+    }
+
+    handleSearchInput(e, type) {
+        const query = e.target.value.trim();
+        
+        this.selectedItem = null;
+        if (this.elements.hiddenInputs[type]) {
+            this.elements.hiddenInputs[type].value = '';
+        }
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = true;
+        }
+        
+        this.searchData[type].query = query;
+        this.searchData[type].page = 1;
+        
+        if (this.debounceTimers[type]) {
+            clearTimeout(this.debounceTimers[type]);
+        }
+        
+        if (query.length >= this.config.minSearchLength) {
+            this.debounceTimers[type] = setTimeout(() => {
+                this.searchEntities(query, type, 1, false);
+            }, this.config.debounceDelay);
+        } else {
+            this.hideDropdown(type);
+            this.clearSearchResults(type);
+        }
+    }
+
+    handleSearchFocus(type) {
+        const query = this.searchData[type].query;
+        const dropdown = this.elements.dropdowns[type];
+        const list = this.elements.lists[type];
+        
+        if (query && query.length >= this.config.minSearchLength && 
+            dropdown && list && list.children.length > 0) {
+            dropdown.style.display = 'block';
+        }
+    }
+
+    handleSearchKeydown(e, type) {
+        if (e.key === 'Escape') {
+            this.hideDropdown(type);
+        }
+    }
+
+    handleLoadMore(type) {
+        const data = this.searchData[type];
+        if (data.hasMore && data.query && !data.loading) {
+            data.page += 1;
+            this.searchEntities(data.query, type, data.page, true);
+        }
+    }
+
+    handleDocumentClick(e) {
+        Object.keys(this.elements.searchInputs).forEach(type => {
+            const input = this.elements.searchInputs[type];
+            const dropdown = this.elements.dropdowns[type];
+            
+            if (input && dropdown && 
+                !input.contains(e.target) && 
+                !dropdown.contains(e.target)) {
+                this.hideDropdown(type);
+            }
+        });
+    }
+
+    async searchEntities(query, type, page = 1, append = false) {
+        if (this.searchData[type].loading) return;
+        
+        this.searchData[type].loading = true;
+        
+        if (!append) {
+            this.showLoading(type, true);
+            this.clearSearchResults(type);
+        }
+        
+        try {
+            const endpoint = this.config.endpoints[type] || `/api/${type}`;
+            const url = `${endpoint}?q=${encodeURIComponent(query)}&page=${page}`;
+            
+            console.log(`Fetching ${type}:`, url);
+            
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            console.log(`Response for ${type}:`, data);
+            
+            this.handleSearchResponse(data, type, append);
+        } catch (error) {
+            console.error(`Error fetching ${type}:`, error);
+            this.showError(type, error.message);
+        } finally {
+            this.searchData[type].loading = false;
+            this.showLoading(type, false);
+        }
+    }
+
+    handleSearchResponse(data, type, append = false) {
+        const list = this.elements.lists[type];
+        const dropdown = this.elements.dropdowns[type];
+        const moreButton = this.elements.moreButtons[type];
+        
+        if (!list || !dropdown) {
+            console.error(`Elements not found for ${type}:`, { list, dropdown });
+            return;
+        }
+        
+        const dataKey = `${type}s`; // organizations, ministries, regions
+        const items = data[dataKey] || [];
+        
+        console.log(`Found ${items.length} items for ${type}`);
+        
+        if (!append) {
+            list.innerHTML = '';
+        }
+        
+        if (items.length > 0) {
+            items.forEach(item => {
+                const itemElement = this.createListItem(item, type);
+                list.appendChild(itemElement);
+            });
+            
+            this.searchData[type].hasMore = data.has_next || false;
+            if (moreButton) {
+                moreButton.style.display = data.has_next ? 'block' : 'none';
+            }
+            
+            dropdown.style.display = 'block';
+        } else if (!append) {
+            list.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+            dropdown.style.display = 'block';
+            if (moreButton) moreButton.style.display = 'none';
+        }
+    }
+
+    createListItem(item, type) {
+        const div = document.createElement('div');
+        div.className = 'search-item';
+        div.dataset.id = item.id;
+        
+        switch(type) {
+            case 'organization':
+                div.innerHTML = `
+                    <div class="item-name">${this.escapeHtml(item.name)}</div>
+                    <div class="item-details">
+                        <span class="item-okpo">ОКПО: ${this.escapeHtml(item.okpo || '—')}</span>
+                        <span class="item-ynp">УНП: ${this.escapeHtml(item.ynp || '—')}</span>
+                        ${item.ministry ? `<span class="item-ministry">Министерство: ${this.escapeHtml(item.ministry)}</span>` : ''}
+                    </div>
+                `;
+                break;
+            case 'ministry':
+                div.innerHTML = `
+                    <div class="item-name">${this.escapeHtml(item.name)}</div>
+                    ${item.code ? `<div class="item-details"><span>Код: ${this.escapeHtml(item.code)}</span></div>` : ''}
+                `;
+                break;
+            case 'region':
+                div.innerHTML = `
+                    <div class="item-name">${this.escapeHtml(item.name)}</div>
+                    ${item.code ? `<div class="item-details"><span>Код: ${this.escapeHtml(item.code)}</span></div>` : ''}
+                `;
+                break;
+        }
+        
+        div.addEventListener('click', () => {
+            this.selectItem(item, type);
+        });
+        
+        return div;
+    }
+
+    selectItem(item, type) {
+        document.querySelectorAll('.search-item').forEach(el => {
+            el.classList.remove('selected');
+        });
+        
+        const clickedElement = document.querySelector(`.search-item[data-id="${item.id}"]`);
+        if (clickedElement) {
+            clickedElement.classList.add('selected');
+        }
+        
+        const input = this.elements.searchInputs[type];
+        if (input) {
+            input.value = item.name;
+        }
+        
+        const hiddenInput = this.elements.hiddenInputs[type];
+        if (hiddenInput) {
+            hiddenInput.value = item.id;
+        }
+        
+        this.hideDropdown(type);
+        
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = false;
+        }
+        this.selectedItem = item;
+        
+        console.log(`Selected ${type}:`, item);
+    }
+
+    showLoading(type, show) {
+        const loading = this.elements.loadings[type];
+        if (loading) {
+            loading.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    clearSearchResults(type) {
+        const list = this.elements.lists[type];
+        if (list) {
+            list.innerHTML = '';
+        }
+        const moreButton = this.elements.moreButtons[type];
+        if (moreButton) {
+            moreButton.style.display = 'none';
+        }
+    }
+
+    hideDropdown(type) {
+        const dropdown = this.elements.dropdowns[type];
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+    }
+
+    showError(type, message = 'Ошибка загрузки данных') {
+        const list = this.elements.lists[type];
+        const dropdown = this.elements.dropdowns[type];
+        
+        if (list && dropdown) {
+            list.innerHTML = `<div class="error">${message}</div>`;
+            dropdown.style.display = 'block';
+        }
+        
+        this.showLoading(type, false);
+    }
+
+    resetHiddenFields() {
+        Object.values(this.elements.hiddenInputs).forEach(input => {
+            if (input) input.value = '';
+        });
+    }
+
+    escapeHtml(text) {
+        if (text === null || text === undefined) {
+            return '';
+        }
+        const div = document.createElement('div');
+        div.textContent = String(text);
+        return div.innerHTML;
+    }
+
+    destroy() {
+        // Очистка всех таймеров
+        Object.values(this.debounceTimers).forEach(timer => {
+            if (timer) clearTimeout(timer);
+        });
+        
+        console.log('MultiStepForm destroyed');
+    }
+
+    reset() {
+        this.currentEntityType = 'organization';
+        this.selectedItem = null;
+        this.resetHiddenFields();
+        
+        if (this.elements.submitBtn) {
+            this.elements.submitBtn.disabled = true;
+        }
+        
+        Object.keys(this.searchData).forEach(type => {
+            this.searchData[type] = { 
+                page: 1, 
+                query: '', 
+                hasMore: false, 
+                loading: false 
+            };
+        });
+        
+        Object.values(this.elements.searchInputs).forEach(input => {
+            if (input) input.value = '';
+        });
+        
+        Object.keys(this.elements.lists).forEach(type => {
+            this.clearSearchResults(type);
+            this.hideDropdown(type);
+        });
+        
+        this.goToStep(1);
+        
+        console.log('MultiStepForm reset');
+    }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        const multiStepForm = new MultiStepForm();
+        window.multiStepForm = multiStepForm; 
+        console.log('MultiStepForm ready');
+    } catch (error) {
+        console.error('Failed to initialize MultiStepForm:', error);
+    }
+});
 
 class CertificateUploadHandler {
     constructor() {

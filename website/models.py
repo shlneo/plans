@@ -1,11 +1,9 @@
 from . import db
 from sqlalchemy import Numeric
-
 from flask_login import UserMixin
-
 from datetime import datetime, timedelta
-
 from decimal import Decimal, InvalidOperation
+
 def to_decimal_3(value):
     try:
         return Decimal(value).quantize(Decimal('0.001'))
@@ -24,7 +22,11 @@ class User(db.Model, UserMixin):
     patronymic_name = db.Column(db.String())
     post = db.Column(db.String())
     phone = db.Column(db.String(), unique=True)
+    
     organization_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))
+    ministry_id = db.Column(db.Integer, db.ForeignKey('ministries.id'))
+    region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))
+    
     password = db.Column(db.String())
     is_admin = db.Column(db.Boolean, default=False)
     is_auditor = db.Column(db.Boolean, default=False)
@@ -34,22 +36,64 @@ class User(db.Model, UserMixin):
     reset_password_token = db.Column(db.String(255), nullable=True)
     reset_password_expires = db.Column(db.DateTime, nullable=True)
     
-    organization = db.relationship('Organization', backref='users')
+    # Явно указываем foreign_keys для каждой связи
+    organization = db.relationship('Organization', 
+                                  foreign_keys=[organization_id],
+                                  backref='users')
+    
+    ministry = db.relationship('Ministry', 
+                              foreign_keys=[ministry_id],
+                              backref='users')
+    
+    region = db.relationship('Region', 
+                            foreign_keys=[region_id],
+                            backref='users')
+    
     plans = db.relationship('Plan', backref='user', lazy=True, cascade="all, delete-orphan")
     notifications = db.relationship('Notification', backref='user', lazy=True, cascade="all, delete-orphan")
     
     def __repr__(self):
         return f'<User {self.email}>'
+
+class Region(db.Model):
+    __tablename__ = 'regions'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
     
+    # Явно указываем foreign_keys для связи
+    plans = db.relationship("Plan", 
+                           foreign_keys="Plan.region_id",
+                           back_populates="region")
+
+class Ministry(db.Model):
+    __tablename__ = 'ministries'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    organizations = db.relationship("Organization", back_populates="ministry")
+    
+    # Явно указываем foreign_keys для связи
+    plans = db.relationship("Plan", 
+                           foreign_keys="Plan.ministry_id",
+                           back_populates="ministry")
+
 class Organization(db.Model):
     __tablename__ = 'organizations'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(), nullable=False)
     okpo = db.Column(db.String, unique=True, nullable=False)
     ynp = db.Column(db.String(), nullable=True)
-    ministry = db.Column(db.String()) 
+    ministry_id = db.Column(db.Integer, db.ForeignKey('ministries.id'))
     is_active = db.Column(db.Boolean, default=True)
-    plans = db.relationship("Plan", back_populates="organization")
+    
+    ministry = db.relationship("Ministry", back_populates="organizations")
+    
+    # Явно указываем foreign_keys для связи
+    plans = db.relationship("Plan", 
+                           foreign_keys="Plan.org_id",
+                           back_populates="organization")
 
 class Plan(db.Model):
     __tablename__ = 'plans'
@@ -79,7 +123,9 @@ class Plan(db.Model):
     is_error = db.Column(db.Boolean, default=False)
     is_approved = db.Column(db.Boolean, default=False)
     
+    ministry_id = db.Column(db.Integer, db.ForeignKey('ministries.id'))
     org_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))  
+    region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))  # Добавлено поле region_id
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  
 
     afch = db.Column(db.Boolean, default=False)
@@ -88,7 +134,19 @@ class Plan(db.Model):
     econ_measures = db.relationship('EconMeasure', back_populates='plan', lazy=True, cascade="all, delete-orphan")
     econ_execes = db.relationship('EconExec', back_populates='plan', lazy=True, cascade="all, delete-orphan")
     indicators_usage = db.relationship('IndicatorUsage', back_populates='plan', lazy=True, cascade="all, delete-orphan")
-    organization = db.relationship("Organization", back_populates="plans")
+    
+    # Явно указываем foreign_keys для каждой связи
+    ministry = db.relationship("Ministry", 
+                              foreign_keys=[ministry_id],
+                              back_populates="plans")
+    
+    organization = db.relationship("Organization", 
+                                  foreign_keys=[org_id],
+                                  back_populates="plans")
+    
+    region = db.relationship("Region", 
+                            foreign_keys=[region_id],
+                            back_populates="plans")
 
 class Ticket(db.Model):
     __tablename__ = 'tickets'
@@ -105,7 +163,7 @@ class Unit(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(400), unique=True, nullable=False)
     name = db.Column(db.String(400), unique=True, nullable=False)
- 
+
 class Direction(db.Model):
     __tablename__ = 'directions'
     id = db.Column(db.Integer, primary_key=True)
@@ -120,14 +178,14 @@ class Direction(db.Model):
 
 class EconMeasure(db.Model):
     __tablename__ = 'econ_measures'
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     id_plan = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=False)
     id_direction = db.Column(db.Integer, db.ForeignKey('directions.id'), nullable=False)
     
     year_econ = db.Column(Numeric(scale=3))
     estim_econ = db.Column(Numeric(scale=3))
         
-    order = db.Column(db.Integer, default = None)
+    order = db.Column(db.Integer, default=None)
 
     plan = db.relationship("Plan", back_populates="econ_measures")
     direction = db.relationship('Direction', backref='econ_measures')
@@ -144,7 +202,7 @@ class EconMeasure(db.Model):
 
 class EconExec(db.Model):
     __tablename__ = 'econ_execes'
-    id = db.Column(db.Integer, primary_key = True)
+    id = db.Column(db.Integer, primary_key=True)
     id_measure = db.Column(db.Integer, db.ForeignKey('econ_measures.id'), nullable=False)
     id_plan = db.Column(db.Integer, db.ForeignKey('plans.id'), nullable=False)
 
@@ -166,7 +224,7 @@ class EconExec(db.Model):
  
     is_local = db.Column(db.Boolean)
     is_corrected = db.Column(db.Boolean)
-    order = db.Column(db.Integer, default = None)
+    order = db.Column(db.Integer, default=None)
 
     plan = db.relationship("Plan", back_populates="econ_execes")
     econ_measures = db.relationship("EconMeasure", back_populates="econ_execes")
@@ -237,7 +295,7 @@ class IndicatorUsage(db.Model):
             'QYearNext': self.QYearNext,
             'CoeffToTut': self.indicator.CoeffToTut
         }
-        
+
 class Notification(db.Model):
     __tablename__ = 'notifications'
 
