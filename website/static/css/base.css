@@ -2027,6 +2027,16 @@ input::placeholder {
   width: calc(100% - 40px);
 }
 
+.pers-page-with-table{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: auto;
+  width: 100%;
+}
+
+
 /* second-header */
 .header-cont {
   display: flex;
@@ -3764,6 +3774,7 @@ th .resizer::before {
   background-color: white;
   font-size: 13px;
   transition: all 0.3s ease-in-out;
+  margin: 0;
 }
 
 .directions-table {  
@@ -4172,7 +4183,7 @@ button[disabled] {
   user-select: none;
 }
 
-.section-title{
+.section-title-switcher{
   font-weight: 500;
   font-size: 16px;
   color: var(--text-subtitle2);
@@ -4709,8 +4720,8 @@ label {
   .navigation-container {
     flex-direction: row;
     justify-content: space-between;
-    width: 80%;
-    max-width: 1200px;
+    width: 100%;
+    max-width: 1244px;
   }
   
   .nav-item {
@@ -4825,7 +4836,7 @@ label {
   /* Навигация */
   .navigation-container {
     width: 90%;
-    max-width: 900px;
+    /* max-width: 900px; */
   }
   
   .nav-item {

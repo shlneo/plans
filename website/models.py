@@ -36,7 +36,6 @@ class User(db.Model, UserMixin):
     reset_password_token = db.Column(db.String(255), nullable=True)
     reset_password_expires = db.Column(db.DateTime, nullable=True)
     
-    # Явно указываем foreign_keys для каждой связи
     organization = db.relationship('Organization', 
                                   foreign_keys=[organization_id],
                                   backref='users')
@@ -61,7 +60,6 @@ class Region(db.Model):
     name = db.Column(db.String(), nullable=False)
     is_active = db.Column(db.Boolean, default=True)
     
-    # Явно указываем foreign_keys для связи
     plans = db.relationship("Plan", 
                            foreign_keys="Plan.region_id",
                            back_populates="region")
@@ -74,7 +72,6 @@ class Ministry(db.Model):
     
     organizations = db.relationship("Organization", back_populates="ministry")
     
-    # Явно указываем foreign_keys для связи
     plans = db.relationship("Plan", 
                            foreign_keys="Plan.ministry_id",
                            back_populates="ministry")
@@ -90,7 +87,6 @@ class Organization(db.Model):
     
     ministry = db.relationship("Ministry", back_populates="organizations")
     
-    # Явно указываем foreign_keys для связи
     plans = db.relationship("Plan", 
                            foreign_keys="Plan.org_id",
                            back_populates="organization")
@@ -125,7 +121,7 @@ class Plan(db.Model):
     
     ministry_id = db.Column(db.Integer, db.ForeignKey('ministries.id'))
     org_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))  
-    region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))  # Добавлено поле region_id
+    region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  
 
     afch = db.Column(db.Boolean, default=False)
@@ -135,7 +131,6 @@ class Plan(db.Model):
     econ_execes = db.relationship('EconExec', back_populates='plan', lazy=True, cascade="all, delete-orphan")
     indicators_usage = db.relationship('IndicatorUsage', back_populates='plan', lazy=True, cascade="all, delete-orphan")
     
-    # Явно указываем foreign_keys для каждой связи
     ministry = db.relationship("Ministry", 
                               foreign_keys=[ministry_id],
                               back_populates="plans")

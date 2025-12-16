@@ -30,20 +30,29 @@ def user_without_param():
                 flash("Необходима авторизация.", "error")
                 return redirect(url_for('auth.login'))
 
-            has_missing = (
-                not current_user.last_name or
-                not current_user.first_name or
-                not current_user.patronymic_name or
-                not current_user.phone or
-                not current_user.organization_id
+            # Проверяем, что заполнены обязательные поля
+            has_required_fields = (
+                current_user.last_name and
+                current_user.first_name and
+                current_user.phone
             )
-
-            if not has_missing:
-                # flash("Доступ запрещён — все данные уже заполнены.", "error")
-                return redirect(url_for('auth.profile'))
+            
+            # Проверяем, что заполнено одно из трех полей
+            has_entity = (
+                current_user.organization_id or
+                current_user.ministry_id or
+                current_user.region_id
+            )
+            
+            # Если все обязательные поля заполнены И выбрана сущность
+            if has_required_fields and has_entity:
+                # Все данные уже заполнены - перенаправляем в профиль
+                return redirect(url_for('views.profile'))
+            
             return f(*args, **kwargs)
         return decorated_function
     return decorator
+
 
 def user_with_all_params():
     def decorator(f):
@@ -52,16 +61,35 @@ def user_with_all_params():
             if not current_user.is_authenticated:
                 flash("Необходима авторизация.", "error")
                 return redirect(url_for('auth.login'))
-            all_filled = (
+            
+            # Проверяем обязательные текстовые поля
+            all_required_filled = (
                 current_user.last_name and
                 current_user.first_name and
-                current_user.phone and
-                current_user.organization_id
+                current_user.phone
             )
-            if not all_filled:
-                flash("Заполните недостающие данные.", "error")
+            
+            if not all_required_filled:
+                flash("Заполните обязательные данные: ФИО и телефон.", "error")
                 return redirect(url_for('auth.param'))
-
+            
+            # Проверяем, что заполнено ровно одно из трех полей
+            entity_fields = [
+                current_user.organization_id,
+                current_user.ministry_id,
+                current_user.region_id
+            ]
+            
+            filled_entities = [field for field in entity_fields if field is not None]
+            
+            if len(filled_entities) == 0:
+                flash("Необходимо выбрать принадлежность: организацию, министерство или регион.", "error")
+                return redirect(url_for('auth.param'))
+            
+            if len(filled_entities) > 1:
+                flash("Можно выбрать только одну принадлежность: организацию, министерство или регион.", "error")
+                return redirect(url_for('auth.param'))
+            
             return f(*args, **kwargs)
         return decorated_function
     return decorator

@@ -31,7 +31,7 @@ def read_dbf(file_path, columns):
         
 def add_data_in_db(db):
     if is_db_empty():
-        from .models import User, Organization, Unit, Direction, Indicator, Ministry
+        from .models import User, Organization, Unit, Direction, Indicator, Ministry, Region
         from sqlalchemy.exc import IntegrityError
         print('Filling is in progress...')
         
@@ -128,14 +128,32 @@ def add_data_in_db(db):
         for name, okpo in dop_org_data:
             dop_org = Organization(name=name, okpo=str(okpo)) 
             db.session.add(dop_org)
+        db.session.commit()
+        
+        ### ----------- ###
+
+        ### REGION DATA ###     
+        region_data = [
+            ('Брестская область'),
+            ('Витебская область'),
+            ('Гомельская область'),
+            ('Гродненская область'),
+            ('г. Минск'),
+            ('Минская область'),
+            ('Могилевская область'),
+        ]
+
+        for name in region_data:
+            new_region = Region(name=name) 
+            db.session.add(new_region)
 
         db.session.commit()
         ### ----------- ###
 
         ### USER DATA ###
         users_data = [
-            ('Инженер-программист', os.getenv('adminemail1'), os.getenv('adminname1'), os.getenv('adminsecondname1'), os.getenv('adminpatr1'), os.getenv('adminphone1'), True, False, 14),
-            ('Администратор', os.getenv('adminemail2'), os.getenv('adminname2'), os.getenv('adminsecondname2'), os.getenv('adminpatr2'), os.getenv('adminphone2'), True, False, 6471),
+            ('', os.getenv('adminemail1'), os.getenv('adminname1'), os.getenv('adminsecondname1'), os.getenv('adminpatr1'), os.getenv('adminphone1'), True, False, 14),
+            ('', os.getenv('adminemail2'), os.getenv('adminname2'), os.getenv('adminsecondname2'), os.getenv('adminpatr2'), os.getenv('adminphone2'), True, False, 6471),
             ('Аудитор', os.getenv('auditoremailBrest'), 'Иванов1', 'Иван', 'Иванович', '+375445544431', False, True, 7940),
             ('Аудитор', os.getenv('auditoremailVitebsk'), 'Иванов2', 'Иван', 'Иванович', '+375445544432', False, True, 7941),
             ('Аудитор', os.getenv('auditoremailGomel'), 'Иванов3', 'Иван', 'Иванович', '+375445544433', False, True, 7942),

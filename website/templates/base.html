@@ -416,6 +416,7 @@
                 
 
                 <div class="button-auth-area" id="step1-buttons">
+                    <div></div>
                     <button type="button" class="auth-next-button" id="step1-next-btn" data-action="directions-next">
                         <span class="btn-text">{{ _('Далее') }}</span>
                         <img src="/static/img/Next.svg" alt="" class="btn-icon">
@@ -557,6 +558,7 @@
                     </table>
                     </div>
                     <div class="button-auth-area" id="step1-buttons">
+                        <div></div>
                         <button type="button" class="auth-next-button" id="step1-next-btn" data-action="directions-next">
                             <span class="btn-text">{{ _('Далее') }}</span>
                             <img src="/static/img/Next.svg" alt="" class="btn-icon">
@@ -838,6 +840,7 @@
                   </div>
                 </div>
                 <div class="button-auth-area">
+                    <div></div>
                     <button type="button" class="auth-next-button" id="step1-next-btn" >
                         <span class="btn-text">{{ _('Далее') }}</span>
                         <img src="/static/img/Next.svg" class="btn-icon">
@@ -968,6 +971,7 @@
                 </table>
                 </div>
                 <div class="button-auth-area" id="step1-buttons">
+                    <div></div>
                     <button type="button" class="auth-next-button" id="step1-next-btn" data-action="directions-next">
                         <span class="btn-text">{{ _('Далее') }}</span>
                         <img src="/static/img/Next.svg" alt="" class="btn-icon">
@@ -1069,6 +1073,7 @@
                     </div>  
                     </div>
                     <div class="button-auth-area">
+                        <div></div>
                         <button type="submit" class="submit-button">
                             <img src="/static/img/Add_wh.svg" alt="" class="btn-icon">
                             <span class="btn-text">{{ _('Добавить изменения') }}</span>
@@ -1131,9 +1136,15 @@
                   </table>
                 </div>             
                 <div class="pagination-container" data-action="pagination-container">
-                    <button class="pagination-btn" data-action="prev-page" disabled>← Назад</button>
+                    <button class="auth-next-button" data-action="prev-page" disabled>
+                        <img src="/static/img/Back.svg" alt="" class="btn-icon">
+                        <span class="btn-text">{{ _('Назад') }}</span>
+                    </button>
                     <span class="pagination-info" data-action="page-info">Страница 1</span>
-                    <button class="pagination-btn" data-action="next-page">Вперед →</button>
+                    <button class="auth-next-button" data-action="next-page">                       
+                        <span class="btn-text">{{ _('Вперед') }}</span>
+                        <img src="/static/img/Next.svg" alt="" class="btn-icon">
+                    </button>
                 </div>
                 <form method="POST" action="{{ url_for('views.edit_user_org') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -1145,6 +1156,7 @@
                         </div>  
                     </div>
                     <div class="button-auth-area">
+                        <div></div>
                         <button type="submit" class="submit-button">
                             <img src="/static/img/Edit.svg" alt="" class="btn-icon">
                             <span class="btn-text">{{ _('Изменить организацию ') }}</span>

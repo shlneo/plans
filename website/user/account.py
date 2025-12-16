@@ -167,37 +167,73 @@ def activate_account():
         return redirect(url_for('auth.param'))        
     else:
         flash('Некорректный код активации.', 'error')
-        return redirect(url_for('auth.code'))      
-
-def add_param(first_name, last_name, patronymic_name, phone, organization_id = None, ministry_id = None, region_id = None, post = None):
+        return redirect(url_for('auth.code')) 
+         
+def add_param(first_name, last_name, patronymic_name, phone, organization_id=None, ministry_id=None, region_id=None, post=None):
+    required_fields = {
+        'first_name': first_name,
+        'last_name': last_name,
+        'phone': phone
+    }
+    
+    for field_name, value in required_fields.items():
+        if not value or not str(value).strip():
+            flash(f'Поле "{field_name}" обязательно для заполнения!', 'error')
+            return redirect(url_for('auth.param'))
+    
     if not phone or len(phone.strip()) < 5:
         flash('Номер телефона должен содержать не менее 5 символов!', 'error')
         return redirect(url_for('views.profile'))
     
+    def parse_id(id_value):
+        if not id_value or not str(id_value).strip():
+            return None
+        try:
+            return int(id_value)
+        except (ValueError, TypeError):
+            return None
+    
+    org_id = parse_id(organization_id)
+    min_id = parse_id(ministry_id)
+    reg_id = parse_id(region_id)
+    
+    filled_ids = [id for id in [org_id, min_id, reg_id] if id is not None]
+    
+    if len(filled_ids) > 1:
+        flash('Можно выбрать только одну принадлежность: организацию, министерство или регион!', 'error')
+        return redirect(url_for('auth.param'))
+    
+    if len(filled_ids) == 0:
+        flash('Необходимо выбрать принадлежность: организацию, министерство или регион!', 'error')
+        return redirect(url_for('auth.param'))
+    
     normalized_phone = phone.strip()
-    if normalized_phone.startswith('+'):
-        plus = '+'
-        digits = ''.join(filter(str.isdigit, normalized_phone[1:]))
-        normalized_phone = plus + digits
-    else:
-        normalized_phone = ''.join(filter(str.isdigit, normalized_phone))
+    # if normalized_phone.startswith('+'):
+    #     plus = '+'
+    #     digits = ''.join(filter(str.isdigit, normalized_phone[1:]))
+    #     normalized_phone = plus + digits
+    # else:
+    #     normalized_phone = ''.join(filter(str.isdigit, normalized_phone))
     
     existing_user = User.query.filter_by(phone=normalized_phone).first()
-    
     if existing_user and existing_user.id != current_user.id:
         flash('Пользователь с таким номером телефона уже зарегистрирован!', 'error')
         return redirect(url_for('auth.param'))
     
-    current_user.first_name = first_name
-    current_user.last_name = last_name
-    current_user.patronymic_name = patronymic_name
+    current_user.first_name = first_name.strip()
+    current_user.last_name = last_name.strip()
+    current_user.patronymic_name = patronymic_name.strip() if patronymic_name else None
     current_user.phone = normalized_phone
-    current_user.organization_id = organization_id
-    current_user.ministry_id = ministry_id
-    current_user.region_id = region_id
-    current_user.post = post
+    current_user.post = post.strip() if post else None
+    current_user.organization_id = org_id
+    current_user.ministry_id = min_id
+    current_user.region_id = reg_id
 
-    db.session.commit()
-    flash('Регистрация прошла успешно!', 'success')
-
-    return redirect(url_for('views.profile'))
+    try:
+        db.session.commit()
+        flash('Данные успешно сохранены!', 'success')
+        return redirect(url_for('views.profile'))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Ошибка при сохранении данных: {str(e)}', 'error')
+        return redirect(url_for('auth.param'))

@@ -2774,27 +2774,24 @@ class MultiStepForm {
     handleFormSubmit(e) {
         e.preventDefault();
         
-        // Проверяем, что все обязательные поля заполнены
         if (!this.validateForm()) {
             alert('Пожалуйста, заполните все обязательные поля и выберите структуру');
             return;
         }
         
-        // Показываем loading на кнопке
         const originalText = this.elements.submitBtn.querySelector('.btn-text').textContent;
         this.elements.submitBtn.querySelector('.btn-text').textContent = 'Отправка...';
         this.elements.submitBtn.disabled = true;
         
-        // Собираем данные формы
+ 
         const formData = new FormData(this.elements.form);
         
-        // Добавляем логирование данных
+
         console.log('Form data to submit:');
         for (let [key, value] of formData.entries()) {
             console.log(`${key}: ${value}`);
         }
         
-        // Отправляем форму
         fetch(this.elements.form.action, {
             method: 'POST',
             body: formData,
@@ -2829,28 +2826,24 @@ class MultiStepForm {
             alert(`Ошибка при отправке формы: ${error.message}`);
         })
         .finally(() => {
-            // Восстанавливаем кнопку
             this.elements.submitBtn.querySelector('.btn-text').textContent = originalText;
             this.elements.submitBtn.disabled = false;
         });
     }
 
     validateForm() {
-        // Проверяем поля шага 1
         const step1Valid = this.validateStep1();
         if (!step1Valid) {
             console.error('Step 1 validation failed');
             return false;
         }
         
-        // Проверяем выбран ли тип структуры
         const entityType = this.currentEntityType;
         if (!entityType) {
             console.error('Entity type not selected');
             return false;
         }
         
-        // Проверяем выбрана ли конкретная структура
         const hiddenInput = this.elements.hiddenInputs[entityType];
         if (!hiddenInput || !hiddenInput.value) {
             console.error(`${entityType} not selected`);
@@ -2861,7 +2854,6 @@ class MultiStepForm {
         return true;
     }
 
-    // Остальные методы без изменений...
     setupStep1Validation() {
         const requiredFields = ['#name', '#secondname', '#phone'];
         requiredFields.forEach(selector => {
@@ -3126,13 +3118,11 @@ class MultiStepForm {
             case 'ministry':
                 div.innerHTML = `
                     <div class="item-name">${this.escapeHtml(item.name)}</div>
-                    ${item.code ? `<div class="item-details"><span>Код: ${this.escapeHtml(item.code)}</span></div>` : ''}
                 `;
                 break;
             case 'region':
                 div.innerHTML = `
                     <div class="item-name">${this.escapeHtml(item.name)}</div>
-                    ${item.code ? `<div class="item-details"><span>Код: ${this.escapeHtml(item.code)}</span></div>` : ''}
                 `;
                 break;
         }
