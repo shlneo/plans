@@ -1,54 +1,56 @@
-# erespondentS
+# eRespondentS
 
-<!-- ![PyPI - Downloads](https://img.shields.io/pypi/dd/markitdown) -->
-![Python](https://img.shields.io/badge/python-3.12-blue)
-[![Built by Shlneo](https://img.shields.io/badge/Built%20by-Shlneo%20-blue)](https://github.com/shlneo)
+![Python Version](https://img.shields.io/badge/python-3.12-blue)
+![Framework](https://img.shields.io/badge/framework-Flask-yellowgreen)
+![Database](https://img.shields.io/badge/database-PostgreSQL-blueviolet)
+![Status](https://img.shields.io/badge/status-active-success)
 
-### Info
- 
-## ...
+## 📋 Overview
 
-### Version
- 
-1.0.0
+eRespondentS is ...
 
-### Requirements
+> **Note:** 
 
-- python `3.12.0`
-- add `.env`
-- PostgreSql `17`
+## 🛠️ Tech Stack
 
-### Database Settings
+| Component | Choice |
+| :--- | :--- |
+| **Language** | Python 3.12 |
+| **Web Framework** | Flask |
+| **Database** | PostgreSQL |
+| **Environment** | Virtual Environment (`.venv`) |
+| **Package Manager** | pip |
 
-1. Make a user `kyrator` and give him pass `palletenjoer`.
+## ⚙️ Prerequisites
 
-2. Create database `eres` with superuser `kyrator`.
+Ensure you have the following installed on your system:
+- **Python 3.12**
+- **PostgreSQL 17**
+- `pip` (usually comes with Python)
 
-### Installation app
+## 🚀 Quick Start
 
-1. Clone the `plans` repository.
+Follow these steps to set up and run the project locally.
 
-2. Create a virtual environment:
-```bash 
+### 1. Clone & Setup Environment
+```bash
+# Clone the repository
+git clone <your-repository-url>
+cd erespondents
+
+# Create and activate a virtual environment
 python -m venv .venv
-```
 
-3. Activate the virtual environment:
-```bash 
+# On Windows:
 .venv\Scripts\activate
-```
+# On macOS/Linux:
+source .venv/bin/activate
 
-4. Install the libraries:
-```bash 
+# Install libraries
 pip install -r requirements.txt
 ```
 
-### Launch
-
-```bash 
+### 2. Start app
+```bash
 python main.py
 ```
-
-### Link
-
-[Link]()
