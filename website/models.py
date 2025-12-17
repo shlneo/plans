@@ -95,8 +95,10 @@ class Plan(db.Model):
     __tablename__ = 'plans'
     id = db.Column(db.Integer, primary_key=True)
     
-    okpo = db.Column(db.String, default=None)
-    name_org = db.Column(db.String, default=None)
+    # okpo = db.Column(db.String, default=None)
+    # name_org = db.Column(db.String, default=None)
+    # name_min = db.Column(db.String, default=None)
+    # name_reg = db.Column(db.String, default=None)
     
     year = db.Column(db.Integer, nullable=False)
     email = db.Column(db.String(), nullable=False)
@@ -122,6 +124,7 @@ class Plan(db.Model):
     ministry_id = db.Column(db.Integer, db.ForeignKey('ministries.id'))
     org_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))  
     region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))
+    
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  
 
     afch = db.Column(db.Boolean, default=False)

@@ -27,26 +27,22 @@ def user_without_param():
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                flash("Необходима авторизация.", "error")
+                flash("Необходима авторизация", "error")
                 return redirect(url_for('auth.login'))
-
-            # Проверяем, что заполнены обязательные поля
+            
             has_required_fields = (
                 current_user.last_name and
                 current_user.first_name and
                 current_user.phone
             )
             
-            # Проверяем, что заполнено одно из трех полей
             has_entity = (
                 current_user.organization_id or
                 current_user.ministry_id or
                 current_user.region_id
             )
             
-            # Если все обязательные поля заполнены И выбрана сущность
             if has_required_fields and has_entity:
-                # Все данные уже заполнены - перенаправляем в профиль
                 return redirect(url_for('views.profile'))
             
             return f(*args, **kwargs)
@@ -59,10 +55,10 @@ def user_with_all_params():
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                flash("Необходима авторизация.", "error")
+                flash("Необходима авторизация", "error")
                 return redirect(url_for('auth.login'))
             
-            # Проверяем обязательные текстовые поля
+
             all_required_filled = (
                 current_user.last_name and
                 current_user.first_name and
@@ -70,10 +66,9 @@ def user_with_all_params():
             )
             
             if not all_required_filled:
-                flash("Заполните обязательные данные: ФИО и телефон.", "error")
+                flash("Заполните обязательные данные: ФИО и телефон", "error")
                 return redirect(url_for('auth.param'))
             
-            # Проверяем, что заполнено ровно одно из трех полей
             entity_fields = [
                 current_user.organization_id,
                 current_user.ministry_id,
@@ -83,11 +78,11 @@ def user_with_all_params():
             filled_entities = [field for field in entity_fields if field is not None]
             
             if len(filled_entities) == 0:
-                flash("Необходимо выбрать принадлежность: организацию, министерство или регион.", "error")
+                flash("Необходимо выбрать принадлежность: организацию, министерство или регион", "error")
                 return redirect(url_for('auth.param'))
             
             if len(filled_entities) > 1:
-                flash("Можно выбрать только одну принадлежность: организацию, министерство или регион.", "error")
+                flash("Можно выбрать только одну принадлежность: организацию, министерство или регион", "error")
                 return redirect(url_for('auth.param'))
             
             return f(*args, **kwargs)
@@ -108,17 +103,16 @@ def login():
                 if (
                     not user.last_name or
                     not user.first_name or
-                    not user.phone or
-                    not user.organization_id
+                    not user.phone
                 ):  
-                    flash("Необходимо заполнить обязательные парамметры.", "error")
+                    flash("Необходимо заполнить обязательные парамметры", "error")
                     return redirect(url_for('auth.param'))
-                flash('Авторизация прошла успешно.', 'success')
+                flash('Авторизация прошла успешно', 'success')
                 return redirect(url_for('views.profile'))
             else:
-                flash('Неправильный email или пароль.', 'error')
+                flash('Неправильный email или пароль', 'error')
         else:
-            flash('Введите данные для авторизации.', 'error')
+            flash('Введите данные для авторизации', 'error')
         return render_template(
             'login.html',
             hide_header=True,
@@ -170,7 +164,7 @@ def resend_code():
         email = session.get('temp_user', {}).get('email')
         if email:
             send_activation_email(email)
-            flash('Новый код подтверждения отправлен на вашу почту.', 'success')
+            flash('Новый код подтверждения отправлен на вашу почту', 'success')
         else:
             flash('Ошибка: email не найден', 'error')
     
@@ -255,7 +249,7 @@ def forgot_password():
             
             mes_on_email(reset_url, email, 'reset_link')
      
-        flash('Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля.', 'success')
+        flash('Если email зарегистрирован, на него будет отправлена ссылка для сброса пароля', 'success')
         return redirect(url_for('auth.forgot_password'))
     
 @auth.route('/reset-password/<token>', methods=['GET', 'POST'])
@@ -264,11 +258,11 @@ def reset_password(token):
         user = User.query.filter_by(reset_password_token=token).first()
         
         if not user:
-            flash('Ссылка для сброса пароля недействительна.', 'error')
+            flash('Ссылка для сброса пароля недействительна', 'error')
             return redirect(url_for('auth.forgot_password'))
         
         if user.reset_password_expires < datetime.utcnow():
-            flash('Ссылка для сброса пароля устарела. Запросите новую.', 'error')
+            flash('Ссылка для сброса пароля устарела. Запросите новую', 'error')
             return redirect(url_for('auth.forgot_password'))
         
         return render_template('reset_password.html', 
@@ -282,7 +276,7 @@ def reset_password(token):
         token_from_form = request.form.get('token')
         
         if token != token_from_form:
-            flash('Неверный токен сброса пароля.', 'error')
+            flash('Неверный токен сброса пароля', 'error')
             return redirect(url_for('auth.forgot_password'))
         
         if password != confirm_password:
@@ -292,11 +286,11 @@ def reset_password(token):
         user = User.query.filter_by(reset_password_token=token).first()
         
         if not user:
-            flash('Ссылка для сброса пароля недействительна.', 'error')
+            flash('Ссылка для сброса пароля недействительна', 'error')
             return redirect(url_for('auth.forgot_password'))
         
         if user.reset_password_expires < datetime.utcnow():
-            flash('Ссылка для сброса пароля устарела. Запросите новую.', 'error')
+            flash('Ссылка для сброса пароля устарела, запросите новую', 'error')
             return redirect(url_for('auth.forgot_password'))
         
         try:
@@ -306,10 +300,10 @@ def reset_password(token):
             user.reset_password_expires = None
             db.session.commit()
             
-            flash('Пароль успешно изменен. Теперь вы можете войти с новым паролем.', 'success')
+            flash('Пароль успешно изменен. Теперь вы можете войти с новым паролем', 'success')
             return redirect(url_for('auth.login'))
             
         except Exception as e:
             db.session.rollback()
-            flash('Произошла ошибка при изменении пароля. Попробуйте еще раз.', 'error')
+            flash('Произошла ошибка при изменении пароля. Попробуйте еще раз', 'error')
             return redirect(url_for('auth.reset_password', token=token))

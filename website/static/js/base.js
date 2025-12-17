@@ -1708,19 +1708,23 @@ function initColumnResize() {
     });
 }
 
-// OrganizationSearchManager
-class OrganizationSearchManager {
+
+class MultiTypeSearchManager {
     constructor(config = {}) {
         this.config = {
             searchInputSelector: 'input[data-action="search-organization"]',
             tableBodySelector: 'table[data-action="organization-table"] tbody',
             selectedOrgInputSelector: 'input[data-action="selected-org"]',
+            selectedItemTypeInputSelector: 'input[data-action="selected-item-type"]',
             submitButtonSelector: 'button[data-action="submit"]',
-            paginationContainerSelector: '.pagination-container[data-action="pagination-container"]',
-            prevPageButtonSelector: 'button[data-action="prev-page"]',
-            nextPageButtonSelector: 'button[data-action="next-page"]',
-            pageInfoSelector: '.pagination-info[data-action="page-info"]',
-            apiUrl: '/api/organizations',
+            loadMoreButtonSelector: 'button[data-action="load-more"]',
+            typeButtonsSelector: '[data-action="select-type"]',
+            
+            // Разные API для разных типов
+            organizationsApiUrl: '/api/organizations',
+            ministriesApiUrl: '/api/ministries',
+            regionsApiUrl: '/api/regions',
+            
             debounceTime: 300,
             ...config
         };
@@ -1728,6 +1732,9 @@ class OrganizationSearchManager {
         this.currentPage = 1;
         this.currentQuery = '';
         this.hasNextPage = false;
+        this.selectedItemType = 'organization'; // По умолчанию организация
+        this.selectedItemId = null;
+        this.allItems = []; // Для хранения всех загруженных данных
         this.init();
     }
 
@@ -1735,65 +1742,76 @@ class OrganizationSearchManager {
         this.searchInput = document.querySelector(this.config.searchInputSelector);
         this.tableBody = document.querySelector(this.config.tableBodySelector);
         this.selectedOrgInput = document.querySelector(this.config.selectedOrgInputSelector);
+        this.selectedItemTypeInput = document.querySelector(this.config.selectedItemTypeInputSelector);
         this.submitButton = document.querySelector(this.config.submitButtonSelector);
-        this.paginationContainer = document.querySelector(this.config.paginationContainerSelector);
-        this.prevPageButton = document.querySelector(this.config.prevPageButtonSelector);
-        this.nextPageButton = document.querySelector(this.config.nextPageButtonSelector);
-        this.pageInfo = document.querySelector(this.config.pageInfoSelector);
+        this.loadMoreButton = document.querySelector(this.config.loadMoreButtonSelector);
+        this.typeButtons = document.querySelectorAll(this.config.typeButtonsSelector);
 
         if (!this.searchInput || !this.tableBody || !this.selectedOrgInput) {
-            console.error('OrganizationSearchManager: Не найдены необходимые элементы');
+            console.error('MultiTypeSearchManager: Не найдены необходимые элементы');
             return;
         }
 
         this.bindEvents();
         this.updateSubmitButtonState();
-        this.loadOrganizations();
+        this.loadData();
     }
 
     bindEvents() {
         let debounceTimer;
+        
+
         this.searchInput.addEventListener('input', (e) => {
             clearTimeout(debounceTimer);
             const query = e.target.value.trim();
             debounceTimer = setTimeout(() => {
-                this.currentPage = 1; // Сбрасываем на первую страницу при новом поиске
+                this.currentPage = 1;
                 this.currentQuery = query;
-                this.loadOrganizations(query);
+                this.allItems = []; 
+                this.loadData();
             }, this.config.debounceTime);
         });
 
         this.tableBody.addEventListener('click', (e) => {
             const row = e.target.closest('tr');
             if (row && row.dataset.id) {
-                this.selectOrganization(row);
+                this.selectItem(row);
             }
         });
 
-        // Обработчики для пагинации
-        if (this.prevPageButton) {
-            this.prevPageButton.addEventListener('click', () => {
-                if (this.currentPage > 1) {
-                    this.currentPage--;
-                    this.loadOrganizations(this.currentQuery);
+        if (this.loadMoreButton) {
+            this.loadMoreButton.addEventListener('click', () => {
+                if (this.hasNextPage) {
+                    this.currentPage++;
+                    this.loadData(true);
                 }
             });
         }
 
-        if (this.nextPageButton) {
-            this.nextPageButton.addEventListener('click', () => {
-                if (this.hasNextPage) {
-                    this.currentPage++;
-                    this.loadOrganizations(this.currentQuery);
-                }
+        if (this.typeButtons.length > 0) {
+            this.typeButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const type = e.target.dataset.type || e.target.closest('button').dataset.type;
+                    if (type && type !== this.selectedItemType) {
+                        this.selectItemType(type);
+                    }
+                });
             });
         }
+
 
         if (this.submitButton) {
             this.submitButton.addEventListener('click', (e) => {
-                if (!this.selectedOrgInput.value) {
+                if (!this.selectedItemId) {
                     e.preventDefault();
-                    this.showNotification('Пожалуйста, выберите организацию из списка');
+                    this.showNotification('Пожалуйста, выберите элемент из списка');
+                    return;
+                }
+                
+
+                this.selectedOrgInput.value = this.selectedItemId;
+                if (this.selectedItemTypeInput) {
+                    this.selectedItemTypeInput.value = this.selectedItemType;
                 }
             });
         }
@@ -1801,99 +1819,271 @@ class OrganizationSearchManager {
         const form = this.selectedOrgInput.closest('form');
         if (form) {
             form.addEventListener('submit', (e) => {
-                if (!this.selectedOrgInput.value) {
+                if (!this.selectedItemId) {
                     e.preventDefault();
-                    this.showNotification('Пожалуйста, выберите организацию из списка');
+                    this.showNotification('Пожалуйста, выберите элемент из списка');
+                    return;
                 }
             });
         }
     }
 
-    async loadOrganizations(query = '') {
+    async loadData(append = false) {
         try {
-            const url = `${this.config.apiUrl}?q=${encodeURIComponent(query)}&page=${this.currentPage}`;
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
-            const data = await response.json();
+            if (!append) {
+                this.showLoading();
+            }
+
+            let apiUrl;
+            let dataKey;
             
-            this.renderOrganizations(data.organizations);
-            this.updatePagination(data);
+            switch(this.selectedItemType) {
+                case 'organization':
+                    apiUrl = this.config.organizationsApiUrl;
+                    dataKey = 'organizations';
+                    break;
+                case 'ministry':
+                    apiUrl = this.config.ministriesApiUrl;
+                    dataKey = 'ministrys';
+                    break;
+                case 'region':
+                    apiUrl = this.config.regionsApiUrl;
+                    dataKey = 'regions';
+                    break;
+                default:
+                    apiUrl = this.config.organizationsApiUrl;
+                    dataKey = 'organizations';
+            }
+
+            console.log(`Загрузка данных: тип=${this.selectedItemType}, endpoint=${apiUrl}, ключ=${dataKey}`);
+
+            const url = `${apiUrl}?q=${encodeURIComponent(this.currentQuery)}&page=${this.currentPage}`;
+            const response = await fetch(url);
+            
+            if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
+            
+            const data = await response.json();
+            console.log('Полученные данные:', data);
+            
+
+            const items = data[dataKey] || [];
+            console.log(`Загружено ${items.length} элементов`);
+            
+            if (append) {
+                this.allItems = [...this.allItems, ...items];
+            } else {
+                this.allItems = items;
+            }
+            
+            this.hasNextPage = data.has_next;
+            this.renderItems();
+            this.updateLoadMoreButton();
             
         } catch (error) {
-            console.error('OrganizationSearchManager: Ошибка загрузки организаций:', error);
+            console.error('MultiTypeSearchManager: Ошибка загрузки данных:', error);
             this.showError('Ошибка загрузки данных');
-            this.hidePagination();
+        } finally {
+            this.hideLoading();
         }
     }
 
-    renderOrganizations(organizations) {
-        this.tableBody.innerHTML = '';
-        if (!organizations || organizations.length === 0) {
-            this.tableBody.innerHTML = `<tr><td colspan="3">Нет данных</td></tr>`;
+    renderItems() {
+        if (!this.allItems || this.allItems.length === 0) {
+            this.tableBody.innerHTML = `<tr><td colspan="2">Нет данных</td></tr>`;
             return;
         }
 
-        organizations.forEach(org => {
+        if (this.currentPage === 1) {
+            this.tableBody.innerHTML = '';
+        }
+
+        this.updateTableHeaders();
+
+        this.allItems.forEach(item => {
             const row = document.createElement('tr');
-            row.dataset.id = org.id;
-            row.innerHTML = `
-                <td style="display: none;">${this.escapeHtml(org.id)}</td>
-                <td>${this.escapeHtml(org.name)}</td>
-                <td>${this.escapeHtml(org.okpo)}</td>
-            `;
+            row.dataset.id = item.id;
+            row.dataset.type = this.selectedItemType;
+            
+            let html = `<td style="display: none;">${this.escapeHtml(item.id)}</td>`;
+            
+            switch(this.selectedItemType) {
+                case 'organization':
+                    html += `
+                        <td>${this.escapeHtml(item.name)}</td>
+                        <td style="text-align: center;">${this.escapeHtml(item.okpo || '')}</td>
+                    `;
+                    break;
+                case 'ministry':
+                case 'region':
+                    html += `
+                        <td>${this.escapeHtml(item.name)}</td>
+                        <td style="text-align: center;">${this.escapeHtml('')}</td>
+                    `;
+                    break;
+            }
+            
+            row.innerHTML = html;
             this.tableBody.appendChild(row);
         });
     }
 
-    updatePagination(data) {
-        if (!this.paginationContainer) return;
-
-        this.hasNextPage = data.has_next;
+    updateTableHeaders() {
+        const table = this.tableBody.closest('table');
+        if (!table) return;
         
-        // Показываем пагинацию только если есть больше одной страницы или есть данные
-        if (data.organizations && data.organizations.length > 0) {
-            this.paginationContainer.style.display = 'flex';
-            
-            // Обновляем информацию о странице
-            if (this.pageInfo) {
-                this.pageInfo.textContent = `Страница ${this.currentPage}`;
-            }
-            
-            // Обновляем состояние кнопок
-            if (this.prevPageButton) {
-                this.prevPageButton.disabled = this.currentPage === 1;
-            }
-            
-            if (this.nextPageButton) {
-                this.nextPageButton.disabled = !this.hasNextPage;
-            }
+        const thead = table.querySelector('thead');
+        if (!thead) return;
+        
+        let headersHTML = `
+            <tr>
+                <th style="display: none;">id</th>
+        `;
+        
+        switch(this.selectedItemType) {
+            case 'organization':
+                headersHTML += `
+                    <th>Наименование</th>
+                    <th style="text-align: center;">ОКПО</th>
+                `;
+                break;
+            case 'ministry':
+                headersHTML += `
+                    <th colspan="2">Наименование</th>
+                `;
+                break;
+            case 'region':
+                headersHTML += `
+                    <th colspan="2">Наименование</th>
+                `;
+                break;
+        }
+        
+        headersHTML += `</tr>`;
+        thead.innerHTML = headersHTML;
+    }
+
+    updateLoadMoreButton() {
+        if (!this.loadMoreButton) return;
+        
+        if (this.hasNextPage) {
+            this.loadMoreButton.style.display = 'block';
+            this.loadMoreButton.disabled = false;
+            this.loadMoreButton.textContent = 'Загрузить еще';
         } else {
-            this.hidePagination();
+            if (this.allItems.length > 0) {
+                this.loadMoreButton.style.display = 'block';
+                this.loadMoreButton.disabled = true;
+                this.loadMoreButton.textContent = `Все ${this.getTypeLabel(this.selectedItemType, true)} загружены`;
+            } else {
+                this.loadMoreButton.style.display = 'none';
+            }
         }
     }
 
-    hidePagination() {
-        if (this.paginationContainer) {
-            this.paginationContainer.style.display = 'none';
+    selectItemType(type) {
+        console.log(`Смена типа на: ${type}`);
+        this.selectedItemType = type;
+        this.selectedItemId = null;
+        this.currentPage = 1;
+        this.currentQuery = '';
+        this.allItems = [];
+        
+        this.typeButtons.forEach(btn => {
+            if (btn.dataset.type === type) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        
+        this.updateSearchPlaceholder(type);
+        
+
+        this.updateSubmitButtonText();
+        
+
+        if (this.searchInput) {
+            this.searchInput.value = '';
+        }
+        
+
+        this.updateSubmitButtonState(false);
+        
+        this.loadData();
+    }
+
+    updateSearchPlaceholder(type) {
+        if (!this.searchInput) return;
+        
+        const placeholders = {
+            'organization': 'Код или наименование организации',
+            'ministry': 'Наименование министерства',
+            'region': 'Наименование региона'
+        };
+        
+        this.searchInput.placeholder = placeholders[type] || 'Поиск...';
+        
+        const searchLabel = this.searchInput.previousElementSibling;
+        if (searchLabel && searchLabel.tagName === 'LABEL') {
+            const labels = {
+                'organization': 'Поиск организации',
+                'ministry': 'Поиск министерства',
+                'region': 'Поиск региона'
+            };
+            searchLabel.textContent = labels[type] || 'Поиск';
         }
     }
 
-    selectOrganization(row) {
-        const orgId = row.dataset.id;
-        this.selectedOrgInput.value = orgId;
+    updateSubmitButtonText() {
+        if (!this.submitButton) return;
+        
+        const buttonTexts = {
+            'organization': 'Изменить организацию',
+            'ministry': 'Изменить министерство',
+            'region': 'Изменить регион'
+        };
+        
+        const text = buttonTexts[this.selectedItemType] || 'Изменить';
+        
+        const btnTextSpan = this.submitButton.querySelector('.btn-text');
+        if (btnTextSpan) {
+            btnTextSpan.textContent = text;
+        } else {
+            const icon = this.submitButton.querySelector('img');
+            if (icon) {
+                this.submitButton.innerHTML = icon.outerHTML + ' ' + text;
+            } else {
+                this.submitButton.textContent = text;
+            }
+        }
+    }
+
+    selectItem(row) {
+        this.selectedItemId = row.dataset.id;
+        
+        this.selectedOrgInput.value = this.selectedItemId;
+        if (this.selectedItemTypeInput) {
+            this.selectedItemTypeInput.value = this.selectedItemType;
+        }
+        
         this.highlightSelectedRow(row);
         this.updateSubmitButtonState(true);
-        this.dispatchSelectionEvent(orgId, row);
+        
+        console.log(`Выбран элемент: id=${this.selectedItemId}, type=${this.selectedItemType}`);
     }
 
     highlightSelectedRow(selectedRow) {
-        this.tableBody.querySelectorAll('tr').forEach(row => row.classList.remove('selected'));
+        this.tableBody.querySelectorAll('tr').forEach(row => {
+            row.classList.remove('selected');
+        });
+        
         selectedRow.classList.add('selected');
     }
 
     updateSubmitButtonState(isActive = false) {
         if (!this.submitButton) return;
-        if (isActive && this.selectedOrgInput.value) {
+        
+        if (isActive && this.selectedItemId) {
             this.submitButton.disabled = false;
             this.submitButton.classList.remove('disabled');
         } else {
@@ -1902,38 +2092,81 @@ class OrganizationSearchManager {
         }
     }
 
-    dispatchSelectionEvent(orgId, row) {
-        const event = new CustomEvent('organizationSelected', {
-            detail: {
-                id: orgId,
-                name: row.cells[1].textContent,
-                okpo: row.cells[2].textContent,
-                element: row
-            }
-        });
-        document.dispatchEvent(event);
+    getTypeLabel(type, plural = false) {
+        const labels = {
+            'organization': plural ? 'организации' : 'организацию',
+            'ministry': plural ? 'министерства' : 'министерство',
+            'region': plural ? 'регионы' : 'регион'
+        };
+        return labels[type] || (plural ? 'элементы' : 'элемент');
+    }
+
+    showLoading() {
+        if (this.currentPage === 1) {
+            this.tableBody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; padding: 40px;">
+                        <div class="loading-spinner" style="width: 40px; height: 40px; margin: 0 auto 20px;"></div>
+                        <div>Загрузка...</div>
+                    </td>
+                </tr>
+            `;
+        } else if (this.loadMoreButton) {
+            this.loadMoreButton.disabled = true;
+            this.loadMoreButton.innerHTML = `
+                <div class="loading-spinner small" style="display: inline-block; width: 16px; height: 16px; margin-right: 8px; vertical-align: middle;"></div>
+                <span>Загрузка...</span>
+            `;
+        }
+    }
+
+    hideLoading() {
+        if (this.loadMoreButton) {
+            this.updateLoadMoreButton();
+        }
     }
 
     showError(message) {
-        this.tableBody.innerHTML = `<tr><td colspan="3">${message}</td></tr>`;
-        this.hidePagination();
+        this.tableBody.innerHTML = `
+            <tr>
+                <td colspan="3" style="text-align: center; padding: 40px; color: #dc3545;">
+                    <div style="font-size: 18px; margin-bottom: 10px;">⚠️</div>
+                    <div>${message}</div>
+                </td>
+            </tr>
+        `;
+        
+        if (this.loadMoreButton) {
+            this.loadMoreButton.style.display = 'none';
+        }
     }
 
     showNotification(message) {
+        const existingNotifications = document.querySelectorAll('.search-notification');
+        existingNotifications.forEach(notification => notification.remove());
+        
         const notification = document.createElement('div');
+        notification.className = 'search-notification';
         notification.style.cssText = `
             position: fixed;
             top: 20px;
             right: 20px;
             background: #ff4757;
             color: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            z-index: 1000;
+            padding: 12px 20px;
+            border-radius: 6px;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            font-size: 14px;
+            animation: slideIn 0.3s ease;
         `;
+        
         notification.textContent = message;
         document.body.appendChild(notification);
-        setTimeout(() => document.body.removeChild(notification), 3000);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
     }
 
     escapeHtml(text) {
@@ -1944,11 +2177,44 @@ class OrganizationSearchManager {
     }
 }
 
-function initOrganizationSearch(config) {
-    document.addEventListener('DOMContentLoaded', () => {
-        new OrganizationSearchManager(config);
-    });
-}
+const style = document.createElement('style');
+style.textContent = `
+    .loading-spinner {
+        display: inline-block;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+    
+    .loading-spinner.small {
+        width: 16px;
+        height: 16px;
+        border-width: 2px;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    tr.selected {
+        background-color: #e3f2fd !important;
+        font-weight: bold;
+    }
+    
+    .disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+`;
+document.head.appendChild(style);
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Инициализация MultiTypeSearchManager...');
+    const searchManager = new MultiTypeSearchManager();
+});
 
 const TableCollapseManager = (function() {
     let isInitialized = false;
@@ -3897,9 +4163,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
     }
 
-    if(document.getElementById('orgUserbutton')){
-        const orgSearchManager = new OrganizationSearchManager();
-    }
 
    
     const triggerSideBar = document.getElementById("user-info-trigger");

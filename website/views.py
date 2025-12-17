@@ -51,7 +51,7 @@ def owner_only(f):
         )
         
         if not has_access:
-            flash('У вас нет доступа к этому плану.', 'error')
+            flash('У вас нет доступа к этому плану', 'error')
             return redirect(url_for('views.plans', user=current_user.id))
     
         g.current_plan = plan
@@ -87,25 +87,69 @@ def profile():
 @user_with_all_params()
 @login_required
 def edit_user_org():
-    id = request.form.get('id_org')
-    
-    current_org = Organization.query.filter_by(
-        id=id
-    ).first()
-    
-    if not current_org:
-        flash('Организация не найдена!', 'error')
-        return redirect(request.referrer)
-    
-    if Plan.query.filter(Plan.user_id == current_user.id).count() > 0:
-        flash('У вас существуют планы энергосбрежения, редактирование запрещено!', 'error')
+    try:
+        item_id = request.form.get('id_org')
+        item_type = request.form.get('item_type', 'organization')
+        
+        if not item_id:
+            flash('Элемент не выбран!', 'error')
+            return redirect(request.referrer)
+        
+        if Plan.query.filter(Plan.user_id == current_user.id).count() > 0:
+            flash('У вас существуют планы энергосбережения, редактирование запрещено', 'error')
+            return redirect(url_for('views.profile'))
+        
+        if item_type == 'organization':
+            selected_item = Organization.query.filter_by(id=item_id).first()
+            
+            if not selected_item:
+                flash('Организация не найдена!', 'error')
+                return redirect(request.referrer)
+            
+            current_user.organization_id = selected_item.id
+            current_user.ministry_id = None 
+            current_user.region_id = None   
+            
+            flash(f'Организация изменена на: {selected_item.name}', 'success')
+            
+        elif item_type == 'ministry':
+            selected_item = Ministry.query.filter_by(id=item_id).first()
+            
+            if not selected_item:
+                flash('Министерство не найдено!', 'error')
+                return redirect(request.referrer)
+            
+            current_user.ministry_id = selected_item.id
+            current_user.organization_id = None 
+            current_user.region_id = None    
+            
+            flash(f'Министерство изменено на: {selected_item.name}', 'success')
+            
+        elif item_type == 'region':
+            selected_item = Region.query.filter_by(id=item_id).first()
+            
+            if not selected_item:
+                flash('Регион не найден!', 'error')
+                return redirect(request.referrer)
+            
+            current_user.region_id = selected_item.id
+            current_user.organization_id = None 
+            current_user.ministry_id = None    
+            
+            flash(f'Регион изменен на: {selected_item.name}', 'success')
+            
+        else:
+            flash('Неизвестный тип элемента!', 'error')
+            return redirect(request.referrer)
+        db.session.commit()
+        
         return redirect(url_for('views.profile'))
-    
-    current_user.organization_id = current_org.id
-    db.session.commit()
-    
-    flash('Изменения приняты!', 'success')
-    return redirect(url_for('views.profile'))
+        
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Error in edit_user_org: {str(e)}")
+        flash('Произошла ошибка при обновлении данных', 'error')
+        return redirect(request.referrer)
 
 @views.route('/api/organizations')
 @login_required
@@ -402,10 +446,24 @@ def create_plan():
         saving_fuel = to_decimal_3(request.form.get('saving_fuel'))
         share_energy = to_decimal_3(request.form.get('share_energy'))
 
+        org_id = None
+        ministry_id = None
+        region_id = None
+
+        if hasattr(current_user, 'organization') and current_user.organization:
+            org_id = current_user.organization.id
+        
+        if hasattr(current_user, 'ministry') and current_user.ministry:
+            ministry_id = current_user.ministry.id
+        
+        if hasattr(current_user, 'region') and current_user.region:
+            region_id = current_user.region.id
+
         new_plan = Plan(
-            okpo=current_user.organization.okpo,
-            org_id=current_user.organization.id,
-            name_org=current_user.organization.name,
+            org_id=org_id,
+            ministry_id=ministry_id,
+            region_id=region_id,
+            
             year=year,
             user_id=current_user.id,
             email=current_user.email,
@@ -419,7 +477,6 @@ def create_plan():
         
         db.session.add(new_plan)
         db.session.commit()
-
 
         existing_indicators = db.session.query(IndicatorUsage.id_indicator)\
             .filter(IndicatorUsage.id_plan == new_plan.id)\
@@ -441,7 +498,7 @@ def create_plan():
             db.session.add(indicator_usage)
         
         db.session.commit()
-        flash('Новый план создан!', 'success')
+        flash('Новый план создан', 'success')
         return redirect(url_for('views.plans'))
 
     return render_template('create_plan.html', 
@@ -460,7 +517,7 @@ def edit_plan(id):
     ).first()
     
     if not current_plan:
-        flash('План не найден или у вас нет прав для его редактирования!', 'error')
+        flash('План не найден или у вас нет прав для его редактирования', 'error')
         return redirect(url_for('views.plans'))
     
     year = request.form.get('year')
@@ -489,7 +546,7 @@ def edit_plan(id):
     current_plan.change_time = current_utc_time()
     
     db.session.commit()
-    flash('Изменения приняты!', 'success')
+    flash('Изменения приняты', 'success')
     update_ChangeTimePlan(current_plan.id)
     return redirect(url_for('views.plan_review', id=current_plan.id))  
     
@@ -507,7 +564,7 @@ def delete_plan(id):
         db.session.delete(current_plan)
         db.session.commit()
         
-        flash('План успешно удален!', 'success')
+        flash('План успешно удален', 'success')
         
     except Exception as e:
         db.session.rollback()
@@ -645,7 +702,7 @@ def create_econmeasure(id):
     
     db.session.add(new_econmeasure)
     db.session.commit()    
-    flash('Направление добавлено!', 'success')
+    flash('Направление добавлено', 'success')
     update_ChangeTimePlan(id)
     return redirect(url_for('views.plan_directions', id=id))
 
@@ -663,7 +720,7 @@ def delete_econmeasure(id):
     other_data_indicatorUpdate(id)
     update_ChangeTimePlan(id_plan)
 
-    flash('Направление успешно удалено!', 'success')
+    flash('Направление успешно удалено', 'success')
     return redirect(url_for('views.plan_directions', id=id_plan))
 
 @views.route('/edit-econmeasure/<int:id>', methods=['POST'])
@@ -685,7 +742,7 @@ def edit_econmeasure(id):
     econmeasure.estim_econ = estim_econ
     db.session.commit()
     update_ChangeTimePlan(id)
-    flash('Направление обновлено!', 'success')
+    flash('Направление обновлено', 'success')
     return redirect(url_for('views.plan_directions', id=id))
 
 def get_cumulative_econ_metrics(plan_id, is_local): 
@@ -837,7 +894,7 @@ def create_econexeces(id):
 
     measure = EconMeasure.query.get(id_measure)
     if not measure:
-        flash('Направление не найдено!', 'error')
+        flash('Направление не найдено', 'error')
         return redirect(url_for('views.plan_events', id=id))
     
     is_local = measure.direction.is_local if measure.direction else False
@@ -867,7 +924,7 @@ def create_econexeces(id):
     db.session.commit()
     other_data_indicatorUpdate(id)
     update_ChangeTimePlan(id)
-    flash('Мероприятие добавлено!', 'success')
+    flash('Мероприятие добавлено', 'success')
     return redirect(url_for('views.plan_events', id=id))
     
 @views.route('/delete-econexeces/<int:id>', methods=['POST'])
@@ -883,7 +940,7 @@ def delete_econexeces(id):
 
     other_data_indicatorUpdate(id_plan)
     update_ChangeTimePlan(id_plan)
-    flash('Мероприятие успешно удалено!', 'success')
+    flash('Мероприятие успешно удалено', 'success')
     return redirect(url_for('views.plan_events', id=id_plan))
 
 @views.route('/edit-econexeces/<int:id>', methods=['POST'])
@@ -915,7 +972,7 @@ def edit_econexeces(id):
 
     current_EconExec = EconExec.query.get(id)
     if not current_EconExec:
-        flash('Мероприятие не найдено!', 'error')
+        flash('Мероприятие не найдено', 'error')
         return redirect(url_for('views.plan_events', id=id))
     
     current_EconExec.name=name
@@ -935,7 +992,7 @@ def edit_econexeces(id):
     current_EconExec.MoneyOther=MoneyOther
 
     db.session.commit()
-    flash('Мероприятие изменено!', 'success')
+    flash('Мероприятие изменено', 'success')
 
     id_plan = current_EconExec.econ_measures.id_plan
     other_data_indicatorUpdate(id_plan)
@@ -1041,7 +1098,7 @@ def create_indicator(id):
     db.session.commit()
     other_data_indicatorUpdate(id)
     update_ChangeTimePlan(id)
-    flash('Показатель добавлен!', 'success')
+    flash('Показатель добавлен', 'success')
     return redirect(url_for('views.plan_indicators', id=id))
 
 @views.route('/edit-indicator/<int:id>', methods=['POST'])
@@ -1066,7 +1123,7 @@ def edit_indicator(id):
     id = indicator_usage.id_plan
     other_data_indicatorUpdate(id)
     update_ChangeTimePlan(id)
-    flash('Обновление данных!', 'success')
+    flash('Обновление данных', 'success')
     return redirect(url_for('views.plan_indicators', id=id))
 
 @views.route('/delete-indicator/<int:id>', methods=['POST'])
@@ -1081,7 +1138,7 @@ def delete_indicator(id):
     db.session.commit()
     other_data_indicatorUpdate(id_plan)
     update_ChangeTimePlan(id_plan)
-    flash('Показатель успешно удален!', 'success')
+    flash('Показатель успешно удален', 'success')
     return redirect(url_for('views.plan_indicators', id=id_plan))
 
 
@@ -1236,7 +1293,7 @@ def handle_draft_status(plan):
     plan.is_draft = True
     plan.is_control = plan.is_sent = plan.is_error = plan.is_approved = False
     plan.afch = False
-    return "Статус переведен в редактирование."
+    return "Статус переведен в редактирование"
 
 def handle_control_status(plan):
     indicator_usage = next(
@@ -1248,13 +1305,13 @@ def handle_control_status(plan):
         plan.is_control = True
         plan.is_draft = plan.is_sent = plan.is_error = plan.is_approved = False
         plan.afch = False
-        return "План прошел проверку на контроль."
+        return "План прошел проверку на контроль"
     else:
-        return {"error": "Ожидаемая экономия ТЭР от внедрения в текущем году не может быть равна 0."}
+        return {"error": "Ожидаемая экономия ТЭР от внедрения в текущем году не может быть равна 0"}
  
 def handle_sent_status(plan):
     if plan.audit_time and (current_utc_time() - plan.audit_time) > timedelta(hours=1):
-        return {"error": "Нельзя изменить статус: прошло больше допустимого времени."}
+        return {"error": "Нельзя изменить статус: прошло больше допустимого времени"}
     plan.sent_time = current_utc_time()
     plan.is_sent = True
     plan.is_draft = plan.is_control = plan.is_error = plan.is_approved = False
@@ -1268,7 +1325,7 @@ def handle_error_status(plan):
 
     notification = Notification(
         user_id=plan.user_id,
-        message=f"В плане на {plan.year} год нашли ошибки."
+        message=f"В плане на {plan.year} год нашли ошибки"
     )
     db.session.add(notification)
     return "Статус ошибки установлен."
@@ -1280,7 +1337,7 @@ def handle_approved_status(plan):
     plan.afch = False 
 
     new_ticket = Ticket(
-        note='План был одобрен и передан в следующую стадию ..!',
+        note='План был одобрен и передан в следующую стадию проверки',
         luck=True,
         plan_id=plan.id,
     )
@@ -1288,10 +1345,10 @@ def handle_approved_status(plan):
 
     notification = Notification(
         user_id=plan.user_id,
-        message=f"План на {plan.year} год был утверждён."
+        message=f"План на {plan.year} год был утверждён"
     )
     db.session.add(notification)
-    return "План утверждён."
+    return "План утверждён"
 
 
 status_handlers = {
@@ -1323,7 +1380,7 @@ def api_change_plan_status(id):
                 flash(error_message, 'error')
                 return redirect(request.referrer)
             else:
-                flash('Сертификат успешно прошел проверку.', 'succes')
+                flash('Сертификат успешно прошел проверку', 'succes')
     
     if not status:
         if request.is_json:
@@ -1371,7 +1428,7 @@ def api_change_plan_status(id):
         return jsonify({'message': message, 'status': status})
     else:
         flash(message, 'success')
-        return redirect(request.referrer or url_for('views.plans'))
+        return redirect(url_for('views.plan_review', id=id))
 
 @views.route('/create-ticket/<int:id>', methods=['POST'])
 @user_with_all_params()

@@ -77,19 +77,47 @@
                     <div class="toggle-icon">−</div>
                 </div>
                 <div class="section-content">
-
                     <div class="row-app-group">
-                        <div class="app-group">
-                            <label>{{ _('Организация') }}</label>
-                            <div class="input-with-icon">
-                                <img src="/static/img/Organization.svg" alt="" class="input-icon">
-                                <input type="text" value="{{ current_user.organization.name }}"  readonly class="app-input">
-                                <div class="input-mes" title = "{{ _('Не изм.') }}">
-                                    <img src="/static/img/Edit_off.svg">
-                                    
-                                </div>
+                        {% set org = none %}
+                        {% set ministry = none %}
+                        {% set region = none %}
+
+                        {% if current_user.organization %}
+                            {% set org = current_user.organization %}
+                        {% endif %}
+
+                        {% if current_user.ministry %}
+                            {% set ministry = current_user.ministry %}
+                        {% endif %}
+
+                        {% if current_user.region %}
+                            {% set region = current_user.region %}
+                        {% endif %}
+
+                        {% if org or ministry or region %}
+                            <div class="app-group">
+                                {% if org %}
+                                    <label>{{ _('Организация') }}</label>
+                                    <div class="input-with-icon">
+                                        <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                                        <input type="text" value="{{ org.name }}" readonly class="app-input">
+                                {% elif ministry %}
+                                    <label>{{ _('Министерство') }}</label>
+                                    <div class="input-with-icon">
+                                        <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                                        <input type="text" value="{{ ministry.name }}" readonly class="app-input">
+                                {% elif region %}
+                                    <label>{{ _('Регион') }}</label>
+                                    <div class="input-with-icon">
+                                        <img src="/static/img/Organization.svg" alt="" class="input-icon">
+                                        <input type="text" value="{{ region.name }}" readonly class="app-input">
+                                {% endif %}
+                                        <div class="input-mes" title="{{ _('Не изм.') }}">
+                                            <img src="/static/img/Edit_off.svg">
+                                        </div>
+                                    </div>
                             </div>
-                        </div>
+                        {% endif %}
                         <div class="app-group">
                             <label>{{ _('ФИО') }}</label>
                             <div class="input-with-icon">
@@ -111,7 +139,6 @@
                                 <input type="text" maxlength="15" value="{{ current_user.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
                                 <div class="input-mes" title = "{{ _('Не изм.') }}">
                                     <img src="/static/img/Edit_off.svg">
-                                    
                                 </div>
                             </div>
                         </div>
@@ -122,12 +149,10 @@
                                 <input type="text" maxlength="15" value="{{ current_user.phone }}" placeholder="+375.." readonly class="app-input">
                                 <div class="input-mes" title = "{{ _('Не изм.') }}">
                                     <img src="/static/img/Edit_off.svg">
-                                    
                                 </div> 
                             </div>
                         </div>
                     </div>
-            
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 </div>
             </div>        

@@ -25,7 +25,7 @@ def export_xml_single(plan: Plan):
         )
 
         ET.SubElement(title, "header").text = "ПЛАН МЕРОПРИЯТИЙ ПО ЭНЕРГОСБЕРЕЖЕНИЮ"
-        ET.SubElement(title, "organization_name").text = str(plan.name_org or "")
+        ET.SubElement(title, "organization_name").text = str(plan.organization.name or "")
         ET.SubElement(title, "year_label").text = f"на {plan.year} год"
 
         targets = ET.SubElement(title, "targets")
@@ -222,7 +222,7 @@ def export_xlsx_single(plan: Plan):
         ws_title["B12"].alignment = center
 
         ws_title.merge_cells("B13:H13")
-        ws_title["B13"].value = f"{plan.name_org}"
+        ws_title["B13"].value = f"{plan.organization.name}"
         ws_title["B13"].font = bold_font
         ws_title["B13"].alignment = center
 
@@ -294,7 +294,7 @@ def export_xlsx_single(plan: Plan):
         )
 
 
-        set_cell(ws, start_row+6, 4, 7, f"от {plan.name_org}", bold_font, row_height=45)
+        set_cell(ws, start_row+6, 4, 7, f"от {plan.organization.name}", bold_font, row_height=45)
         set_cell(ws, start_row+7, 4, 7, 
             "________________________________________________\n"
             "________________________________________________\n"
@@ -536,7 +536,7 @@ def export_xlsx_single(plan: Plan):
             regular_font, row_height=60
         )
 
-        set_cell(ws, start_row+6, 6, 11, f"от {plan.name_org}", bold_font, row_height=45)
+        set_cell(ws, start_row+6, 6, 11, f"от {plan.organization.name}", bold_font, row_height=45)
         set_cell(ws, start_row+7, 6, 11, 
             "________________________________________________\n"
             "________________________________________________\n"

@@ -107,33 +107,47 @@
                 {% if plans %}
                     {% for plan in plans %}
                         <div class="choose-plan"        
-                            data-plan="choose"
-                            data-name="{{ plan.name_org|lower }}" 
-                            data-okpo="{{ plan.okpo|lower }}">
+                            data-plan="choose">
                             <input type="checkbox" name="ids" value="{{ plan.id }}" id="plan-{{ plan.id }}">
                             <label for="plan-{{ plan.id }}">
                                 <div class="choose-plan-text">
-                                    <a class="choose-conteiner-text-title" title="{{ plan.name_org or _('Без названия') }}">
-                                        {% if current_user.is_auditor %}     
-                                            {{ plan.name_org | truncate(35, True, '...') }}
-                                            <span class="status-plan">{{ plan.okpo }}</span> 
+                                    <a class="choose-conteiner-text-title" >
+                                        {% if current_user.is_auditor %}   
+                                            {% if plan.organization.name %}
+                                                <span class="structure-plan">Организация</span>{{ plan.organization.name | truncate(35, True, '...') }} 
+                                            {% elif plan.ministry.name %}
+                                                <span class="structure-plan">Министерство</span>{{ plan.ministry.name | truncate(35, True, '...') }}
+                                            {% elif plan.region.name %}
+                                                <span class="structure-plan">Регион</span>{{ plan.region.name| truncate(35, True, '...') }}
+                                            {% endif %}
+                                            <span class="status-plan">                 
+                                                {% if plan.is_draft %}{{ _('В редакции') }}{% endif %}
+                                                    {% if plan.is_error %}{{ _('Есть ошибки') }}{% endif %}
+                                                    {% if plan.is_control %}{{ _('Контроль пройден') }}{% endif %}
+                                                    {% if plan.is_sent %}
+                                                        {% if not current_user.is_auditor %}
+                                                            {{ _('Отправлен') }}
+                                                        {% else %}
+                                                            {{ _('Не просмотрен') }}
+                                                        {% endif %}
+                                                    {% endif %}
+                                                    {% if plan.is_approved %}{{ _('Одобрен') }}{% endif %}
+                                            </span> 
+                                            
                                         {% else %}
                                             {{ _('План энергосбережения на') }} {{ plan.year }} {{ _('год') }}
                                         {% endif %}
                                     </a>
-                                    <a class="choose-conteiner-text-dis">
-                                        {% if plan.is_draft %}{{ _('В редакции') }}{% endif %}
-                                        {% if plan.is_error %}{{ _('Есть ошибки') }}{% endif %}
-                                        {% if plan.is_control %}{{ _('Контроль пройден') }}{% endif %}
-                                        {% if plan.is_sent %}
-                                            {% if not current_user.is_auditor %}
-                                                {{ _('Отправлен') }}
-                                            {% else %}
-                                                {{ _('Не просмотрен') }}
-                                            {% endif %}
-                                        {% endif %}
-                                        {% if plan.is_approved %}{{ _('Одобрен') }}{% endif %}
-                                    </a>
+                                    <div class="plan-cont-column-footer-element">
+                                        <img src="/static/img/Calendar.svg" alt="" class="btn-icon">
+                                        <a class="name-plan">{{ plan.year }}</a>
+                                    </div>
+                                    {% if plan.organization.okpo %}
+                                        <div class="plan-cont-column-footer-element">
+                                            <img src="/static/img/Organization.svg" alt="" class="btn-icon">
+                                            <a class="name-plan">{{ plan.organization.okpo }}</a>
+                                        </div>
+                                    {% endif %}
                                 </div>
                             </label>
                         </div>

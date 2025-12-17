@@ -392,9 +392,9 @@ class OrganizationView(SecureModelView):
 class PlanView(SecureModelView):
     """Админ-панель для управления планами"""
     
-    column_list = ['id', 'name_org', 'okpo', 'year', 'email', 'fio', 
+    column_list = ['id', 'year', 'email', 'fio', 
                    'is_draft', 'is_control', 'is_sent', 'is_error', 'is_approved',
-                   'begin_time', 'change_time', 'sent_time', 'audit_time']
+                   'begin_time', 'change_time', 'sent_time', 'audit_time', 'ministry_id', 'org_id', 'region_id']
     column_default_sort = ('id', True)
     column_sortable_list = ('id', 'year', 'begin_time', 'change_time', 'sent_time', 'audit_time')
     
@@ -403,22 +403,12 @@ class PlanView(SecureModelView):
     can_edit = True
     can_export = True
     
-    form_columns = ['okpo', 'name_org', 'year', 'email', 'fio', 'phone',
+    form_columns = ['year', 'email', 'fio', 'phone',
                     'organization', 'user', 'energy_saving', 'share_fuel', 
                     'saving_fuel', 'share_energy', 'is_draft', 'is_control', 
                     'is_sent', 'is_error', 'is_approved', 'afch']
     
     form_args = {
-        'okpo': {
-            'label': 'ОКПО',
-            'validators': [Length(max=20)],
-            'description': 'Код ОКПО организации'
-        },
-        'name_org': {
-            'label': 'Название организации',
-            'validators': [Length(max=500)],
-            'description': 'Название организации'
-        },
         'year': {
             'label': 'Год',
             'validators': [DataRequired(), NumberRange(min=2000, max=2100)],
@@ -441,7 +431,7 @@ class PlanView(SecureModelView):
         }
     }
     
-    column_searchable_list = ['okpo', 'name_org', 'email', 'fio', 'phone']
+    column_searchable_list = ['email', 'fio', 'phone']
     column_filters = ['id', 'year', 'is_draft', 'is_control', 'is_sent', 
                       'is_error', 'is_approved', 'afch']
     
@@ -501,7 +491,7 @@ class TicketView(SecureModelView):
         'luck': lambda v, c, m, p: '✅ Да' if m.luck else '❌ Нет',
         'is_owner': lambda v, c, m, p: '👤 Да' if m.is_owner else '👥 Нет',
         'begin_time': lambda v, c, m, p: m.begin_time.strftime('%d.%m.%Y %H:%M') if m.begin_time else '',
-        'plan': lambda v, c, m, p: f"План #{m.plan.id} ({m.plan.name_org})" if m.plan else ''
+        'plan': lambda v, c, m, p: f"План #{m.plan.id} ({m.plan.organization.name})" if m.plan else ''
     }
 
 class UnitView(SecureModelView):
