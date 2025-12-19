@@ -3,8 +3,6 @@ import xml.etree.ElementTree as ET
 from ..models import Plan, EconMeasure, EconExec
 from sqlalchemy.orm import joinedload
 from ..views import get_cumulative_econ_metrics
-from openpyxl.utils import get_column_letter
-from openpyxl.styles import Font, Alignment
         
 def export_xml_single(plan: Plan):
     """Экспорт одного плана в XML с тремя разделами и титульными данными."""
@@ -170,204 +168,315 @@ def export_xml_single(plan: Plan):
 def export_pdf_single(plan: Plan):
     pass
 
+
 def export_xlsx_single(plan: Plan):
     from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment, Border, Side
+    
+    # ===============================
+    # Шрифт и выравнивание
+    # ===============================
+    regular_font_9 = Font(name="Times New Roman", size=9)
+    regular_font_9_italic = Font(name="Times New Roman", size=9, italic=True)
+    
+    regular_font_11 = Font(name="Times New Roman", size=11)
+    
+    regular_font_13 = Font(name="Times New Roman", size=13)
+    bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
+    bold_font_13 = Font(name="Times New Roman", size=13, bold=True)
+    
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    right = Alignment(horizontal="right", vertical="center", wrap_text=True)
+    
+    thin_bottom = Side(border_style="thin", color="000000")
+    bottom_border = Border(bottom=thin_bottom)
+
+    def page_setttings(ws, print_area):
+        ws.print_area = print_area      
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.page_setup.paperSize = ws.PAPERSIZE_A4
+        ws.page_margins.left = 0.7
+        ws.page_margins.right = 0.7
+        ws.page_margins.top = 0.75
+        ws.page_margins.bottom = 0.75
+        ws.page_margins.header = 0.3
+        ws.page_margins.footer = 0.3
+
+
     def title_xlsx(wb, plan):
-        ws_title = wb.create_sheet("Титульный лист", 0)
-
-        for col in range(1, 10):
-            ws_title.column_dimensions[get_column_letter(col)].width = 20
-        for row in range(1, 40):
-            ws_title.row_dimensions[row].height = 25
-
-        bold_font = Font(name="Times New Roman", size=12, bold=True)
-        regular_font = Font(name="Times New Roman", size=12)
-        center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        left = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        right = Alignment(horizontal="right", vertical="center", wrap_text=True)
-
-        ws_title.merge_cells("B4:D8")
-        cell = ws_title["B4"]
-        cell.value = (
-            "СОГЛАСОВАНО:\n"
-            "(должность)\n"
-            "областного (городского)\n"
-            "управление по надзору за рациональным использованием ТЭР\n"
-            "\n"
-            "(подпись, инициалы и фамилия)\n"
-            "«___» _____ 20__ г."
-        )
-        cell.font = regular_font
-        cell.alignment = left
-
-        ministrystr = "Министерство (концерн, государственный комитет)"
-        if plan.organization.ministry != None:
-            ministrystr = plan.organization.ministry
-
-        ws_title.merge_cells("F4:H8")
-        cell = ws_title["F4"]
-        cell.value = (
-            "УТВЕРЖДАЮ\n"
-            f"{ministrystr}\n\n"
-            "\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г."
-        )
-        cell.font = regular_font
-        cell.alignment = right
-
-        ws_title.merge_cells("B12:H12")
-        ws_title["B12"].value = "ПЛАН МЕРОПРИЯТИЙ ПО ЭНЕРГОСБЕРЕЖЕНИЮ"
-        ws_title["B12"].font = bold_font
-        ws_title["B12"].alignment = center
-
-        ws_title.merge_cells("B13:H13")
-        ws_title["B13"].value = f"{plan.organization.name}"
-        ws_title["B13"].font = bold_font
-        ws_title["B13"].alignment = center
-
-        ws_title.merge_cells("B14:H14")
-        ws_title["B14"].value = f"на {plan.year} год"
-        ws_title["B14"].font = bold_font
-        ws_title["B14"].alignment = center
-
-        # Целевые показатели
-        ws_title.merge_cells("B20:D20")
-        ws_title["B20"].value = "Целевые показатели: показатель энергосбрежения:"
-        ws_title["B20"].font = regular_font
-        ws_title["B20"].alignment = left
-
-        ws_title.merge_cells("E20:H23")
-        ws_title["E20"].value = (
-            f"показатель энергосбережения - {plan.energy_saving}%\n"
-            f"(задание по экономии ТЭР - {plan.share_fuel} т у.т.);\n"
-            f"доля местных ТЭР в КПТ - {plan.saving_fuel}%;\n"
-            f"доля местных ТЭР в КПТ - {plan.share_energy}%."
-        )
-        ws_title["E20"].font = regular_font
-        ws_title["E20"].alignment = left
-
-        ws_title.page_setup.orientation = ws_title.ORIENTATION_LANDSCAPE
-        ws_title.page_setup.paperSize = ws_title.PAPERSIZE_A4
-        ws_title.page_setup.fitToWidth = 1
-        ws_title.page_setup.fitToHeight = 1
+        ws = wb.create_sheet("Титульный лист", 0)
+        # ===============================
+        # Колонки и строки
+        # ===============================
+        columns = [("A", 8.43), ("B", 8.43), ("C", 8.43), ("D", 8.43),
+                ("E", 8.43), ("F", 8.43), ("G", 8.43), ("H", 8.43),
+                ("I", 8.43), ("J", 8.43), ("K", 8.43), ("L", 8.43),
+                ("M", 8.43), ("N", 8.43)]
         
-        # Центрирование по горизонтали
-        ws_title.page_setup.horizontalCentered = True
+        for col, width in columns:
+            ws.column_dimensions[col].width = width
+
+        for row in range(1, 34):
+            if row == 3:
+                ws.row_dimensions[row].height = 12
+            elif row == 5:
+                ws.row_dimensions[row].height = 32.25
+            elif row == 7:
+                ws.row_dimensions[row].height = 4
+            elif row == 8:
+                ws.row_dimensions[row].height = 12
+            elif row == 9:
+                ws.row_dimensions[row].height = 22.5
+            elif row == 16:
+                ws.row_dimensions[row].height = 17.5
+            elif row == 17:
+                ws.row_dimensions[row].height = 19.5
+            elif row == 20:
+                ws.row_dimensions[row].height = 16.5
+            else:
+                ws.row_dimensions[row].height = 15
+
+        # ===============================
+        # Блоки текста
+        # ===============================
         
-        return ws_title
+        def title_first_sign():
+            ws.merge_cells("B1:D1")
+            ws["B1"].value = "Согласовано".upper()
+            ws["B1"].font = bold_font_11
 
-    def signatures_indicators_xlsx(ws, start_row, plan):
-        from openpyxl.styles import Font, Alignment
+            ws.merge_cells("B2:D2")
+            ws["B2"].value = "_______________________"
+            ws["B2"].font = bold_font_11
+            
+            ws.merge_cells("B3:D3")
+            ws["B3"].value = "(должность)"
+            ws["B3"].font = regular_font_9
+            ws["B3"].alignment = center
+            
+                    
+            ws.merge_cells("B4:F4")
+            ws["B4"].value = "_______________ областного (городского)"
+            ws["B4"].font = regular_font_11
+            ws["B4"].alignment = left
+                            
+            ws.merge_cells("B5:E5")
+            ws["B5"].value = "управление по надзору за рациональным использованием ТЭР"
+            ws["B5"].font = regular_font_11
+            ws["B5"].alignment = left
+                    
+            ws.merge_cells("B6:D6")
+            ws["B6"].value = "подписано ЭЦП"
+            ws["B6"].font = regular_font_9_italic
+            ws["B6"].alignment = center
+            
+            ws.merge_cells("B7:D7")
+            ws["B7"].value = "_______________________"
+            ws["B7"].font = bold_font_11
+            
+            ws.merge_cells("B8:D8")
+            ws["B8"].value = "(подпись, инициалы и фамилия)"
+            ws["B8"].font = regular_font_9
+            ws["B8"].alignment = left
+            
+            ws.merge_cells("B9:E9")
+            ws["B9"].value = "«___» ____________ 20__ г."
+            ws["B9"].font = regular_font_11
+            ws["B9"].alignment = left
 
-        bold_font = Font(name="Times New Roman", size=11, bold=True)
-        regular_font = Font(name="Times New Roman", size=11)
-        left = Alignment(horizontal="left", vertical="top", wrap_text=True)
+        def title_second_sign():
+            ws.merge_cells("K1:M1")
+            ws["K1"].value = "Утверждаю".upper()
+            ws["K1"].font = bold_font_11
 
-        def set_cell(ws, row, col_start, col_end, text, font, row_height=20):
-            """
-            Устанавливает текст в объединённой ячейке
-            row_height - высота строки в пунктах
-            """
-            ws.merge_cells(start_row=row, start_column=col_start, end_row=row, end_column=col_end)
-            cell = ws.cell(row=row, column=col_start)
-            cell.value = text
-            cell.font = font
-            cell.alignment = left
-            ws.row_dimensions[row].height = row_height
-
-
-        set_cell(ws, start_row+6, 1, 2, "от Департамента по энергоэффективности Госстандарта", bold_font, row_height=20)
-        set_cell(ws, start_row+7, 1, 2, 
-            "Отдел анализа и прогнозирования развития энергосбережения\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font, row_height=60
-        )
-
-        set_cell(ws, start_row+9, 1, 2, 
-            "Начальник Минского городского управления\n"
-            "по назору за рациональным использованием ТЭР\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font, row_height=60
-        )
-
-
-        set_cell(ws, start_row+6, 4, 7, f"от {plan.organization.name}", bold_font, row_height=45)
-        set_cell(ws, start_row+7, 4, 7, 
-            "________________________________________________\n"
-            "________________________________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font, row_height=60
-        )
-        ministry_name = plan.organization.ministry
-        ministrytext = f"от {ministry_name if ministry_name else 'Министерство (концерн, государственный комитет)'}"
-        set_cell(ws, start_row+8, 4, 7, f"{ministrytext}", bold_font, row_height=45)
-        set_cell(ws, start_row+9, 4, 7, 
-            "________________________________________________\n"
-            "________________________________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font, row_height=60
-        )
-
-        set_cell(ws, start_row+10, 4, 7, "от Минского городского исполнительного комитета", bold_font, row_height=45)
-        set_cell(ws, start_row+11, 4, 7, 
-            "________________________________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font, row_height=60
-        )
+            ws.merge_cells("K2:M2")
+            ws["K2"].value = "_______________________"
+            ws["K2"].font = bold_font_11
+            
+            ws.merge_cells("K3:M3")
+            ws["K3"].value = "(должность)"
+            ws["K3"].font = regular_font_9
+            ws["K3"].alignment = center
+            
+                    
+            ws.merge_cells("K4:M4")
+            ws["K4"].value = "_______________________"
+            ws["K4"].font = regular_font_11
+            ws["K4"].alignment = left
+                            
+            ws.merge_cells("K5:M5")
+            ws["K5"].value = "(министерство, концерн, государственный комитет)"
+            ws["K5"].font = regular_font_11
+            ws["K5"].alignment = left
+            
+                    
+            ws.merge_cells("K6:M6")
+            ws["K6"].value = "подписано ЭЦП"
+            ws["K6"].font = regular_font_9_italic
+            ws["K6"].alignment = center
+            
+            ws.merge_cells("K7:M7")
+            ws["K7"].value = "_______________________"
+            ws["K7"].font = bold_font_11
+            
+            ws.merge_cells("K8:M8")
+            ws["K8"].value = "(подпись, инициалы и фамилия)"
+            ws["K8"].font = regular_font_9
+            ws["K8"].alignment = left
+            
+            ws.merge_cells("K9:N9")
+            ws["K9"].value = "«___» ____________ 20__ г."
+            ws["K9"].font = regular_font_11
+            ws["K9"].alignment = left
         
+        title_first_sign()
+        title_second_sign()
+        
+        ws.merge_cells("A14:O15")
+        ws["A14"].value = "ПЛАН МЕРОПРИЯТИЙ ПО ЭНЕРГОСБЕРЕЖЕНИЮ"
+        ws["A14"].font = bold_font_13
+        ws["A14"].alignment = center
+                                     
+        ws.merge_cells("B16:N17")
+        ws["B16"].value = f"{plan.organization.name}"
+        ws["B16"].font = regular_font_13
+        ws["B16"].alignment = center
+        
+        for col in range(2, 15):  # B=2, N=15
+            ws.cell(row=17, column=col).border = bottom_border
+        
+        ws.merge_cells("D18:L18")
+        ws["D18"].value = "(наименование юридического лица)"
+        ws["D18"].font = regular_font_13
+        ws["D18"].alignment = center     
+                
+        ws.merge_cells("B20:N20")
+        ws["B20"].value = f"на {plan.year} год".upper()
+        ws["B20"].font = bold_font_13
+        ws["B20"].alignment = center
+        
+        ws.merge_cells("B25:D25")
+        ws["B25"].value = "Целевые показатели:"
+        ws["B25"].font = bold_font_11
+        ws["B25"].alignment = center    
+        
+        ws.merge_cells("E25:H25")
+        ws["E25"].value = "энергосбережения"
+        ws["E25"].font = bold_font_11
+        ws["E25"].alignment = left 
+               
+        ws.merge_cells("E26:H26")
+        ws["E26"].value = "по экономии ТЭР"
+        ws["E26"].font = bold_font_11
+        ws["E26"].alignment = left   
+             
+        ws.merge_cells("E27:H27")
+        ws["E27"].value = "по доле местных ТЭР в КПТ"
+        ws["E27"].font = bold_font_11
+        ws["E27"].alignment = left 
+                    
+        ws.merge_cells("E28:H28")
+        ws["E28"].value = "по доле ВИЭ в КПТ"
+        ws["E28"].font = bold_font_11
+        ws["E28"].alignment = left
+                    
+        ws["I25"].value = "-"
+        ws["I25"].font = bold_font_11
+        ws["I25"].alignment = center                    
+        ws["I26"].value = "-"
+        ws["I26"].font = bold_font_11
+        ws["I26"].alignment = center                    
+        ws["I27"].value = "-"
+        ws["I27"].font = bold_font_11
+        ws["I27"].alignment = center                    
+        ws["I28"].value = "-"
+        ws["I28"].font = bold_font_11
+        ws["I28"].alignment = center
+
+        ws["J25"].value = f"{plan.energy_saving}"
+        ws["J25"].font = bold_font_11
+        ws["J25"].alignment = center        
+        ws["J26"].value = f"{plan.share_fuel}"
+        ws["J26"].font = bold_font_11
+        ws["J26"].alignment = center        
+        ws["J27"].value = f"{plan.saving_fuel}"
+        ws["J27"].font = bold_font_11
+        ws["J27"].alignment = center        
+        ws["J28"].value = f"{plan.share_energy}"
+        ws["J28"].font = bold_font_11
+        ws["J28"].alignment = center       
+
+        ws["K25"].value = "%"
+        ws["K25"].font = bold_font_11
+        ws["K25"].alignment = center        
+        ws["K26"].value = "т у.т."
+        ws["K26"].font = bold_font_11
+        ws["K26"].alignment = center        
+        ws["K27"].value = "%"
+        ws["K27"].font = bold_font_11
+        ws["K27"].alignment = center        
+        ws["K28"].value = "%"
+        ws["K28"].font = bold_font_11
+        ws["K28"].alignment = center
+                     
+        page_setttings(ws, print_area = "A1:O32")
+        
+        return ws
+ 
     def usage_xlsx(wb, plan):
-        from openpyxl.styles import Font, Alignment, Border, Side
-        
         ws = wb.create_sheet("Часть 1")
+    
+        # ===============================
+        # Колонки и строки
+        # ===============================
+        columns = [("A", 5.43), ("B", 55.86), ("C", 14), ("D", 11),
+                ("E", 11.86), ("F", 12.57), ("G", 18.29)]
         
-        bold_font = Font(name="Times New Roman", size=11, bold=True)
-        regular_font = Font(name="Times New Roman", size=11)
-        center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+        for col, width in columns:
+            ws.column_dimensions[col].width = width
+
+        for row in range(1, 34):
+            if row == 1:
+                ws.row_dimensions[row].height = 21
+            elif row == 2:
+                ws.row_dimensions[row].height = 12
+            elif row == 3:
+                ws.row_dimensions[row].height = 85.5
+            elif row == 4:
+                ws.row_dimensions[row].height = 34
+            else:
+                ws.row_dimensions[row].height = 15
+        
         thin_border = Border(
             left=Side(style="thin"), right=Side(style="thin"),
             top=Side(style="thin"), bottom=Side(style="thin")
         )
         
         ws.merge_cells("A1:G1")
-        ws["A1"].value = "Часть 1."
-        ws["A1"].font = bold_font
+        ws["A1"].value = "Часть 1. Показатели использования топливно-энергетических ресурсов"
+        ws["A1"].font = bold_font_13
         ws["A1"].alignment = center
         
         ws.merge_cells("A2:G2")
-        ws["A2"].value = "1. Показатели использования топливно-энергетических ресурсов"
-        ws["A2"].font = bold_font
+        ws["A2"].value = ""
+        ws["A2"].font = bold_font_13
         ws["A2"].alignment = center
 
         headers = [
             "№ п/п", 
-            "Основные показатели по использованию ТЭР", 
+            "Основные показатели использования ТЭР", 
             "Единица измерения", 
-            f"{plan.year-1} г. отчет", 
-            f"{plan.year} г. отчет", 
-            f"{plan.year+1} г. отчет", 
-            "Изменение ТЭР прогнозного года к предыдущему (увеличение +, снижение -)"
+            f"{plan.year - 1} г. отчет", 
+            f"{plan.year} г. оценка", 
+            f"{plan.year + 1} г. прогноз", 
+            "Изменение ТЭР прогнозного года к предыдущему (увеличение + , снижение - )"
         ]
         ws.append(headers)
         
-        column_widths = {
-            "A": 6,    # № п/п
-            "B": 60,   # Основные показатели
-            "C": 18,   # Ед. изм.
-            "D": 15,   # Предыдущий год
-            "E": 15,   # Текущий год
-            "F": 15,   # Прогноз
-            "G": 20,   # Изменение
-        }
-        for col_letter, width in column_widths.items():
-            ws.column_dimensions[col_letter].width = width
-        
         for col in range(1, len(headers) + 1):
             cell = ws.cell(row=3, column=col)
-            cell.font = bold_font
+            cell.font = bold_font_11
             cell.alignment = center
             cell.border = thin_border
         
@@ -393,24 +502,28 @@ def export_xlsx_single(plan: Plan):
             for col in range(1, len(row)+1):
                 cell = ws.cell(row=row_index, column=col)
                 if group_value:
-                    cell.font = bold_font
+                    cell.font = bold_font_11
                 else:
-                    cell.font = regular_font
+                    cell.font = regular_font_11
                 
                 cell.alignment = center if col != 2 else left
                 cell.border = thin_border
-                cell.number_format = '0.00' 
+                
+                # Разные форматы для разных колонок
+                if col == 1:  # Первая колонка - целые числа или текст
+                    if group_value:  # Если есть значение группы
+                        cell.number_format = '0'  # Без десятичных
+                    else:
+                        cell.number_format = '@'  # Текстовый формат
+                elif col in [4, 5, 6, 7]:  # Колонки с числами
+                    cell.number_format = '0.00'
+                else:  # Текстовые колонки (2, 3)
+                    cell.number_format = '@'
         
-        signatures_indicators_xlsx(ws, row_index + 1, plan)
+        # signatures_indicators_xlsx(ws, row_index + 1, plan)
 
-        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-        ws.page_setup.paperSize = ws.PAPERSIZE_A4
-        ws.page_setup.fitToWidth = 1
-        ws.page_setup.fitToHeight = 0
-        
-        # Центрирование по горизонтали
-        ws.page_setup.horizontalCentered = True
-        
+        page_setttings(ws, print_area = "A1:G75")
+
         return ws
 
     def derections_xlsx(wb, plan):
@@ -418,8 +531,8 @@ def export_xlsx_single(plan: Plan):
         
         ws = wb.create_sheet("Часть 2")
         
-        bold_font = Font(name="Times New Roman", size=11, bold=True)
-        regular_font = Font(name="Times New Roman", size=11)
+        bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
+        regular_font_11 = Font(name="Times New Roman", size=11)
         center = Alignment(horizontal="center", vertical="center", wrap_text=True)
         left = Alignment(horizontal="left", vertical="center", wrap_text=True)
         thin_border = Border(
@@ -429,12 +542,12 @@ def export_xlsx_single(plan: Plan):
         
         ws.merge_cells("A1:E1")
         ws["A1"].value = "Часть 2."
-        ws["A1"].font = bold_font
+        ws["A1"].font = bold_font_11
         ws["A1"].alignment = center
         
         ws.merge_cells("A2:E2")
         ws["A2"].value = f"2. Мероприятия по реализации основных направлений энергосбережения на {plan.year} год"
-        ws["A2"].font = bold_font
+        ws["A2"].font = bold_font_11
         ws["A2"].alignment = center
 
         headers = [
@@ -458,7 +571,7 @@ def export_xlsx_single(plan: Plan):
         
         for col in range(1, len(headers) + 1):
             cell = ws.cell(row=3, column=col)
-            cell.font = bold_font
+            cell.font = bold_font_11
             cell.alignment = center
             cell.border = thin_border
         
@@ -477,7 +590,7 @@ def export_xlsx_single(plan: Plan):
 
             for col in range(1, len(row)+1):
                 cell = ws.cell(row=row_index, column=col)
-                cell.font = regular_font
+                cell.font = regular_font_11
                 cell.alignment = center if col not in [3] else left
                 cell.border = thin_border
                 cell.number_format = '0.00' 
@@ -495,8 +608,8 @@ def export_xlsx_single(plan: Plan):
     def signatures_events_xlsx(ws, start_row, plan):
         from openpyxl.styles import Font, Alignment
 
-        bold_font = Font(name="Times New Roman", size=11, bold=True)
-        regular_font = Font(name="Times New Roman", size=11)
+        bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
+        regular_font_11 = Font(name="Times New Roman", size=11)
         left = Alignment(horizontal="left", vertical="top", wrap_text=True)
 
         def set_cell(ws, row, col_start, col_end, text, font, row_height=20):
@@ -512,19 +625,19 @@ def export_xlsx_single(plan: Plan):
             ws.row_dimensions[row].height = row_height
 
 
-        set_cell(ws, start_row+6, 2, 4, "от Департамента по энергоэффективности Госстандарта", bold_font, row_height=20)
+        set_cell(ws, start_row+6, 2, 4, "от Департамента по энергоэффективности Госстандарта", bold_font_11, row_height=20)
         set_cell(ws, start_row+7, 2, 4, 
             "Производственно-техническое управление\n"
             "_________________________\n"
             "«___» ____________ 20__ г.",
-            regular_font, row_height=60
+            regular_font_11, row_height=60
         )
 
         set_cell(ws, start_row+9, 2, 4, 
             "Управление экономики и финансов\n"
             "_________________________\n"
             "«___» ____________ 20__ г.",
-            regular_font, row_height=60
+            regular_font_11, row_height=60
         )
 
 
@@ -533,32 +646,32 @@ def export_xlsx_single(plan: Plan):
             "по наздору за рациональным использованием ТЭР\n"
             "_________________________\n"
             "«___» ____________ 20__ г.",
-            regular_font, row_height=60
+            regular_font_11, row_height=60
         )
 
-        set_cell(ws, start_row+6, 6, 11, f"от {plan.organization.name}", bold_font, row_height=45)
+        set_cell(ws, start_row+6, 6, 11, f"от {plan.organization.name}", bold_font_11, row_height=45)
         set_cell(ws, start_row+7, 6, 11, 
             "________________________________________________\n"
             "________________________________________________\n"
             "«___» ____________ 20__ г.",
-            regular_font, row_height=60
+            regular_font_11, row_height=60
         )
 
         ministry_name = plan.organization.ministry
         ministrytext = f"от {ministry_name if ministry_name else 'Министерство (концерн, государственный комитет)'}"
-        set_cell(ws, start_row+8, 6, 11, f"{ministrytext}", bold_font, row_height=45)
+        set_cell(ws, start_row+8, 6, 11, f"{ministrytext}", bold_font_11, row_height=45)
         set_cell(ws, start_row+9, 6, 11, 
             "________________________________________________\n"
             "________________________________________________\n"
             "«___» ____________ 20__ г.",
-            regular_font, row_height=60
+            regular_font_11, row_height=60
         )
 
-        set_cell(ws, start_row+10, 6, 11, "от Минского городского исполнительного комитета", bold_font, row_height=45)
+        set_cell(ws, start_row+10, 6, 11, "от Минского городского исполнительного комитета", bold_font_11, row_height=45)
         set_cell(ws, start_row+11, 6, 11, 
             "________________________________________________\n"
             "«___» ____________ 20__ г.",
-            regular_font, row_height=60
+            regular_font_11, row_height=60
         )
 
     def events_xlsx(wb, plan):
@@ -567,8 +680,8 @@ def export_xlsx_single(plan: Plan):
         
         ws = wb.create_sheet("Часть 3")
 
-        bold_font = Font(name="Times New Roman", size=11, bold=True)
-        regular_font = Font(name="Times New Roman", size=11)
+        bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
+        regular_font_11 = Font(name="Times New Roman", size=11)
         center = Alignment(horizontal="center", vertical="center", wrap_text=True)
         left = Alignment(horizontal="left", vertical="center", wrap_text=True)
         vertical_text = Alignment(horizontal="center", vertical="center", textRotation=90, wrap_text=True)
@@ -579,12 +692,12 @@ def export_xlsx_single(plan: Plan):
 
         ws.merge_cells("A1:R1")
         ws["A1"].value = "Часть 3."
-        ws["A1"].font = bold_font
+        ws["A1"].font = bold_font_11
         ws["A1"].alignment = center
 
         ws.merge_cells("A2:R2")
         ws["A2"].value = "3. Мероприятия по увеличению использования местных топливно-энергетических ресурсов"
-        ws["A2"].font = bold_font
+        ws["A2"].font = bold_font_11
         ws["A2"].alignment = center
 
         ws.merge_cells("A3:A5"); ws["A3"].value = "№ п/п"
@@ -617,7 +730,7 @@ def export_xlsx_single(plan: Plan):
                     cell.alignment = vertical_text
                 else:
                     cell.alignment = center
-                cell.font = bold_font
+                cell.font = bold_font_11
 
         # ws.row_dimensions[3].height = 55
 
@@ -625,7 +738,7 @@ def export_xlsx_single(plan: Plan):
         for col in range(1, 19):
             cell = ws.cell(row=row_index, column=col, value=col)
             cell.alignment = center
-            cell.font = bold_font
+            cell.font = bold_font_11
 
         local_econ_execes = (EconExec.query
             .join(EconMeasure)
@@ -649,7 +762,7 @@ def export_xlsx_single(plan: Plan):
             nonlocal row_index
             row_index += 1
             ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=18)
-            ws.cell(row=row_index, column=1, value=title).font = bold_font
+            ws.cell(row=row_index, column=1, value=title).font = bold_font_11
             ws.cell(row=row_index, column=1).alignment = center
             sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
             sums = {col: 0 for col in sum_cols}
@@ -684,13 +797,13 @@ def export_xlsx_single(plan: Plan):
                 for col_idx in range(1, 19):
                     cell = ws.cell(row=row_index, column=col_idx)
                     cell.alignment = left if col_idx == 3 else center
-                    cell.font = regular_font
+                    cell.font = regular_font_11
             row_index += 1
             ws.cell(row=row_index, column=3, value="ИТОГО по разделу:").alignment = left
             for col in sum_cols:
                 cell = ws.cell(row=row_index, column=col, value=sums[col])
                 cell.alignment = center
-                cell.font = regular_font
+                cell.font = regular_font_11
                 cell.number_format = '0.00'
             return start_number + len(execs)
 
@@ -698,7 +811,7 @@ def export_xlsx_single(plan: Plan):
         add_section("Раздел 3.1. Мероприятия по увеличению использования местных ТЭР (первоначальная ред.)", local_econ_execes, next_number)
 
         row_index += 2
-        ws.cell(row=row_index, column=3, value="Всего:").font = bold_font
+        ws.cell(row=row_index, column=3, value="Всего:").font = bold_font_11
         ws.cell(row=row_index, column=3).alignment = left
         sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
         total_sums = {col: 0 for col in sum_cols}
@@ -713,7 +826,7 @@ def export_xlsx_single(plan: Plan):
         for col in sum_cols:
             cell = ws.cell(row=row_index, column=col, value=total_sums[col])
             cell.alignment = center
-            cell.font = bold_font
+            cell.font = bold_font_11
             cell.number_format = '0.00'
 
         quarters = [
@@ -737,7 +850,7 @@ def export_xlsx_single(plan: Plan):
 
         for q_label, q_key in quarters:
             row_index += 1
-            ws.cell(row=row_index, column=3, value=q_label).font = regular_font
+            ws.cell(row=row_index, column=3, value=q_label).font = regular_font_11
             ws.cell(row=row_index, column=3).alignment = left
             for col in range(3, 19):
                 c = ws.cell(row=row_index, column=col)
@@ -767,16 +880,25 @@ def export_xlsx_single(plan: Plan):
         return ws
 
     wb = Workbook()
-    if "Sheet" in wb.sheetnames:
-        wb.remove(wb["Sheet"])
-    
-    title_xlsx(wb, plan)
-    usage_xlsx(wb, plan)
-    derections_xlsx(wb, plan)
-    events_xlsx(wb, plan)
+
+    default_sheet = wb.active
+    wb.remove(default_sheet)
+
+    ws_title = title_xlsx(wb, plan)
+    ws_usage = usage_xlsx(wb, plan)
+    ws_directions = derections_xlsx(wb, plan)
+    ws_events = events_xlsx(wb, plan)
+
+    wb.active = wb.index(ws_usage)
 
     file_stream = io.BytesIO()
     wb.save(file_stream)
     file_stream.seek(0)
-    filename = f"{plan.okpo}_{plan.year}.xlsx"
-    return file_stream, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename
+
+    filename = f"{plan.organization.okpo}_{plan.year}.xlsx"
+
+    return (
+        file_stream,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename
+    )
