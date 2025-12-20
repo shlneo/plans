@@ -172,19 +172,28 @@ def export_pdf_single(plan: Plan):
 def export_xlsx_single(plan: Plan):
     from openpyxl import Workbook
     from openpyxl.styles import Font, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
     
     # ===============================
     # Шрифт и выравнивание
     # ===============================
     regular_font_9 = Font(name="Times New Roman", size=9)
     regular_font_9_italic = Font(name="Times New Roman", size=9, italic=True)
+    regular_font_10 = Font(name="Times New Roman", size=10)
+    regular_font_10_italic = Font(name="Times New Roman", size=10, italic=True)
     
     regular_font_11 = Font(name="Times New Roman", size=11)
+    regular_font_11_italic = Font(name="Times New Roman", size=11, italic=True)
     
     regular_font_13 = Font(name="Times New Roman", size=13)
+    bold_font_10 = Font(name="Times New Roman", size=10, bold=True)
     bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
     bold_font_13 = Font(name="Times New Roman", size=13, bold=True)
     
+    vertical_text = Alignment(horizontal="center", vertical="bottom", textRotation=90, wrap_text=True)
+    top = Alignment(horizontal="center", vertical="top", wrap_text=True)
+    bottom = Alignment(horizontal="center", vertical="bottom", wrap_text=True)
+    bottom_left = Alignment(horizontal="left", vertical="bottom", wrap_text=True)
     center = Alignment(horizontal="center", vertical="center", wrap_text=True)
     left = Alignment(horizontal="left", vertical="center", wrap_text=True)
     right = Alignment(horizontal="right", vertical="center", wrap_text=True)
@@ -192,6 +201,56 @@ def export_xlsx_single(plan: Plan):
     thin_bottom = Side(border_style="thin", color="000000")
     bottom_border = Border(bottom=thin_bottom)
 
+
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin")
+    )
+    
+    def set_cell(ws, row_start, col_start, row_end=None, col_end=None, text="", 
+                        font=regular_font_10, row_height=None, alignment=left,
+                        merge_direction='both'):  # 'horizontal', 'vertical', 'both', 'none'
+        """
+        merge_direction: 
+        - 'horizontal': объединить только по столбцам (row_end игнорируется)
+        - 'vertical': объединить только по строкам (col_end игнорируется)
+        - 'both': объединить и по строкам и по столбцам
+        - 'none': не объединять
+        """
+        if merge_direction == 'horizontal':
+            row_end = row_start
+            if col_end is None:
+                col_end = col_start
+        elif merge_direction == 'vertical':
+            col_end = col_start
+            if row_end is None:
+                row_end = row_start
+        elif merge_direction == 'both':
+            if row_end is None:
+                row_end = row_start
+            if col_end is None:
+                col_end = col_start
+        else:
+            row_end = row_start
+            col_end = col_start
+        
+        if row_start != row_end or col_start != col_end:
+            ws.merge_cells(start_row=row_start, start_column=col_start, 
+                        end_row=row_end, end_column=col_end)
+        
+        cell = ws.cell(row=row_start, column=col_start)
+        cell.value = text
+        if font:
+            cell.font = font
+        if alignment:
+            cell.alignment = alignment
+        
+        if row_height is not None:
+            for row in range(row_start, row_end + 1):
+                ws.row_dimensions[row].height = row_height
+        
+        return cell
+    
     def page_setttings(ws, print_area):
         ws.print_area = print_area      
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
@@ -202,7 +261,6 @@ def export_xlsx_single(plan: Plan):
         ws.page_margins.bottom = 0.75
         ws.page_margins.header = 0.3
         ws.page_margins.footer = 0.3
-
 
     def title_xlsx(wb, plan):
         ws = wb.create_sheet("Титульный лист", 0)
@@ -424,7 +482,7 @@ def export_xlsx_single(plan: Plan):
         
         return ws
  
-    def usage_xlsx(wb, plan):
+    def first_half_xlsx(wb, plan):
         ws = wb.create_sheet("Часть 1")
     
         # ===============================
@@ -526,219 +584,93 @@ def export_xlsx_single(plan: Plan):
 
         return ws
 
-    def derections_xlsx(wb, plan):
-        from openpyxl.styles import Font, Alignment, Border, Side
-        
+    def second_half_xlsx(wb, plan):
         ws = wb.create_sheet("Часть 2")
+        # ===============================
+        # Колонки и строки
+        # ===============================
+        columns = [("A", 4), 
+                ("B", 9), 
+                ("C", 15), 
+                ("D", 6),
+                ("E", 6.75), 
+                ("F", 6.43), 
+                ("G", 6.86), 
+                ("H", 6.43), 
+                ("I", 9.43), 
+                ("J", 5), 
+                ("K", 7.86), 
+                ("L", 7.43), 
+                ("M", 6.57), 
+                ("N", 6.57), 
+                ("O", 6), 
+                ("P", 7.14), 
+                ("Q", 6.71), 
+                ("R", 7)
+                ]
         
-        bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
-        regular_font_11 = Font(name="Times New Roman", size=11)
-        center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        left = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        thin_border = Border(
-            left=Side(style="thin"), right=Side(style="thin"),
-            top=Side(style="thin"), bottom=Side(style="thin")
-        )
-        
-        ws.merge_cells("A1:E1")
-        ws["A1"].value = "Часть 2."
-        ws["A1"].font = bold_font_11
-        ws["A1"].alignment = center
-        
-        ws.merge_cells("A2:E2")
-        ws["A2"].value = f"2. Мероприятия по реализации основных направлений энергосбережения на {plan.year} год"
-        ws["A2"].font = bold_font_11
-        ws["A2"].alignment = center
+        for col, width in columns:
+            ws.column_dimensions[col].width = width
 
-        headers = [
-            "№ п/п", 
-            "Код основных направлений энергосбережения в соответствии с формой 4-энерго-сбережение (Госстандарт)", 
-            "Наименование направлений в соответствии с формой 4-энергосбережения (Госстандарт)", 
-            "Условно-годовой экономический эффект, т у.т.", 
-            f"Ожидаемая экономия ТЭР от внедрения мероприятий в {plan.year} г., т у.т.", 
-        ]
-        ws.append(headers)
-        
-        column_widths = {
-            "A": 6,    # № п/п
-            "B": 30,   # Код
-            "C": 60,   # Наименование
-            "D": 15,   # Условно-годовой экономический эффект
-            "E": 20,   # Ожидаемая экономия ТЭР
-        }
-        for col_letter, width in column_widths.items():
-            ws.column_dimensions[col_letter].width = width
-        
-        for col in range(1, len(headers) + 1):
-            cell = ws.cell(row=3, column=col)
-            cell.font = bold_font_11
-            cell.alignment = center
-            cell.border = thin_border
-        
-        row_index = 3 
-
-        for idx, measure in enumerate(sorted(plan.econ_measures, key=lambda u: u.direction.code), start=1):
-            row_index += 1
-            row = [
-                idx, 
-                measure.direction.code,
-                measure.direction.name,
-                float(measure.year_econ or 0),
-                float(measure.estim_econ or 0),
-            ]
-            ws.append(row)
-
-            for col in range(1, len(row)+1):
-                cell = ws.cell(row=row_index, column=col)
-                cell.font = regular_font_11
-                cell.alignment = center if col not in [3] else left
-                cell.border = thin_border
-                cell.number_format = '0.00' 
-
-        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-        ws.page_setup.paperSize = ws.PAPERSIZE_A4
-        ws.page_setup.fitToWidth = 1
-        ws.page_setup.fitToHeight = 0
-        
-        # Центрирование по горизонтали
-        ws.page_setup.horizontalCentered = True
-
-        return ws
-
-    def signatures_events_xlsx(ws, start_row, plan):
-        from openpyxl.styles import Font, Alignment
-
-        bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
-        regular_font_11 = Font(name="Times New Roman", size=11)
-        left = Alignment(horizontal="left", vertical="top", wrap_text=True)
-
-        def set_cell(ws, row, col_start, col_end, text, font, row_height=20):
-            """
-            Устанавливает текст в объединённой ячейке
-            row_height - высота строки в пунктах
-            """
-            ws.merge_cells(start_row=row, start_column=col_start, end_row=row, end_column=col_end)
-            cell = ws.cell(row=row, column=col_start)
-            cell.value = text
-            cell.font = font
-            cell.alignment = left
-            ws.row_dimensions[row].height = row_height
-
-
-        set_cell(ws, start_row+6, 2, 4, "от Департамента по энергоэффективности Госстандарта", bold_font_11, row_height=20)
-        set_cell(ws, start_row+7, 2, 4, 
-            "Производственно-техническое управление\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font_11, row_height=60
-        )
-
-        set_cell(ws, start_row+9, 2, 4, 
-            "Управление экономики и финансов\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font_11, row_height=60
-        )
-
-
-        set_cell(ws, start_row+11, 2, 4, 
-            "Начальник Минского городского управления\n"
-            "по наздору за рациональным использованием ТЭР\n"
-            "_________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font_11, row_height=60
-        )
-
-        set_cell(ws, start_row+6, 6, 11, f"от {plan.organization.name}", bold_font_11, row_height=45)
-        set_cell(ws, start_row+7, 6, 11, 
-            "________________________________________________\n"
-            "________________________________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font_11, row_height=60
-        )
-
-        ministry_name = plan.organization.ministry
-        ministrytext = f"от {ministry_name if ministry_name else 'Министерство (концерн, государственный комитет)'}"
-        set_cell(ws, start_row+8, 6, 11, f"{ministrytext}", bold_font_11, row_height=45)
-        set_cell(ws, start_row+9, 6, 11, 
-            "________________________________________________\n"
-            "________________________________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font_11, row_height=60
-        )
-
-        set_cell(ws, start_row+10, 6, 11, "от Минского городского исполнительного комитета", bold_font_11, row_height=45)
-        set_cell(ws, start_row+11, 6, 11, 
-            "________________________________________________\n"
-            "«___» ____________ 20__ г.",
-            regular_font_11, row_height=60
-        )
-
-    def events_xlsx(wb, plan):
-        from openpyxl.utils import get_column_letter
-        from openpyxl.styles import Font, Alignment, Border, Side
-        
-        ws = wb.create_sheet("Часть 3")
-
-        bold_font_11 = Font(name="Times New Roman", size=11, bold=True)
-        regular_font_11 = Font(name="Times New Roman", size=11)
-        center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        left = Alignment(horizontal="left", vertical="center", wrap_text=True)
-        vertical_text = Alignment(horizontal="center", vertical="center", textRotation=90, wrap_text=True)
-        thin_border = Border(
-            left=Side(style="thin"), right=Side(style="thin"),
-            top=Side(style="thin"), bottom=Side(style="thin")
-        )
+        for row in range(1, 34):
+            if row == 1:
+                ws.row_dimensions[row].height = 21.75
+            elif row == 4:
+                ws.row_dimensions[row].height = 23.25
+            elif row == 5:
+                ws.row_dimensions[row].height = 19.5
+            elif row == 6:
+                ws.row_dimensions[row].height = 159
+            else:
+                ws.row_dimensions[row].height = 15
 
         ws.merge_cells("A1:R1")
-        ws["A1"].value = "Часть 3."
-        ws["A1"].font = bold_font_11
+        ws["A1"].value = "Часть 2. Мероприятия по экономии топливно-энергетических ресурсов"
+        ws["A1"].font = bold_font_13
         ws["A1"].alignment = center
 
         ws.merge_cells("A2:R2")
-        ws["A2"].value = "3. Мероприятия по увеличению использования местных топливно-энергетических ресурсов"
-        ws["A2"].font = bold_font_11
+        ws["A2"].value = ""
+        ws["A2"].font = bold_font_13
         ws["A2"].alignment = center
 
-        ws.merge_cells("A3:A5"); ws["A3"].value = "№ п/п"
-        ws.merge_cells("B3:B5"); ws["B3"].value = "Код основных направлений энергосбережения"
-        ws.merge_cells("C3:C5"); ws["C3"].value = "Наименование мероприятий, работ"
-        ws.merge_cells("D3:D5"); ws["D3"].value = "Единицы измерения"
-        ws.merge_cells("E3:E5"); ws["E3"].value = "Объем внедрения, ед."
-        ws.merge_cells("F3:G3"); ws["F3"].value = "Условно-годовой экономический эффект"
-        ws.merge_cells("F4:F5"); ws["F4"].value = "т у.т."
-        ws.merge_cells("G4:G5"); ws["G4"].value = "руб."
-        ws.merge_cells("H3:H5"); ws["H3"].value = "Ожидаемый срок внедрения мероприятия, квартал"
-        ws.merge_cells("I3:I5"); ws["I3"].value = "Ожидаемый экономический эффект от внедрения мероприятия в текущем году, т у.т."
-        ws.merge_cells("J3:J5"); ws["J3"].value = "Срок окупаемости, лет"
-        ws.merge_cells("K3:K5"); ws["K3"].value = "Объем финансирования, руб."
-        ws.merge_cells("L3:R3"); ws["L3"].value = "в том числе по источникам финансирования, руб."
+        ws.merge_cells("A3:A6"); ws["A3"].value = "№ п/п"
+        ws.merge_cells("B3:B6"); ws["B3"].value = "Код основных направлений энергосбережения"
+        ws.merge_cells("C3:C6"); ws["C3"].value = "Наименование мероприятия"
+        ws.merge_cells("D3:D6"); ws["D3"].value = "Единицы измерения"
+        ws.merge_cells("E3:E6"); ws["E3"].value = "Объем внедрения"
+        ws.merge_cells("F3:G5"); ws["F3"].value = "Условно-годовой экономический эффект"
+        ws["F6"].value = "т у.т."
+        ws["G6"].value = "тыс. руб."
+        ws.merge_cells("H3:H6"); ws["H3"].value = "Ожидаемый срок внедрения мероприятия, квартал"
+        ws.merge_cells("I3:I6"); ws["I3"].value = "Ожидаемый экономический эффект от внедрения мероприятия в текущем году, т у.т."
+        ws.merge_cells("J3:J6"); ws["J3"].value = "Срок окупаемости, лет"
+        ws.merge_cells("K3:K6"); ws["K3"].value = "Объем финансирования, тыс. руб."
+        ws.merge_cells("L3:R3"); ws["L3"].value = "источники финансирования, руб."
         ws.merge_cells("L4:O4"); ws["L4"].value = "бюджетные"
-        ws["L5"].value = "республиканский бюджет"
-        ws["M5"].value = "областной (городской) бюджет"
-        ws["N5"].value = "местный бюджет"
-        ws["O5"].value = "другие"
-        ws.merge_cells("P4:P5"); ws["P4"].value = "собственные средства организации"
-        ws.merge_cells("Q4:Q5"); ws["Q4"].value = "кредиты банков, займы"
-        ws.merge_cells("R4:R5"); ws["R4"].value = "иные"
+        ws.merge_cells("L5:L6"); ws["L5"].value = "республиканский бюджет на финансирование госпрограммы"
+        ws.merge_cells("M5:M6"); ws["M5"].value = "республиканский бюджет"
+        ws.merge_cells("N5:N6"); ws["N5"].value = "местный бюджет"
+        ws.merge_cells("O5:O6"); ws["O5"].value = "другие"
+        ws.merge_cells("P4:P6"); ws["P4"].value = "собственные средства организации"
+        ws.merge_cells("Q4:Q6"); ws["Q4"].value = "кредиты банков, займы"
+        ws.merge_cells("R4:R6"); ws["R4"].value = "иные"
 
-        for row in ws.iter_rows(min_row=3, max_row=5, min_col=1, max_col=18):
+        for row in ws.iter_rows(min_row=3, max_row=6, min_col=1, max_col=18):
             for cell in row:
                 if not cell.value:
                     continue
-                if cell.coordinate in ("B3", "D3", "E3", "J3", "K3", "H3", "I3", "L5", "M5", "N5", "O5", "P4", "Q4", "R4"):
+                if cell.coordinate in ("D3", "E3", "F6", "G6", "J3", "K3", "H3", "I3", "L5", "M5", "N5", "O5", "P4", "Q4", "R4"):
                     cell.alignment = vertical_text
                 else:
-                    cell.alignment = center
-                cell.font = bold_font_11
+                    cell.alignment = top
+                cell.font = regular_font_10
 
-        # ws.row_dimensions[3].height = 55
-
-        row_index = 6
+        row_index = 7
         for col in range(1, 19):
             cell = ws.cell(row=row_index, column=col, value=col)
             cell.alignment = center
-            cell.font = bold_font_11
+            cell.font = regular_font_10
 
         local_econ_execes = (EconExec.query
             .join(EconMeasure)
@@ -756,13 +688,11 @@ def export_xlsx_single(plan: Plan):
             .all()
         )
 
-        
-
         def add_section(title, execs, start_number=1):
             nonlocal row_index
             row_index += 1
             ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=18)
-            ws.cell(row=row_index, column=1, value=title).font = bold_font_11
+            ws.cell(row=row_index, column=1, value=title).font = bold_font_10
             ws.cell(row=row_index, column=1).alignment = center
             sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
             sums = {col: 0 for col in sum_cols}
@@ -797,86 +727,442 @@ def export_xlsx_single(plan: Plan):
                 for col_idx in range(1, 19):
                     cell = ws.cell(row=row_index, column=col_idx)
                     cell.alignment = left if col_idx == 3 else center
-                    cell.font = regular_font_11
+                    cell.font = regular_font_10
+                    if col_idx in [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]:
+                        cell.number_format = '0.000'
             row_index += 1
-            ws.cell(row=row_index, column=3, value="ИТОГО по разделу:").alignment = left
+            
+            ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=3)
+            ws.cell(row=row_index, column=1, value="Итого по разделу:").alignment = left
+            ws.cell(row=row_index, column=1).font = regular_font_10_italic
+            
             for col in sum_cols:
                 cell = ws.cell(row=row_index, column=col, value=sums[col])
                 cell.alignment = center
-                cell.font = regular_font_11
-                cell.number_format = '0.00'
+                cell.font = regular_font_10_italic
+                cell.number_format = '0.000'
             return start_number + len(execs)
 
-        next_number = add_section("Раздел 2.1 Мероприятия по экономии ТЭР (первоначальная ред.)", non_local_econ_execes, 1)
-        add_section("Раздел 3.1. Мероприятия по увеличению использования местных ТЭР (первоначальная ред.)", local_econ_execes, next_number)
+        next_number = add_section("Раздел 2. Мероприятия по экономии топливно-энергетических ресурсов", non_local_econ_execes, 1)
+        # add_section("Раздел 3. Мероприятия по увеличению использования местных топливно-энергетических ресурсов", local_econ_execes, next_number)
 
-        row_index += 2
-        ws.cell(row=row_index, column=3, value="Всего:").font = bold_font_11
-        ws.cell(row=row_index, column=3).alignment = left
-        sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
-        total_sums = {col: 0 for col in sum_cols}
-        for row in ws.iter_rows(min_row=6, max_row=row_index, min_col=3, max_col=18):
-            if row[0].value == "ИТОГО по разделу:":
-                for col in sum_cols:
-                    val = ws.cell(row=row[0].row, column=col).value
-                    try:
-                        total_sums[col] += float(val)
-                    except (TypeError, ValueError):
-                        pass
-        for col in sum_cols:
-            cell = ws.cell(row=row_index, column=col, value=total_sums[col])
-            cell.alignment = center
-            cell.font = bold_font_11
-            cell.number_format = '0.00'
+        # row_index += 1
+        
+        # ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=3)
+        # ws.cell(row=row_index, column=1, value="Всего по части 2:").font = bold_font_10
+        # ws.cell(row=row_index, column=1).alignment = left
+        
+        # sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
+        # total_sums = {col: 0 for col in sum_cols}
+        # for row in ws.iter_rows(min_row=6, max_row=row_index, min_col=3, max_col=18):
+        #     if row[0].value == "Итого по разделу:":
+        #         for col in sum_cols:
+        #             val = ws.cell(row=row[0].row, column=col).value
+        #             try:
+        #                 total_sums[col] += float(val)
+        #             except (TypeError, ValueError):
+        #                 pass
+        # for col in sum_cols:
+        #     cell = ws.cell(row=row_index, column=col, value=total_sums[col])
+        #     cell.alignment = center
+        #     cell.font = regular_font_10_italic
+        #     cell.number_format = '0.000'
 
         quarters = [
-            ("Январь–Март", "jan_mar"),
-            ("Январь–Июнь", "jan_jun"),
-            ("Январь–Сентябрь", "jan_sep"),
-            ("Январь–Декабрь", "jan_dec")
+            ("      январь–март", "jan_mar"),
+            ("      январь–июнь", "jan_jun"),
+            ("      январь–сентябрь", "jan_sep"),
+            ("      январь–декабрь", "jan_dec")
         ]
         local_totals = get_cumulative_econ_metrics(plan.id, True)
+        
         non_local_totals = get_cumulative_econ_metrics(plan.id, False)
+        # total_metrics = {
+        #     'jan_mar_eff': local_totals['jan_mar']['eff_curr_year'] + non_local_totals['jan_mar']['eff_curr_year'],
+        #     'jan_mar_vol': local_totals['jan_mar']['volume_fin'] + non_local_totals['jan_mar']['volume_fin'],
+        #     'jan_jun_eff': local_totals['jan_jun']['eff_curr_year'] + non_local_totals['jan_jun']['eff_curr_year'],
+        #     'jan_jun_vol': local_totals['jan_jun']['volume_fin'] + non_local_totals['jan_jun']['volume_fin'],
+        #     'jan_sep_eff': local_totals['jan_sep']['eff_curr_year'] + non_local_totals['jan_sep']['eff_curr_year'],
+        #     'jan_sep_vol': local_totals['jan_sep']['volume_fin'] + non_local_totals['jan_sep']['volume_fin'],
+        #     'jan_dec_eff': local_totals['jan_dec']['eff_curr_year'] + non_local_totals['jan_dec']['eff_curr_year'],
+        #     'jan_dec_vol': local_totals['jan_dec']['volume_fin'] + non_local_totals['jan_dec']['volume_fin']
+        # }
+        
         total_metrics = {
-            'jan_mar_eff': local_totals['jan_mar']['eff_curr_year'] + non_local_totals['jan_mar']['eff_curr_year'],
-            'jan_mar_vol': local_totals['jan_mar']['volume_fin'] + non_local_totals['jan_mar']['volume_fin'],
-            'jan_jun_eff': local_totals['jan_jun']['eff_curr_year'] + non_local_totals['jan_jun']['eff_curr_year'],
-            'jan_jun_vol': local_totals['jan_jun']['volume_fin'] + non_local_totals['jan_jun']['volume_fin'],
-            'jan_sep_eff': local_totals['jan_sep']['eff_curr_year'] + non_local_totals['jan_sep']['eff_curr_year'],
-            'jan_sep_vol': local_totals['jan_sep']['volume_fin'] + non_local_totals['jan_sep']['volume_fin'],
-            'jan_dec_eff': local_totals['jan_dec']['eff_curr_year'] + non_local_totals['jan_dec']['eff_curr_year'],
-            'jan_dec_vol': local_totals['jan_dec']['volume_fin'] + non_local_totals['jan_dec']['volume_fin']
+            'jan_mar_eff': local_totals['jan_mar']['eff_curr_year'],
+            'jan_mar_vol': local_totals['jan_mar']['volume_fin'],
+            'jan_jun_eff': local_totals['jan_jun']['eff_curr_year'],
+            'jan_jun_vol': local_totals['jan_jun']['volume_fin'],
+            'jan_sep_eff': local_totals['jan_sep']['eff_curr_year'],
+            'jan_sep_vol': local_totals['jan_sep']['volume_fin'],
+            'jan_dec_eff': local_totals['jan_dec']['eff_curr_year'],
+            'jan_dec_vol': local_totals['jan_dec']['volume_fin']
         }
+
 
         for q_label, q_key in quarters:
             row_index += 1
-            ws.cell(row=row_index, column=3, value=q_label).font = regular_font_11
-            ws.cell(row=row_index, column=3).alignment = left
+            ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=3)
+            ws.cell(row=row_index, column=1, value=q_label).font = regular_font_10
+            ws.cell(row=row_index, column=1).alignment = left
+            
             for col in range(3, 19):
                 c = ws.cell(row=row_index, column=col)
-                c.alignment = left
-            ws.cell(row=row_index, column=9, value=total_metrics[f"{q_key}_eff"]).number_format = '0.00'
-            ws.cell(row=row_index, column=11, value=total_metrics[f"{q_key}_vol"]).number_format = '0.00'
-
-        widths = [6, 12, 40, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11]
-        for i, width in enumerate(widths, start=1):
-            ws.column_dimensions[get_column_letter(i)].width = width
+                c.alignment = center
+            
+            eff_cell = ws.cell(row=row_index, column=9, value=total_metrics[f"{q_key}_eff"])
+            eff_cell.number_format = '0.000'
+            eff_cell.font = regular_font_10
+            
+            vol_cell = ws.cell(row=row_index, column=11, value=total_metrics[f"{q_key}_vol"])
+            vol_cell.number_format = '0.000'
+            vol_cell.font = regular_font_10 
 
         for row in ws.iter_rows(min_row=3, max_row=row_index, min_col=1, max_col=18):
             for cell in row:
                 cell.border = thin_border
 
+        def signatures_second_half_xlsx(ws, start_row, plan):
+            big_space = " " * 10  
+            text = f"Стоимость 1 т у.т. принята равной{big_space}долларов, при курсе{big_space}руб."
 
-        signatures_events_xlsx(ws, row_index + 1, plan)
+            set_cell(ws, row_start=start_row, col_start=2, col_end=9, 
+                    text=text, font=regular_font_10_italic, row_height=None)
 
-        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-        ws.page_setup.paperSize = ws.PAPERSIZE_A4
-        ws.page_setup.fitToWidth = 1
-        ws.page_setup.fitToHeight = 0
+            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=9, text="_______________ областное (городское) управление по надзору за рациональным использованием ТЭР")
+      
+            set_cell(ws, row_start=start_row+4, col_start=2, col_end=3, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)   
+              
+            set_cell(ws, row_start=start_row+5, col_start=2, col_end=3, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                       
+            set_cell(ws, row_start=start_row+6, col_start=2, col_end=3, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=center) 
+             
+            set_cell(ws, row_start=start_row+7, col_start=2, col_end=3, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')  
+                    
+            set_cell(ws, row_start=start_row+2, col_start=12, col_end=17, 
+                    text="__________________________________", merge_direction='horizontal')           
+                                   
+            set_cell(ws, row_start=start_row+3, col_start=12, col_end=16, 
+                    text="(юридическое лицо)", merge_direction='horizontal', font = regular_font_9, alignment=center)      
+                     
+            set_cell(ws, row_start=start_row+4, col_start=12, col_end=15, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)
+                     
+            set_cell(ws, row_start=start_row+5, col_start=12, col_end=15, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                       
+            set_cell(ws, row_start=start_row+6, col_start=12, col_end=15, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=left) 
+                         
+            set_cell(ws, row_start=start_row+7, col_start=12, col_end=15, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')           
+                         
+            set_cell(ws, row_start=start_row+9, col_start=12, col_end=17, 
+                    text="__________________________________", merge_direction='horizontal')               
+                         
+            set_cell(ws, row_start=start_row+10, col_start=12, col_end=17, 
+                    text="(министерство, концерн, государственный коммитет)", merge_direction='horizontal', font = regular_font_9, row_height = 11)  
+                                 
+            set_cell(ws, row_start=start_row+11, col_start=12, col_end=15, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)
+                     
+            set_cell(ws, row_start=start_row+12, col_start=12, col_end=15, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                       
+            set_cell(ws, row_start=start_row+13, col_start=12, col_end=15, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=left) 
+                         
+            set_cell(ws, row_start=start_row+14, col_start=12, col_end=15, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')  
+              
+        signatures_second_half_xlsx(ws, row_index + 1, plan)
+        page_setttings(ws, print_area="A1:R32")
         
-        # Центрирование по горизонтали
-        ws.page_setup.horizontalCentered = True
+        return ws
 
+    def third_half_xlsx(wb, plan):
+        ws = wb.create_sheet("Часть 3")
+        # ===============================
+        # Колонки и строки
+        # ===============================
+        columns = [("A", 4), 
+                ("B", 9), 
+                ("C", 15), 
+                ("D", 6),
+                ("E", 6.75), 
+                ("F", 6.43), 
+                ("G", 6.86), 
+                ("H", 6.43), 
+                ("I", 9.43), 
+                ("J", 5), 
+                ("K", 7.86), 
+                ("L", 7.43), 
+                ("M", 6.57), 
+                ("N", 6.57), 
+                ("O", 6), 
+                ("P", 7.14), 
+                ("Q", 6.71), 
+                ("R", 7)
+                ]
+        
+        for col, width in columns:
+            ws.column_dimensions[col].width = width
+
+        for row in range(1, 34):
+            if row == 1:
+                ws.row_dimensions[row].height = 21.75
+            elif row == 4:
+                ws.row_dimensions[row].height = 23.25
+            elif row == 5:
+                ws.row_dimensions[row].height = 26
+            elif row == 6:
+                ws.row_dimensions[row].height = 159
+            else:
+                ws.row_dimensions[row].height = 15
+
+        ws.merge_cells("A1:R1")
+        ws["A1"].value = "Часть 3. Мероприятия по увеличению использования местных топливно-энергетических ресурсов"
+        ws["A1"].font = bold_font_13
+        ws["A1"].alignment = center
+
+        ws.merge_cells("A2:R2")
+        ws["A2"].value = ""
+        ws["A2"].font = bold_font_13
+        ws["A2"].alignment = center
+
+        ws.merge_cells("A3:A6"); ws["A3"].value = "№ п/п"
+        ws.merge_cells("B3:B6"); ws["B3"].value = "Код основных направлений энергосбережения"
+        ws.merge_cells("C3:C6"); ws["C3"].value = "Наименование мероприятия"
+        ws.merge_cells("D3:D6"); ws["D3"].value = "Единицы измерения"
+        ws.merge_cells("E3:E6"); ws["E3"].value = "Объем внедрения"
+        ws.merge_cells("F3:G5"); ws["F3"].value = "Условно-годовое увеличение использования местных ТЭР "
+        ws["F6"].value = "т у.т."
+        ws["G6"].value = "тыс. руб."
+        ws.merge_cells("H3:H6"); ws["H3"].value = "Ожидаемый срок внедрения мероприятия, квартал"
+        ws.merge_cells("I3:I6"); ws["I3"].value = "Ожидаемый экономический эффект от внедрения мероприятия в текущем году, т у.т."
+        ws.merge_cells("J3:J6"); ws["J3"].value = "Срок окупаемости, лет"
+        ws.merge_cells("K3:K6"); ws["K3"].value = "Объем финансирования, тыс. руб."
+        ws.merge_cells("L3:R3"); ws["L3"].value = "источники финансирования, руб."
+        ws.merge_cells("L4:O4"); ws["L4"].value = "бюджетные"
+        ws.merge_cells("L5:L6"); ws["L5"].value = "республиканский бюджет на финансирование госпрограммы"
+        ws.merge_cells("M5:M6"); ws["M5"].value = "республиканский бюджет"
+        ws.merge_cells("N5:N6"); ws["N5"].value = "местный бюджет"
+        ws.merge_cells("O5:O6"); ws["O5"].value = "другие"
+        ws.merge_cells("P4:P6"); ws["P4"].value = "собственные средства организации"
+        ws.merge_cells("Q4:Q6"); ws["Q4"].value = "кредиты банков, займы"
+        ws.merge_cells("R4:R6"); ws["R4"].value = "иные"
+
+        for row in ws.iter_rows(min_row=3, max_row=6, min_col=1, max_col=18):
+            for cell in row:
+                if not cell.value:
+                    continue
+                if cell.coordinate in ("D3", "E3", "F6", "G6", "J3", "K3", "H3", "I3", "L5", "M5", "N5", "O5", "P4", "Q4", "R4"):
+                    cell.alignment = vertical_text
+                else:
+                    cell.alignment = top
+                cell.font = regular_font_10
+
+        row_index = 7
+        for col in range(1, 19):
+            cell = ws.cell(row=row_index, column=col, value=col)
+            cell.alignment = center
+            cell.font = regular_font_10
+
+        local_econ_execes = (EconExec.query
+            .join(EconMeasure)
+            .join(Plan)
+            .filter(Plan.id == plan.id, EconExec.is_local == True)
+            .options(joinedload(EconExec.econ_measures).joinedload(EconMeasure.plan))
+            .all()
+        )
+
+        non_local_econ_execes = (EconExec.query
+            .join(EconMeasure)
+            .join(Plan)
+            .filter(Plan.id == plan.id, EconExec.is_local == False)
+            .options(joinedload(EconExec.econ_measures).joinedload(EconMeasure.plan))
+            .all()
+        )
+
+        def add_section(title, execs, start_number=1):
+            nonlocal row_index
+            row_index += 1
+            ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=18)
+            ws.cell(row=row_index, column=1, value=title).font = bold_font_10
+            ws.cell(row=row_index, column=1).alignment = center
+            sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
+            sums = {col: 0 for col in sum_cols}
+            for idx, econ in enumerate(execs, start=start_number):
+                row_index += 1
+                row = [
+                    idx,
+                    econ.econ_measures.direction.code if econ.econ_measures and econ.econ_measures.direction else "",
+                    econ.name if hasattr(econ, "name") else "",
+                    econ.econ_measures.direction.unit.name if econ.econ_measures and econ.econ_measures.direction and econ.econ_measures.direction.unit else "",
+                    econ.Volume if hasattr(econ, "Volume") else 0,
+                    econ.EffTut if hasattr(econ, "EffTut") else 0,
+                    econ.EffRub if hasattr(econ, "EffRub") else 0,
+                    econ.ExpectedQuarter if hasattr(econ, "ExpectedQuarter") else 0,
+                    econ.EffCurrYear if hasattr(econ, "EffCurrYear") else 0,
+                    econ.Payback if hasattr(econ, "Payback") else 0,
+                    econ.VolumeFin if hasattr(econ, "VolumeFin") else 0,
+                    econ.BudgetState if hasattr(econ, "BudgetState") else 0,
+                    econ.BudgetRep if hasattr(econ, "BudgetRep") else 0,
+                    econ.BudgetLoc if hasattr(econ, "BudgetLoc") else 0,
+                    econ.BudgetOther if hasattr(econ, "BudgetOther") else 0,
+                    econ.MoneyOwn if hasattr(econ, "MoneyOwn") else 0,
+                    econ.MoneyLoan if hasattr(econ, "MoneyLoan") else 0,
+                    econ.MoneyOther if hasattr(econ, "MoneyOther") else 0
+                ]
+                for col in sum_cols:
+                    try:
+                        sums[col] += float(row[col-1])
+                    except (TypeError, ValueError):
+                        pass
+                ws.append(row)
+                for col_idx in range(1, 19):
+                    cell = ws.cell(row=row_index, column=col_idx)
+                    cell.alignment = left if col_idx == 3 else center
+                    cell.font = regular_font_10
+                    if col_idx in [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]:
+                        cell.number_format = '0.000'
+            row_index += 1
+            
+            ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=3)
+            ws.cell(row=row_index, column=1, value="Итого по разделу:").alignment = left
+            ws.cell(row=row_index, column=1).font = regular_font_10_italic
+            
+            for col in sum_cols:
+                cell = ws.cell(row=row_index, column=col, value=sums[col])
+                cell.alignment = center
+                cell.font = regular_font_10_italic
+                cell.number_format = '0.000'
+            return start_number + len(execs)
+
+        add_section("Раздел 3. Мероприятия по увеличению использования местных топливно-энергетических ресурсов", local_econ_execes, 1)
+
+        # row_index += 1
+        
+        # ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=3)
+        # ws.cell(row=row_index, column=1, value="Всего по части 2:").font = bold_font_10
+        # ws.cell(row=row_index, column=1).alignment = left
+        
+        # sum_cols = [5, 6, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18]
+        # total_sums = {col: 0 for col in sum_cols}
+        # for row in ws.iter_rows(min_row=6, max_row=row_index, min_col=3, max_col=18):
+        #     if row[0].value == "Итого по разделу:":
+        #         for col in sum_cols:
+        #             val = ws.cell(row=row[0].row, column=col).value
+        #             try:
+        #                 total_sums[col] += float(val)
+        #             except (TypeError, ValueError):
+        #                 pass
+        # for col in sum_cols:
+        #     cell = ws.cell(row=row_index, column=col, value=total_sums[col])
+        #     cell.alignment = center
+        #     cell.font = regular_font_10_italic
+        #     cell.number_format = '0.000'
+
+        quarters = [
+            ("      январь–март", "jan_mar"),
+            ("      январь–июнь", "jan_jun"),
+            ("      январь–сентябрь", "jan_sep"),
+            ("      январь–декабрь", "jan_dec")
+        ]
+        local_totals = get_cumulative_econ_metrics(plan.id, True)
+        non_local_totals = get_cumulative_econ_metrics(plan.id, False)
+        
+        total_metrics = {
+            'jan_mar_eff': non_local_totals['jan_mar']['eff_curr_year'],
+            'jan_mar_vol': non_local_totals['jan_mar']['volume_fin'],
+            'jan_jun_eff': non_local_totals['jan_jun']['eff_curr_year'],
+            'jan_jun_vol': non_local_totals['jan_jun']['volume_fin'],
+            'jan_sep_eff': non_local_totals['jan_sep']['eff_curr_year'],
+            'jan_sep_vol': non_local_totals['jan_sep']['volume_fin'],
+            'jan_dec_eff': non_local_totals['jan_dec']['eff_curr_year'],
+            'jan_dec_vol': non_local_totals['jan_dec']['volume_fin']
+        }
+
+        for q_label, q_key in quarters:
+            row_index += 1
+            ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=3)
+            ws.cell(row=row_index, column=1, value=q_label).font = regular_font_10
+            ws.cell(row=row_index, column=1).alignment = left
+            
+            for col in range(3, 19):
+                c = ws.cell(row=row_index, column=col)
+                c.alignment = center
+            
+            eff_cell = ws.cell(row=row_index, column=9, value=total_metrics[f"{q_key}_eff"])
+            eff_cell.number_format = '0.000'
+            eff_cell.font = regular_font_10
+            
+            vol_cell = ws.cell(row=row_index, column=11, value=total_metrics[f"{q_key}_vol"])
+            vol_cell.number_format = '0.000'
+            vol_cell.font = regular_font_10 
+
+        for row in ws.iter_rows(min_row=3, max_row=row_index, min_col=1, max_col=18):
+            for cell in row:
+                cell.border = thin_border
+
+        def signatures_third_half_xlsx(ws, start_row, plan):
+            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=9, text="_______________ областное (городское) управление по надзору за рациональным использованием ТЭР")
+    
+            set_cell(ws, row_start=start_row+4, col_start=2, col_end=3, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)   
+            
+            set_cell(ws, row_start=start_row+5, col_start=2, col_end=3, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                    
+            set_cell(ws, row_start=start_row+6, col_start=2, col_end=3, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=center) 
+            
+            set_cell(ws, row_start=start_row+7, col_start=2, col_end=3, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')  
+                    
+            set_cell(ws, row_start=start_row+2, col_start=12, col_end=17, 
+                    text="__________________________________", merge_direction='horizontal')           
+                                
+            set_cell(ws, row_start=start_row+3, col_start=12, col_end=16, 
+                    text="(юридическое лицо)", merge_direction='horizontal', font = regular_font_9, alignment=center)      
+                    
+            set_cell(ws, row_start=start_row+4, col_start=12, col_end=15, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)
+                    
+            set_cell(ws, row_start=start_row+5, col_start=12, col_end=15, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                    
+            set_cell(ws, row_start=start_row+6, col_start=12, col_end=15, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=left) 
+                        
+            set_cell(ws, row_start=start_row+7, col_start=12, col_end=15, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')           
+                        
+            set_cell(ws, row_start=start_row+9, col_start=12, col_end=17, 
+                    text="__________________________________", merge_direction='horizontal')               
+                        
+            set_cell(ws, row_start=start_row+10, col_start=12, col_end=17, 
+                    text="(министерство, концерн, государственный коммитет)", merge_direction='horizontal', font = regular_font_9, row_height = 11)  
+                                
+            set_cell(ws, row_start=start_row+11, col_start=12, col_end=15, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)
+                    
+            set_cell(ws, row_start=start_row+12, col_start=12, col_end=15, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                    
+            set_cell(ws, row_start=start_row+13, col_start=12, col_end=15, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=left) 
+                        
+            set_cell(ws, row_start=start_row+14, col_start=12, col_end=15, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')  
+            
+        signatures_third_half_xlsx(ws, row_index + 1, plan)
+        page_setttings(ws, print_area="A1:R32")
+        
         return ws
 
     wb = Workbook()
@@ -885,11 +1171,11 @@ def export_xlsx_single(plan: Plan):
     wb.remove(default_sheet)
 
     ws_title = title_xlsx(wb, plan)
-    ws_usage = usage_xlsx(wb, plan)
-    ws_directions = derections_xlsx(wb, plan)
-    ws_events = events_xlsx(wb, plan)
-
-    wb.active = wb.index(ws_usage)
+    ws_firstHalf = first_half_xlsx(wb, plan)
+    ws_secondHalf = second_half_xlsx(wb, plan)
+    ws_thirdHalf = third_half_xlsx(wb, plan)
+    
+    wb.active = wb.index(ws_firstHalf)
 
     file_stream = io.BytesIO()
     wb.save(file_stream)
