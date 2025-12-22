@@ -668,9 +668,7 @@ class EconExecView(SecureModelView):
 class IndicatorView(SecureModelView):
     """Админ-панель для управления показателями"""
     
-    column_list = ['id', 'code', 'name', 'unit', 'CoeffToTut', 'IsMandatory', 
-                   'IsSummary', 'IsSendRealUnit', 'IsSelfProd', 'IsLocal', 
-                   'IsRenewable', 'Group', 'RowN', 'DateStart', 'DateEnd']
+    column_list = ['id', 'code', 'name', 'unit', 'CoeffToTut', 'IsMandatory', 'Group', 'RowN', 'DateStart', 'DateEnd']
     column_default_sort = ('id', True)
     
     can_delete = True
@@ -678,10 +676,7 @@ class IndicatorView(SecureModelView):
     can_edit = True
     can_export = True
     
-    form_columns = ['code', 'name', 'unit', 'CoeffToTut', 'IsMandatory', 
-                    'IsSummary', 'IsSendRealUnit', 'IsSelfProd', 'IsLocal', 
-                    'IsRenewable', 'Group', 'RowN', 'DateStart', 'DateEnd', 
-                    'id_indicator_parent']
+    form_columns = ['code', 'name', 'unit', 'CoeffToTut', 'IsMandatory', 'Group', 'RowN', 'DateStart', 'DateEnd']
     
     form_args = {
         'code': {
@@ -701,16 +696,15 @@ class IndicatorView(SecureModelView):
     }
     
     column_searchable_list = ['code', 'name']
-    column_filters = ['id', 'IsMandatory', 'IsSummary', 'IsSendRealUnit', 
-                      'IsSelfProd', 'IsLocal', 'IsRenewable', 'Group']
+    column_filters = ['id', 'IsMandatory', 'Group']
     
     column_formatters = {
         'IsMandatory': lambda v, c, m, p: '✅ Да' if m.IsMandatory else '❌ Нет',
-        'IsSummary': lambda v, c, m, p: '📊 Да' if m.IsSummary else '📈 Нет',
-        'IsSendRealUnit': lambda v, c, m, p: '📤 Да' if m.IsSendRealUnit else '📥 Нет',
-        'IsSelfProd': lambda v, c, m, p: '🏭 Да' if m.IsSelfProd else '🏢 Нет',
-        'IsLocal': lambda v, c, m, p: '🏠 Да' if m.IsLocal else '🌍 Нет',
-        'IsRenewable': lambda v, c, m, p: '♻️ Да' if m.IsRenewable else '⚡ Нет',
+        # 'IsSummary': lambda v, c, m, p: '📊 Да' if m.IsSummary else '📈 Нет',
+        # 'IsSendRealUnit': lambda v, c, m, p: '📤 Да' if m.IsSendRealUnit else '📥 Нет',
+        # 'IsSelfProd': lambda v, c, m, p: '🏭 Да' if m.IsSelfProd else '🏢 Нет',
+        # 'IsLocal': lambda v, c, m, p: '🏠 Да' if m.IsLocal else '🌍 Нет',
+        # 'IsRenewable': lambda v, c, m, p: '♻️ Да' if m.IsRenewable else '⚡ Нет',
         'DateStart': lambda v, c, m, p: m.DateStart.strftime('%d.%m.%Y') if m.DateStart else '',
         'DateEnd': lambda v, c, m, p: m.DateEnd.strftime('%d.%m.%Y') if m.DateEnd else '',
         'unit': lambda v, c, m, p: f"{m.unit.code} ({m.unit.name})" if m.unit else ''

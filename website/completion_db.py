@@ -332,53 +332,65 @@ def add_data_in_db(db):
         
         ### Indicator DATA ###
         indicator_data = [
-            (1, 1, '1000', 'Котельно-печное топливо израсходовано всего, в том числе', 1.000, True, True, False, False, False, False, 1, 10, None, None, None),
-            (2, 2, '1040', 'Топливо печное бытовое', 1.450, False, False, False, False, False, False, 1, 20, None, None, 1),
-            (3, 2, '1050', 'Мазут топочный', 1.370, False, False, False, False, False, False, 1, 30, None, None, 1),
-            (4, 2, '1060', 'Газы углеводородные нефтепереработки', 1.500, False, False, False, False, False, False, 1, 40, None, None, 1),
-            (5, 3, '1090', 'Газ природный', 1.150, False, False, False, False, False, False, 1, 50, None, None, 1),
-            (6, 3, '1110', 'Газ природный попутный', 1.300, False, False, False, False, True, False, 1, 60, None, None, 1),
-            (7, 2, '1150', 'Газы углеводородные сжиженные', 1.570, False, False, False, False, False, False, 1, 70, None, None, 1),
-            (8, 2, '1160', 'Уголь и продукты переработки угля', 1.000, False, False, False, False, False, False, 1, 80, None, None, 1),
-            (9, 4, '1620', 'Торф топливный фрезерный', 0.340, False, False, False, False, True, False, 1, 90, None, None, 1),
-            (10, 4, '1630', 'Торф топливный кусковой', 0.410, False, False, False, False, True, False, 1, 100, None, None, 1),
-            (11, 4, '1640', 'Брикеты и полубрикеты торфяные', 0.600, False, False, False, False, True, False, 1, 110, None, None, 1),
-            (12, 2, '1660', 'Кокс металлургический, коксик и коксовая мелочь', 0.990, False, False, False, False, False, False, 1, 120, None, None, 1),
-            (13, 5, '1680', 'Щепа топливная', 0.187, False, False, False, False, True, True, 1, 130, None, None, 1),
-            (14, 5, '1690', 'Дрова', 0.266, False, False, False, False, True, True, 1, 140, None, None, 1),
-            (15, 1, '1700', 'Прочие виды топлива - всего', 1.000, False, False, False, False, False, True, 1, 150, None, None, 1),
-            (16, 1, '1720', 'нефть сырая', 1.000, False, False, False, False, False, False, 1, 160, None, None, 1),
-            (17, 1, '1730', 'отходы лесозаготовок и деревообработки', 1.000, False, False, False, False, True, True, 1, 170, None, None, 1),
-            (18, 1, '1740', 'отходы с/х деятельности и прочие виды природного топлива', 1.000, False, False, False, False, True, True, 1, 180, None, None, 1),
-            (19, 1, '1741', 'древесный уголь', 1.000, False, False, False, False, False, False, 1, 190, None, None, 1),
-            (20, 1, '1742', 'древесные гранулы, пеллеты', 1.000, False, False, False, False, True, True, 1, 200, None, None, 1),
-            (21, 1, '1743', 'торфодревесное топливо', 1.000, False, False, False, False, True, False, 1, 210, None, None, 1),
-            (22, 1, '1745', 'биогаз', 1.000, False, False, False, False, True, True, 1, 220, None, None, 1),
-            (23, 1, '1750', 'метано-водородная фракция', 1.000, False, False, False, False, False, False, 1, 230, None, None, 1),
-            (24, 1, '1760', 'лигнин гидролизного производства', 1.000, False, False, False, False, False, False, 1, 240, None, None, 1),
-            (25, 1, '1770', 'Х-масла производства капролактама', 1.000, False, False, False, False, False, False, 1, 250, None, None, 1),
-            (26, 1, '1771', 'смесь эфиров и кислот', 1.000, False, False, False, False, False, False, 1, 260, None, None, 1),
-            (27, 1, '1772', 'метанольная фракция', 1.000, False, False, False, False, False, False, 1, 270, None, None, 1),
-            (28, 1, '1780', 'сульфатные и сульфитные щелока целлюлозно-бумажной промышленности', 1.000, False, False, False, False, False, False, 1, 280, None, None, 1),
-            (29, 1, '1791', 'нефтешлам', 1.000, False, False, False, False, True, False, 1, 290, None, None, 1),
-            (30, 1, '1793', 'адсорбированные отходы после очистных сооружений', 1.000, False, False, False, False, True, False, 1, 300, None, None, 1),
-            (31, 1, '1794', 'использованные автопокрышки', 1.000, False, False, False, False, True, False, 1, 310, None, None, 1),
-            (32, 1, '1795', 'прочие горючие отходы', 1.000, False, False, False, False, True, False, 1, 320, None, None, 1),
-            (33, 6, '1105', 'Электроэнергия израсходовано всего', 0.123, True, False, True, False, False, False, 2, 330, None, None, None),
-            (34, 6, '1405', 'Электроэнергия, выработанная собственными энергоисточниками, в том числе', 0.123, True, False, True, True, False, False, 2, 340, None, None, 33),
-            (35, 6, '1425', 'энергия воды, ветра, солнца, геотермальных источников', 0.123, True, False, True, False, True, False, 2, 350, None, None, 34),
-            (36, 6, '1445', 'собственная выработка электроэнергии на АЭС', 0.123, True, False, True, False, False, False, 2, 360, None, None, 34),
-            (37, 7, '1104', 'Теплоэнергия израсходовано всего', 0.143, True, False, True, False, False, False, 3, 370, None, None, None),
-            (38, 7, '1404', 'Теплоэнергия, произведенная собственными энергоисточниками,  в том числе', 0.143, True, False, True, True, False, False, 3, 380, None, None, 37),
-            (39, 7, '1424', 'энергия воды, ветра, солнца, геотермальных источников', 0.143, True, False, True, False, True, False, 3, 390, None, None, 38),
-            (40, 1, '260', 'Суммарное потребление ТЭР', 1.000, True, True, False, False, False, False, 4, 400, None, None, None),
-            (41, 1, '9900', 'Ожидаемая экономия ТЭР от внедрения мероприятий в текущем году', 1.000, True, True, False, False, False, False, 5, 410, None, None, None),
-            (42, 1, '9910', 'Экономия ТЭР от мероприятий предыдущего года внедрения, в том числе:', 1.000, True, False, False, False, False, False, 6, 420, None, None, None),
-            (43, 1, '9911', 'январь-март', 1.000, True, False, False, False, False, False, 6, 430, None, None, 42),
-            (44, 1, '9912', 'январь-июнь', 1.000, True, False, False, False, False, False, 6, 440, None, None, 42),
-            (45, 1, '9913', 'январь-сентябрь', 1.000, True, False, False, False, False, False, 6, 450, None, None, 42),
-            (46, 1, '9914', 'январь-декабрь', 1.000, True, False, False, False, False, False, 6, 460, None, None, 42),
-            (47, 1, '9999', 'Итого: годовая экономия ТЭР от энергосберегающих мероприятий', 1.000, True, True, False, False, False, False, 7, 470, None, None, None)
+            (1, '1000', 'Котельно-печное топливо израсходовано всего, в том числе', 1.000, True, 1, 10),
+            (2, '1040', 'Топливо печное бытовое', 1.450, False, 1, 20),
+            (2, '1050', 'Мазут топочный', 1.370, False, 1, 30),
+            (2, '1060', 'Газы углеводородные нефтепереработки', 1.500, False, 1, 40),
+            (3, '1090', 'Газ природный', 1.150, False, 1, 50),
+            (3, '1110', 'Газ природный попутный', 1.300, False, 1, 60),
+            (2, '1150', 'Газы углеводородные сжиженные', 1.570, False, 1, 70),
+            (2, '1160', 'Уголь и продукты переработки угля', 1.000, False, 1, 80),
+            (4, '1620', 'Торф топливный фрезерный', 0.340, False, 1, 90),
+            (4, '1630', 'Торф топливный кусковой', 0.410, False, 1, 100),
+            (4, '1640', 'Брикеты и полубрикеты торфяные', 0.600, False, 1, 110),
+            (2, '1660', 'Кокс металлургический, коксик и коксовая мелочь', 0.990, False, 1, 120),
+            (5, '1680', 'Щепа топливная', 0.187, False, 1, 130),
+            (5, '1690', 'Дрова', 0.266, False, 1, 140),
+            (1, '1700', 'Прочие виды топлива - всего', 1.000, False, 1, 150),
+            (1, '1720', 'нефть сырая', 1.000, False, 1, 160),
+            (1, '1730', 'отходы лесозаготовок и деревообработки', 1.000, False, 1, 170),
+            (1, '1740', 'отходы с/х деятельности и прочие виды природного топлива', 1.000, False, 1, 180),
+            (1, '1741', 'древесный уголь', 1.000, False, 1, 190),
+            (1, '1742', 'древесные гранулы, пеллеты', 1.000, False, 1, 200),
+            (1, '1743', 'торфодревесное топливо', 1.000, False, 1, 210),
+            (1, '1745', 'биогаз', 1.000, False, 1, 220),
+            (1, '1750', 'метано-водородная фракция', 1.000, False, 1, 230),
+            (1, '1760', 'лигнин гидролизного производства', 1.000, False, 1, 240),
+            (1, '1770', 'Х-масла производства капролактама', 1.000, False, 1, 250),
+            (1, '1771', 'смесь эфиров и кислот', 1.000, False, 1, 260),
+            (1, '1772', 'метанольная фракция', 1.000, False, 1, 270),
+            (1, '1780', 'сульфатные и сульфитные щелока целлюлозно-бумажной промышленности', 1.000, False, 1, 280),
+            (1, '1791', 'нефтешлам', 1.000, False, 1, 290),
+            (1, '1793', 'адсорбированные отходы после очистных сооружений', 1.000, False, 1, 300),
+            (1, '1794', 'использованные автопокрышки', 1.000, False, 1, 310),
+            (1, '1795', 'прочие горючие отходы', 1.000, False, 1, 320),
+            
+            (1, '1796', 'из него местные виды топлива и отходы', 1.000, True, 1, 10),       
+            (1, '1797', 'из них возобновляемые', 1.000, True, 1, 10),  
+            
+            (6, '1105', 'Электроэнергия израсходовано всего', 0.123, True, 2, 330),
+            (6, '1405', 'Электроэнергия, выработанная собственными энергоисточниками, в том числе', 0.123, True, 2, 340),
+            (6, '1425', 'энергия воды, ветра, солнца, геотермальных источников', 0.123, True, 2, 350),
+            # (6, '1445', 'собственная выработка электроэнергии на АЭС', 0.123, True, 2, 360),
+            
+            (7, '1104', 'Теплоэнергия израсходовано всего', 0.143, True, 3, 370),
+            (7, '1404', 'Теплоэнергия, произведенная собственными энергоисточниками,  в том числе', 0.143, True, 3, 380),
+            (7, '1424', 'энергия воды, ветра, солнца, геотермальных источников', 0.143, True, 3, 390),
+            
+            (1, '260', 'Суммарное потребление ТЭР', 1.000, True, 4, 400),
+            
+            (1, '9999', 'Годовая экономия ТЭР от энергосберегающих мероприятий всего', 1.000, True, 5, 470),
+            (1, '9900', 'Ожидаемая экономия ТЭР от внедрения мероприятий в текущем году', 1.000, True, 5, 410),
+            (1, '9910', 'Экономия ТЭР от мероприятий предыдущего года внедрения, в том числе:', 1.000, True, 5, 420),
+            
+            (1, '9911', 'январь-март', 1.000, True, 5, 430),
+            (1, '9912', 'январь-июнь', 1.000, True, 5, 440),
+            (1, '9913', 'январь-сентябрь', 1.000, True, 5, 450),
+            (1, '9914', 'январь-декабрь', 1.000, True, 5, 460),
+
+            (1, '9915', 'Целевой показатель энергосбережения', 1.000, True, 6, 420),
+            (1, '9916', 'Целевой показатель по доле местных ТЭР в КПТ', 1.000, True, 7, 420),
+            (1, '9917', 'Целевой показатель по доле возобновляемых источников энергии в КПТ', 1.000, True, 8, 420)
         ]
         
         from decimal import Decimal, InvalidOperation
@@ -388,24 +400,15 @@ def add_data_in_db(db):
             except (InvalidOperation, TypeError, ValueError):
                 return Decimal('0.000')
 
-        for IdIndicator, IdUnit, CodeIndicator, NameIndicator, CoeffToTut, IsMandatory, IsSummary, IsSendRealUnit, IsSelfProd, IsLocal, IsRenewable, Group, RowN, DateStart, DateEnd, IdIndicatorParent in indicator_data:
+        for IdUnit, CodeIndicator, NameIndicator, CoeffToTut, IsMandatory, Group, RowN in indicator_data:
             indicator = Indicator(
-                id=IdIndicator,
                 id_unit=IdUnit,
                 code=CodeIndicator,
                 name=NameIndicator,
                 CoeffToTut=to_decimal_3(CoeffToTut),
                 IsMandatory=IsMandatory,
-                IsSummary=IsSummary,
-                IsSendRealUnit=IsSendRealUnit,
-                IsSelfProd=IsSelfProd,
-                IsLocal=IsLocal,
-                IsRenewable=IsRenewable,
                 Group=Group,
-                RowN=RowN,
-                DateStart=DateStart,
-                DateEnd=DateEnd,
-                id_indicator_parent=IdIndicatorParent
+                RowN=RowN
             )
             db.session.add(indicator)
         db.session.commit()

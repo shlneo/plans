@@ -254,20 +254,22 @@ class Indicator(db.Model):
     code = db.Column(db.String(400))
     name = db.Column(db.String(400))
     CoeffToTut = db.Column(Numeric(scale=3))
-
     IsMandatory = db.Column(db.Boolean)
-    IsSummary = db.Column(db.Boolean)
-    IsSendRealUnit = db.Column(db.Boolean)
-    IsSelfProd = db.Column(db.Boolean)
-    IsLocal = db.Column(db.Boolean)
-    IsRenewable = db.Column(db.Boolean)
-
+    
     Group = db.Column(db.Integer)
     RowN = db.Column(db.Integer)
+    
+    # IsSummary = db.Column(db.Boolean)
+    # IsSendRealUnit = db.Column(db.Boolean)
+    # IsSelfProd = db.Column(db.Boolean)
+    # IsLocal = db.Column(db.Boolean)
+    # IsRenewable = db.Column(db.Boolean)
+    # id_indicator_parent = db.Column(db.Integer)
 
-    DateStart = db.Column(db.DateTime)
-    DateEnd = db.Column(db.DateTime)
-    id_indicator_parent = db.Column(db.Integer)
+
+    DateStart = db.Column(db.DateTime, default=None)
+    DateEnd = db.Column(db.DateTime, default=None)
+    
     unit = db.relationship('Unit', backref='indicators')
     indicators_usage = db.relationship("IndicatorUsage", back_populates="indicator")
 

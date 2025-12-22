@@ -122,6 +122,8 @@
                                 {% set group_color = '#1191F3' %}
                             {% elif row.indicator.Group == 7 %}
                                 {% set group_color = '#1E99E5' %}
+                            {% elif row.indicator.Group == 8 %}
+                                {% set group_color = '#1E91A9' %}
                             {% endif %}
                         {% endif %}
                         <tr class="menu-row" data-id="{{ row.id }}" {% if group_color %}style="background-color: {{ group_color }}"{% endif %}>
