@@ -2,7 +2,6 @@
 {% block title %}{{ _('Личный кабинет') }} - ErespondentS{% endblock %}
 {% block content %}
 
-
 <div class="pers-page">
     <div class="personal-acc-conteiner">
         <a class="name">{{ _('Личный кабинет') }}</a>
@@ -32,18 +31,18 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row-app-group">
                 <div class="app-group">
-                    <label>{{ _('Фамилия') }}</label>
+                    <label>{{ _('Фамилия *') }}</label>
                     <div class="input-with-icon">
                         <img src="/static/img/Account.svg" alt="" class="input-icon">
-                        <input type="text" name="last_name" maxlength="15" value="{{current_user.last_name}}" 
+                        <input type="text" name="last_name" maxlength="30" value="{{current_user.last_name}}" 
                             placeholder="{{ _('Иванов') }}" class="app-input" required>
                     </div>
                 </div>
                 <div class="app-group">
-                    <label>{{ _('Имя') }}</label>
+                    <label>{{ _('Имя *') }}</label>
                     <div class="input-with-icon">
                         <img src="/static/img/Account.svg" alt="" class="input-icon">
-                        <input type="text" name="first_name" maxlength="15" value="{{current_user.first_name}}" class="app-input" placeholder="{{ _('Иван') }}" required>
+                        <input type="text" name="first_name" maxlength="30" value="{{current_user.first_name}}" class="app-input" placeholder="{{ _('Иван') }}" required>
                     </div>
                 </div>
             </div>
@@ -51,14 +50,14 @@
                 <label>{{ _('Отчество') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Account.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="15" name = "patronymic_name" value="{{current_user.patronymic_name}}" placeholder="{{ _('Иванович') }}" class="app-input" required>
+                    <input type="text" maxlength="30" name = "patronymic_name" value="{{current_user.patronymic_name}}" placeholder="{{ _('Иванович') }}" class="app-input" required>
                 </div>
             </div> 
             <div class="app-group">
-                <label>{{ _('Email') }}</label>
+                <label>{{ _('Email *') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Email.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="15" value="{{current_user.email}}" placeholder="{{ _('demo@example.com') }}" class="app-input" readonly>
+                    <input type="text" maxlength="" value="{{current_user.email}}" placeholder="{{ _('demo@example.com') }}" class="app-input" readonly>
                     <div class="input-mes" title = "{{ _('Не изм.') }}">
                         <img src="/static/img/Edit_off.svg">
                         
@@ -66,10 +65,10 @@
                 </div>
             </div>
             <div class="app-group">
-                <label>{{ _('Телефон') }}</label>
+                <label>{{ _('Телефон *') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Phone.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="15" name = "phone" value="{{current_user.phone}}" placeholder="+375.." class="app-input" required>
+                    <input type="text" maxlength="13" name = "phone" value="{{current_user.phone}}" placeholder="+375.." class="app-input" required>
                 </div>
             </div>
             <div class="app-group">
@@ -80,7 +79,8 @@
                 </div>
             </div>
             <div class="button-area">
-                <button type="button" class="submit-button" id="editprofileButton">
+                <button type="button" class="submit-button" id="editprofileButton"
+                        style="{% if not can_change_modal or current_user.is_auditor %}display:none;{% endif %}">
                     <img src="/static/img/Add_wh.svg" alt="" class="btn-icon">
                     <span class="btn-text">{{ _('Применить изменения') }}</span>
                 </button>
@@ -92,7 +92,7 @@
         <div class = "profile-org">
             <div class="row-app-group">
                     <div class="app-group">
-                        <label>{{ _('Организация') }}</label>
+                        <label>{{ _('Организация *') }}</label>
                         <div class="input-with-icon">
                             <img src="/static/img/Organization.svg" alt="" class="input-icon">
                             <input type="text" value="{{ current_user.organization.name }}"  readonly class="app-input">
@@ -116,7 +116,7 @@
         {% elif current_user.ministry %}
             <div class = "profile-min">
                 <div class="app-group">
-                    <label>{{ _('Министерство') }}</label>
+                    <label>{{ _('Министерство *') }}</label>
                     <div class="input-with-icon">
                         <img src="/static/img/Organization.svg" alt="" class="input-icon">
                         <input type="text" value="{{ current_user.ministry.name }}"  readonly class="app-input">
@@ -126,7 +126,7 @@
         {% elif current_user.region %}
             <div class = "profile-reg">
                 <div class="app-group">
-                    <label>{{ _('Регион') }}</label>
+                    <label>{{ _('Регион *') }}</label>
                     <div class="input-with-icon">
                         <img src="/static/img/Organization.svg" alt="" class="input-icon">
                         <input type="text" value="{{ current_user.region.name }}"  readonly class="app-input">
@@ -134,10 +134,6 @@
                 </div>
             </div>
         {%endif%}
-       
-
-
-
         <div class="button-area">
             <button id="orgUserbutton" type="button" class="submit-button"
                     style="{% if not can_change_modal or current_user.is_auditor %}display:none;{% endif %}">
@@ -145,17 +141,30 @@
                 <span class="btn-text">{{ _('Изменить субъект') }}</span>
             </button>
         </div>
-        
+
+
         <hr>
-        <a class="sername">{{ _('Информация об аккаунте') }}</a>
-        <div class="no-input"> 
-            <img src="/static/img/Calendar_grey.svg" alt="" >
-            <a>{{ _('Дата регистрации') }}: {{ current_user.begin_time.strftime('%d-%m-%Y') }}</a>
+        <a class="sername">{{ _('Прочая информация') }}</a>
+        <div class = "support-txt-cont">
+            <p class="row">Наименование * — обязательные поля для заполнения/выбора</p>
+            <div class="row">
+                <div class="input-mes-test" title="Не изм.">
+                    <img src="/static/img/Edit_off.svg">
+                </div> 
+                <p>&nbsp; — поля не подлежащие редактированию</p>
+            </div> 
         </div>
-        <div class="no-input"> 
-            <img src="/static/img/Account_grey.svg" alt="" >
-            <a>{{ _('Id пользователя') }}: demo{{ current_user.id }}</a>
+        <div>
+            <div class="no-input"> 
+                <img src="/static/img/Calendar_gray.svg" alt="" >
+                <a>{{ _('Дата регистрации') }}: {{ current_user.begin_time.strftime('%d-%m-%Y') }}</a>
+            </div>
+            <div class="no-input"> 
+                <img src="/static/img/Account_grey.svg" alt="" >
+                <a>{{ _('Id пользователя') }}: demo{{ current_user.id }}</a>
+            </div>
         </div>
+        
     </div>
 </div>
 {% endblock %}

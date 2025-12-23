@@ -5,13 +5,13 @@
 <div class="pers-page">
     <div class="personal-acc-conteiner">
         <a class="name">{{ _('Создание нового плана') }}</a>
-        <a class="sername">{{ _('Основная информация') }}</a>
+        <p class="support-text">Выберите доступный год и заполните необходимые парамметры</p>
         <form class="main-form" action="/create-plan" method="POST" id="plan-form">
             <div class="row-app-group">
                 <div class="app-group">
                     <label>{{ _('Год') }}</label>
                     <div class="input-with-icon">
-                        <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
+                        <img src="/static/img/Calendar_gray.svg" alt="" class="input-icon">
                         <input type="number" id="year" name="year" min="2024" max="2030" value="2026" 
                             placeholder="2026" class="app-input"  required
                             onchange="checkExistingPlan(this.value)">
@@ -67,8 +67,9 @@
                     </div>
                 </div>
             </div>
-            <hr>
 
+            {# 
+            <hr>
             <div class="user-info-section" data-action="close">
                 <div class="section-header" id="section-header">
                     <div class="section-title-switcher">
@@ -90,14 +91,7 @@
                             {% set ministry = current_user.ministry %}
                         {% endif %}
 
-                        {% if current_user.region %}
-                            {% set region = current_user.region %}
-                        {% endif %}
-
-                        {% if org or ministry or region %}
-                            <div class="app-group">
-                                {% if org %}
-                                    <label>{{ _('Организация') }}</label>
+                       <label>{{ _('Организация') }}</label>
                                     <div class="input-with-icon">
                                         <img src="/static/img/Organization.svg" alt="" class="input-icon">
                                         <input type="text" value="{{ org.name }}" readonly class="app-input">
@@ -153,11 +147,20 @@
                             </div>
                         </div>
                     </div>
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
                 </div>
             </div>        
-            <hr>
+            <hr>        {% if current_user.region %}
+                            {% set region = current_user.region %}
+                        {% endif %}
+
+                        {% if org or ministry or region %}
+                            <div class="app-group">
+                                {% if org %}
+            #}
+                   
             <div class="button-area">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" id="submit-btn" class="submit-button">
                     <img src="/static/img/Add_wh.svg" alt="" class="btn-icon">
                     <span class="btn-text">{{ _('Создать план') }}</span>

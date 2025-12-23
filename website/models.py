@@ -101,9 +101,9 @@ class Plan(db.Model):
     # name_reg = db.Column(db.String, default=None)
     
     year = db.Column(db.Integer, nullable=False)
-    email = db.Column(db.String(), nullable=False)
-    fio = db.Column(db.String(), nullable=False)
-    phone = db.Column(db.String(), nullable=False)
+    # email = db.Column(db.String(), nullable=False)
+    # fio = db.Column(db.String(), nullable=False)
+    # phone = db.Column(db.String(), nullable=False)
     
     begin_time = db.Column(db.DateTime, nullable=False, default=current_utc_time)
     change_time = db.Column(db.DateTime, nullable=False, default=current_utc_time)
@@ -120,13 +120,13 @@ class Plan(db.Model):
     is_sent = db.Column(db.Boolean, default=False)
     is_error = db.Column(db.Boolean, default=False)
     is_approved = db.Column(db.Boolean, default=False)
+        
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id')) 
     
     ministry_id = db.Column(db.Integer, db.ForeignKey('ministries.id'))
     org_id = db.Column(db.Integer, db.ForeignKey('organizations.id'))  
     region_id = db.Column(db.Integer, db.ForeignKey('regions.id'))
-    
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))  
-
+ 
     afch = db.Column(db.Boolean, default=False)
 
     tickets = db.relationship('Ticket', back_populates='plan', lazy=True, cascade="all, delete-orphan")
@@ -256,8 +256,8 @@ class Indicator(db.Model):
     CoeffToTut = db.Column(Numeric(scale=3))
     IsMandatory = db.Column(db.Boolean)
     
-    Group = db.Column(db.Integer)
-    RowN = db.Column(db.Integer)
+    Group = db.Column(db.Float)
+    RowN = db.Column(db.Float)
     
     # IsSummary = db.Column(db.Boolean)
     # IsSendRealUnit = db.Column(db.Boolean)

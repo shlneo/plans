@@ -1568,7 +1568,11 @@ function Edit_indicator_modal(){
         }
     }
 
-    const isGroup6 = groupValue === '6';
+    const isGroup5 = groupValue === '5.0';
+    const isGroup6 = groupValue === '6.0';
+    
+    // Для групп 5 и 6 показываем только последнее поле
+    const isSpecialGroup = isGroup5 || isGroup6;
 
     // Управляем видимостью элементов
     const qYearCurrNoDisplay = document.getElementById('QYearCurr-edit-nodisplay');
@@ -1578,17 +1582,18 @@ function Edit_indicator_modal(){
     const qYearCurrInput = qYearCurrNoDisplay ? qYearCurrNoDisplay.querySelector('input') : null;
     const qYearPrevInput = qYearPrevNoDisplay ? qYearPrevNoDisplay.querySelector('input') : null;
     
+    // Скрываем поля QYearPrev и QYearCurr для групп 5 и 6
     if (qYearCurrNoDisplay) {
-        qYearCurrNoDisplay.style.display = isGroup6 ? 'none' : '';
+        qYearCurrNoDisplay.style.display = isSpecialGroup ? 'none' : '';
     }
     
     if (qYearPrevNoDisplay) {
-        qYearPrevNoDisplay.style.display = isGroup6 ? 'none' : '';
+        qYearPrevNoDisplay.style.display = isSpecialGroup ? 'none' : '';
     }
 
     // Управляем обязательностью полей
     if (qYearCurrInput) {
-        if (isGroup6) {
+        if (isSpecialGroup) {
             qYearCurrInput.removeAttribute('required');
         } else {
             qYearCurrInput.setAttribute('required', 'required');
@@ -1596,7 +1601,7 @@ function Edit_indicator_modal(){
     }
     
     if (qYearPrevInput) {
-        if (isGroup6) {
+        if (isSpecialGroup) {
             qYearPrevInput.removeAttribute('required');
         } else {
             qYearPrevInput.setAttribute('required', 'required');
@@ -1617,12 +1622,12 @@ function Edit_indicator_modal(){
                 throw new Error(data.error);
             }
 
-            // Для группы 6 не заполняем QYearPrev и QYearCurr
-            if (!isGroup6) {
+            // Для групп 5 и 6 не заполняем QYearPrev и QYearCurr
+            if (!isSpecialGroup) {
                 setValueIfExists('QYearPrev-edit', data.QYearPrev ? (data.QYearPrev / data.CoeffToTut).toFixed(3) : '');
                 setValueIfExists('QYearCurr-edit', data.QYearCurr ? (data.QYearCurr / data.CoeffToTut).toFixed(3) : '');
             } else {
-                // Очищаем значения для группы 6
+                // Очищаем значения для групп 5 и 6
                 setValueIfExists('QYearPrev-edit', '');
                 setValueIfExists('QYearCurr-edit', '');
             }
@@ -1968,7 +1973,11 @@ class MultiTypeSearchManager {
         if (this.hasNextPage) {
             this.loadMoreButton.style.display = 'block';
             this.loadMoreButton.disabled = false;
-            this.loadMoreButton.textContent = 'Загрузить еще';
+
+            this.loadMoreButton.innerHTML = `
+                <img src="/static/img/spinner.svg" alt="Загрузить еще" class="btn-icon">
+                <span class="btn-text">Загрузить еще</span>
+            `;
         } else {
             if (this.allItems.length > 0) {
                 this.loadMoreButton.style.display = 'block';
@@ -3833,7 +3842,7 @@ document.addEventListener('DOMContentLoaded', () => {
           
           immutableCodes: ['260', '9900', '9999', '1000'], // Коды, которые нельзя изменять/удалять
           immutableEditCodes: [],
-          immutableDeleteCodes: ['9911', '9910', '9912', '9913', '9914', '1404', '1104', '1424', '1105', '1405', '1425', '1445'], // Коды, которые нельзя удалять (но можно редактировать)
+          immutableDeleteCodes: ['9911', '9910', '9912', '9913', '9914', '1404', '1104', '1424', '1105', '1405', '1425', '1445', '9915', '9916', '9917'], // Коды, которые нельзя удалять (но можно редактировать)
 
           codeColumnIndex: 11, 
           hideCodeColumn: true

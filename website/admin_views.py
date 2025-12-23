@@ -64,7 +64,6 @@ class MyMainView(AdminIndexView):
             draft_plans = Plan.query.filter_by(is_draft=True).count()
             approved_plans = Plan.query.filter_by(is_approved=True).count()
             
-            # Статистика по другим таблицам
             tickets_count = Ticket.query.count()
             units_count = Unit.query.count()
             directions_count = Direction.query.count()
@@ -83,8 +82,6 @@ class MyMainView(AdminIndexView):
             execs_count = indicators_count = usages_count = notifications_count = 0
             flash('Ошибка при получении статистики из базы данных', 'error')
 
-        # Правильные endpoint'ы Flask-Admin
-        # Формат: {view_class_name.lower()}.index_view
         endpoints = {
             'users': 'user.index_view',  # UserView -> user
             'organizations': 'organization.index_view',  # OrganizationView -> organization
@@ -163,7 +160,6 @@ class SecureModelView(ModelView):
         flash('Недостаточно прав для доступа к этому разделу', 'error')
         return redirect(url_for('views.begin_page'))
     
-    # Конфигурация отображения
     page_size = 50
     can_view_details = True
     can_export = True
@@ -339,7 +335,6 @@ class UserView(SecureModelView):
         
         return form
     
-    
 class OrganizationView(SecureModelView):
     """Админ-панель для управления организациями"""
     
@@ -392,7 +387,7 @@ class OrganizationView(SecureModelView):
 class PlanView(SecureModelView):
     """Админ-панель для управления планами"""
     
-    column_list = ['id', 'year', 'email', 'fio', 
+    column_list = ['id', 
                    'is_draft', 'is_control', 'is_sent', 'is_error', 'is_approved',
                    'begin_time', 'change_time', 'sent_time', 'audit_time', 'ministry_id', 'org_id', 'region_id']
     column_default_sort = ('id', True)
@@ -403,7 +398,7 @@ class PlanView(SecureModelView):
     can_edit = True
     can_export = True
     
-    form_columns = ['year', 'email', 'fio', 'phone',
+    form_columns = ['year',
                     'organization', 'user', 'energy_saving', 'share_fuel', 
                     'saving_fuel', 'share_energy', 'is_draft', 'is_control', 
                     'is_sent', 'is_error', 'is_approved', 'afch']
@@ -413,25 +408,10 @@ class PlanView(SecureModelView):
             'label': 'Год',
             'validators': [DataRequired(), NumberRange(min=2000, max=2100)],
             'description': 'Год плана'
-        },
-        'email': {
-            'label': 'Email',
-            'validators': [DataRequired(), Email(), Length(max=255)],
-            'description': 'Email ответственного'
-        },
-        'fio': {
-            'label': 'ФИО',
-            'validators': [DataRequired(), Length(max=255)],
-            'description': 'ФИО ответственного'
-        },
-        'phone': {
-            'label': 'Телефон',
-            'validators': [Length(max=20)],
-            'description': 'Телефон ответственного'
         }
     }
     
-    column_searchable_list = ['email', 'fio', 'phone']
+    column_searchable_list = ['year']
     column_filters = ['id', 'year', 'is_draft', 'is_control', 'is_sent', 
                       'is_error', 'is_approved', 'afch']
     

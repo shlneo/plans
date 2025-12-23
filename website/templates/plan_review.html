@@ -45,14 +45,14 @@
                 {% endif %}
             </div>
         </div>
-        <a class="sername">{{ _('Основные параметры') }}</a>
+        
         <form id = "editPlanForm" class="main-form" action="{{ url_for('views.edit_plan', id=plan.id) }}" method="POST">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">    
             <div class="row-app-group"> 
                 <div class="app-group">
                     <label>{{ _('Год') }}</label>
                     <div class="input-with-icon">
-                        <img src="/static/img/Calendar_grey.svg" alt="" class="input-icon">
+                        <img src="/static/img/Calendar_gray.svg" alt="" class="input-icon">
                         <input type="number" id="year" name="year" min="2024" max="2030" value="{{ plan.year }}" 
                             placeholder="" class="app-input" required
                             onchange="checkExistingPlan(this.value)"
@@ -118,7 +118,8 @@
             </div>
             {% endif %}
         </form>
-        <hr>
+        <br>
+        <br>
         <div class="user-info-section" data-action="close">
             <div class="section-header" id="section-header">
                 <div class="section-title-switcher">
@@ -127,7 +128,6 @@
                 <div class="toggle-icon">−</div>
             </div>
             <div class="section-content">
-
                 <div class="row-app-group">
                     {% set org = none %}
                     {% set ministry = none %}
@@ -173,8 +173,8 @@
                         <label>{{ _('ФИО') }}</label>
                         <div class="input-with-icon">
                             <img src="/static/img/Account.svg" alt="" class="input-icon">
-                            <input type="text" id="secondname" maxlength="15" value="{{ plan.fio }}" 
-                                placeholder="{{ _('Иванов') }}" class="app-input" readonly>
+                            <input type="text" id="secondname" maxlength="15"  value="{{ plan.user.last_name }} {{ plan.user.first_name }} {{ plan.user.patronymic_name }}" 
+                                placeholder="{{ _('ФИО') }}" class="app-input" readonly>
                             <div class="input-mes" title = "{{ _('Не изм.') }}">
                                 <img src="/static/img/Edit_off.svg">
                                 
@@ -187,7 +187,7 @@
                         <label>{{ _('Email') }}</label>
                         <div class="input-with-icon">
                             <img src="/static/img/Email.svg" alt="" class="input-icon">
-                            <input type="text" maxlength="15" value="{{ plan.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
+                            <input type="text" maxlength="15" value="{{ plan.user.email }}" placeholder="{{ _('demo@example.com') }}"  readonly class="app-input">
                             <div class="input-mes" title = "{{ _('Не изм.') }}">
                                 <img src="/static/img/Edit_off.svg">
                                 
@@ -198,7 +198,7 @@
                         <label>{{ _('Телефон') }}</label>
                         <div class="input-with-icon">
                             <img src="/static/img/Phone.svg" alt="" class="input-icon">
-                            <input type="text" maxlength="15" value="{{ plan.phone }}" placeholder="+375.." readonly class="app-input">
+                            <input type="text" maxlength="15" value="{{ plan.user.phone }}" placeholder="+375.." readonly class="app-input">
                             <div class="input-mes" title = "{{ _('Не изм.') }}">
                                 <img src="/static/img/Edit_off.svg">
                                 
@@ -231,19 +231,27 @@
         {% endif %}
         <hr>        
         <a class="sername">{{ _('Прочая информация') }}</a>
+        <div class = "support-txt-cont">
+            <div class="row">
+                <div class="input-mes-test" title="Не изм.">
+                    <img src="/static/img/Edit_off.svg">
+                </div> 
+                <p>&nbsp; — поля не подлежащие редактированию</p>
+            </div> 
+        </div>
         <div class="no-input"> 
-            <img src="/static/img/Calendar_grey.svg" alt="" >
+            <img src="/static/img/Calendar_gray.svg" alt="" >
             <a>{{ _('Создан') }}: {{ plan.begin_time.strftime('%d-%m-%Y %H:%M') if plan.begin_time else '-- -- --' }}</a>
         </div>
         <div class="no-input"> 
-            <img src="/static/img/Calendar_grey.svg" alt="" >
+            <img src="/static/img/Calendar_gray.svg" alt="" >
             <a>    
                 {{ _('Последняя редакция') }}: 
                     {{ plan.change_time.strftime('%d-%m-%Y %H:%M') if plan.change_time else '-- -- --' }}
             </a>
         </div>
         <div class="no-input"> 
-            <img src="/static/img/Calendar_grey.svg" alt="" >
+            <img src="/static/img/Calendar_gray.svg" alt="" >
             <a>    
                 {{ _('Отправлен') }}: 
                 {{ plan.sent_time.strftime('%d-%m-%Y %H:%M') if plan.sent_time else '-- -- --' }}

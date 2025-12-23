@@ -35,13 +35,13 @@ def owner_only(f):
         plan_id = kwargs.get('id')
         
         if not plan_id:
-            flash('ID плана не указан.', 'error')
+            flash('ID плана не указан', 'error')
             return redirect(url_for('views.plans', user=current_user.id))
         
         plan = Plan.query.get(plan_id)
         
         if plan is None:
-            flash('План не найден.', 'error')
+            flash('План не найден', 'error')
             return redirect(url_for('views.plans', user=current_user.id))
         
         has_access = (
@@ -466,9 +466,6 @@ def create_plan():
             
             year=year,
             user_id=current_user.id,
-            email=current_user.email,
-            fio=current_user.last_name + ' ' + current_user.first_name + ' ' + current_user.patronymic_name,
-            phone=current_user.phone,
             energy_saving=energy_saving,
             share_fuel=share_fuel,
             saving_fuel=saving_fuel,
@@ -1359,7 +1356,6 @@ status_handlers = {
     'approved': handle_approved_status
 }
 
-
 @views.route('/api/change-plan-status/<int:id>', methods=['POST'])
 @user_with_all_params()
 @login_required
@@ -1455,7 +1451,8 @@ def create_ticket(id):
 def FAQ_page():    
     return render_template('FAQ.html',
             hide_header=True,
-            show_circle_buttons=True)
+            show_circle_buttons=True,
+            active_tab = 'faq')
 
 @views.route('/', methods=['GET'])
 def begin_page():    
@@ -1467,7 +1464,9 @@ def begin_page():
             organization_data=organization_data,
             plan_data=plan_data,
             hide_header=True,
-            show_circle_buttons=True)
+            show_circle_buttons=True,
+            active_tab = 'begin'
+            )
 
 @views.route('/api/notifications', methods=['GET'])
 @user_with_all_params()

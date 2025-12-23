@@ -4,7 +4,7 @@
 <div class="pers-page">
     <div class="personal-acc-conteiner">
         <a class="name">{{ _('Экспорт данных') }}</a>
-        <a class="sername">{{ _('Выберите формат экспорта') }}</a>
+        <p class="support-text">Выберите формат файла и план/ы для экспорта</p>
 
         <div class="choose-conteiner-area">
             <div class="choose-conteiner" data-format="xlsx">
@@ -29,14 +29,8 @@
                 </div>
             </div>
         </div>
-        <hr>
-        <div class="header-content">
-            <a class="sername" style="padding:0;">{{ _('Выберите планы для экспорта') }}</a>
-            <div class="check-box-area">
-                <input type="checkbox" id="selectAllBtn">
-                <a>{{ _('Выбрать все') }}</a>
-            </div>
-        </div>
+        <br>
+        <br>
 
         <div class="filters-area">
             <form method="GET" action="{{ url_for('views.export') }}" class="filter-form" id="statusFilter">
@@ -102,6 +96,14 @@
                 </div>
             {% endif %}
         </div>
+        
+        <div class="header-content">
+            <a></a>
+            <div class="check-box-area">
+                <input type="checkbox" id="selectAllBtn">
+                <a>{{ _('Выбрать все') }}</a>
+            </div>
+        </div>
         <form method="POST" id="exportForm">
             <div class="choose-plan-area">
                 {% if plans %}
@@ -154,9 +156,7 @@
                     {% endfor %}
                 {% else %}
                     <div class="choose-plan">
-                        <div class="choose-plan-text">
-                            <p>{{ _('Нет доступных планов для экспорта.') }}</p>
-                        </div>
+                        <p class="choose-plan-text">{{ _('Нет доступных планов для экспорта') }}</p>
                     </div>
                 {% endif %}
             </div>

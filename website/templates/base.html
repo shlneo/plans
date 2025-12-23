@@ -98,7 +98,6 @@
                 <img src="/static/img/Phone.svg" alt="" class="btn-icon">
                 <span class="btn-text">Контакты</span>
             </button>
-            <hr>
             <div class = "user-sidebar-buttons-area">
                 <form id = "logout_form" action="{{ url_for('auth.logout') }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -114,25 +113,28 @@
 
     {% if show_circle_buttons %}
     <div class="circle-buttons-container">
-      <button class="circle-button" onclick="window.location.href='/'">
-        <img src="{{ url_for('static', filename='img/Logo-black.svg') }}" alt="{{ _('Начальная страница') }}" class="circle-button-icon">
-      </button>
-      <button class="circle-button" onclick="window.location.href='/profile'">
-        <img src="{{ url_for('static', filename='img/Account.svg') }}" alt="{{ _('Аккаунт') }}" class="circle-button-icon">
-      </button>
-      <button class="circle-button" onclick="window.location.href='/FAQ'">
-        <img src="{{ url_for('static', filename='img/FAQ.svg') }}" alt="{{ _('FAQ') }}" class="circle-button-icon">
-      </button>
-      <div class="language-dropdown">
-        <button class="circle-button language-button">
-          <img src="{{ url_for('static', filename='img/Language.svg') }}" alt="{{ _('Язык') }}" class="circle-button-icon">
+        <button class="circle-button {% if active_tab == 'begin' %}active{% endif %}" 
+                onclick="window.location.href='/'">
+            <img src="{{ url_for('static', filename='img/Logo-black.svg') }}" 
+                alt="{{ _('Начальная страница') }}" 
+                class="circle-button-icon">
         </button>
-        <div class="language-dropdown-content">
-          <a href="{{ url_for('views.change_language', lang_code='ru') }}">Русский</a>
-          <a href="{{ url_for('views.change_language', lang_code='en') }}">English</a>
-          <a href="{{ url_for('views.change_language', lang_code='be') }}">Беларускiй</a>
+        <button class="circle-button {% if active_tab == 'acc' %}active{% endif %}" onclick="window.location.href='/profile'">
+            <img src="{{ url_for('static', filename='img/Account.svg') }}" alt="{{ _('Аккаунт') }}" class="circle-button-icon">
+        </button>
+        <button class="circle-button {% if active_tab == 'faq' %}active{% endif %}" onclick="window.location.href='/FAQ'">
+            <img src="{{ url_for('static', filename='img/FAQ.svg') }}" alt="{{ _('FAQ') }}" class="circle-button-icon">
+        </button>
+        <div class="language-dropdown">
+            <button class="circle-button language-button">
+            <img src="{{ url_for('static', filename='img/Language.svg') }}" alt="{{ _('Язык') }}" class="circle-button-icon">
+            </button>
+            <div class="language-dropdown-content">
+            <a href="{{ url_for('views.change_language', lang_code='ru') }}">Русский</a>
+            <a href="{{ url_for('views.change_language', lang_code='en') }}">English</a>
+            <a href="{{ url_for('views.change_language', lang_code='be') }}">Беларускiй</a>
+            </div>
         </div>
-      </div>
       
     </div>
     {% endif %}
@@ -609,7 +611,7 @@
                     <div class="app-group">
                         <label>[8] {{ _('Ожидаемый срок внедрения мероприятия, квартал') }}</label>
                         <div class="input-with-icon">
-                            <img src="/static/img/Calendar.svg" alt="" class="input-icon">
+                            <img src="/static/img/Calendar_gray.svg" alt="" class="input-icon">
                             <input type="number" name="ExpectedQuarter" min="1" max="4" 
                             pattern="[1-4]" inputmode="numeric" value="1"
                             placeholder="Квартал" class="app-input" required
@@ -806,7 +808,7 @@
                   <div class="app-group">
                       <label>[8] {{ _('Ожидаемый срок внедрения мероприятия, квартал') }}</label>
                       <div class="input-with-icon">
-                          <img src="/static/img/Calendar.svg" class="input-icon">
+                          <img src="/static/img/Calendar_gray.svg" class="input-icon">
                           <input type="number" name="ExpectedQuarter" min="1" max="4" 
                           pattern="[1-4]" inputmode="numeric" id="change-ExpectedQuarter-edit-model"
                           placeholder="Квартал" class="app-input" required

@@ -106,36 +106,25 @@
                 <tbody class = "rows">
                     {% set ns = namespace(last_group=none) %}
                     {% for row in indicators %}
-                        {% set group_color = none %}
+                        {% set is_new_group = false %}
                         {% if row.indicator.Group != ns.last_group %}
-                            {% if row.indicator.Group == 1 %}
-                                {% set group_color = '#E3F2FD' %} 
-                            {% elif row.indicator.Group == 2 %}
-                                {% set group_color = '#BBDEFB' %}
-                            {% elif row.indicator.Group == 3 %}
-                                {% set group_color = '#90CAF9' %} 
-                            {% elif row.indicator.Group == 4 %}
-                                {% set group_color = '#64B5F6' %}
-                            {% elif row.indicator.Group == 5 %}
-                                {% set group_color = '#42A5F5' %} 
-                            {% elif row.indicator.Group == 6 %}
-                                {% set group_color = '#1191F3' %}
-                            {% elif row.indicator.Group == 7 %}
-                                {% set group_color = '#1E99E5' %}
-                            {% elif row.indicator.Group == 8 %}
-                                {% set group_color = '#1E91A9' %}
-                            {% endif %}
+                            {% set is_new_group = true %}
+                            {% set ns.last_group = row.indicator.Group %}
                         {% endif %}
-                        <tr class="menu-row" data-id="{{ row.id }}" {% if group_color %}style="background-color: {{ group_color }}"{% endif %}>
+                        
+                        <tr class="menu-row {% if is_new_group %}group-header{% endif %}" data-id="{{ row.id }}">
                             <td>{{ loop.index }}</td>
                             <td style="text-align: center;">
-                                {% if row.indicator.Group != ns.last_group %}
-                                    {{ row.indicator.Group }}
-                                    {% set ns.last_group = row.indicator.Group %}
+                                {% if is_new_group %}
+                                    {{ row.indicator.Group|int if row.indicator.Group % 1 == 0 else row.indicator.Group }}
                                 {% endif %}
                             </td>
-                            <td style="text-align: start;">{{ row.indicator.name }}</td>
-                            <td style="text-align: start;">{{ row.indicator.unit.name }}</td>
+                            <td style="text-align: start;">
+                                {{ row.indicator.name }}
+                            </td>
+                            <td style="text-align: start;">
+                                {{ row.indicator.unit.name }}
+                            </td>
                             <td>{{ (row.QYearPrev / row.indicator.CoeffToTut) | round(3) }}</td>
                             <td>{{ row.QYearPrev }}</td>
                             <td>{{ (row.QYearCurr / row.indicator.CoeffToTut) | round(3) }}</td>
@@ -146,7 +135,7 @@
                                 style="{% if (row.QYearNext - row.QYearCurr) < 0 %}background-color: rgb(255, 96, 96, 0.705);{% elif (row.QYearNext - row.QYearCurr) > 0 %}background-color: rgb(96, 255, 122, 0.705);{% endif %}">
                                 {{ row.QYearNext - row.QYearCurr }}
                             </td>
-                            <td style = "display: none;">{{ row.indicator.code }}</td>
+                            <td style="display: none;">{{ row.indicator.code }}</td>
                             <td style="display: none;" data-group="{{ row.indicator.Group }}">{{ row.indicator.Group }}</td>
                         </tr>
                     {% endfor %}
