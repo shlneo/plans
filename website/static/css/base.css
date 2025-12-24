@@ -2058,7 +2058,8 @@ input::placeholder {
   justify-content: center;
   align-items: center;
   height: auto;
-  width: 100%;
+  padding: 0 20px;
+  width: calc(100% - 40px);
 }
 
 
@@ -2196,10 +2197,17 @@ input::placeholder {
 }
 
 .personal-plan-conteiner{
-  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: white;
+  width: calc(100% - 50px);
+  max-width: calc(2000px - 50px);
   height: 100%;
+  padding: 25px;
   display: flex;
   flex-direction: column;
+  min-height: 100vh;
+  margin-bottom: 25px;
 
 }
 
@@ -2232,6 +2240,7 @@ input::placeholder {
   display: flex;
   flex-direction: row;
   gap: 10px;
+  overflow-x: auto;
 }
 
 .status-plan {
@@ -2275,9 +2284,8 @@ input::placeholder {
   border-radius: 8px;
   overflow-x: auto;
   width: fit-content;
-  white-space: nowrap;
   display: inline-block;
-
+  /* box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);     */
   margin-bottom: 20px;
 }
 
@@ -2617,6 +2625,11 @@ input[type="checkbox"] {
   cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
+}
+
+input[type="checkbox"].black{
+  border: 2px solid rgb(61, 61, 61);
+  background-color: white;
 }
 
 input[type="checkbox"]:checked {
@@ -3269,7 +3282,7 @@ input[type="checkbox"]:focus {
   text-align: center;
   vertical-align: middle;
   align-items: center;
-  margin-top: 15px;  
+  margin: 15px 0;  
   width: calc(80% - 54px);
   max-width: 1200px;
 }
@@ -3492,6 +3505,9 @@ input[type="checkbox"]:focus {
   display: flex;
   gap: 15px;
   margin: 20px;
+  margin-bottom: 10px;
+  overflow-x: auto;
+  padding-bottom: 10px;
 }
 
 .menu-conteiner .element {
@@ -3557,8 +3573,9 @@ input[type="checkbox"]:focus {
 }
 
 .table-container {
-  overflow-x: auto;
-  padding-bottom: 10px;  
+  overflow-x: auto; 
+
+  padding-bottom: 20px;
   scrollbar-width: thin; 
   scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
 }
@@ -3586,7 +3603,7 @@ input[type="checkbox"]:focus {
 }
 
 .main-table-titels th {
-  /* background-color: yellow; */
+  background-color: var(--background-grey);
   border: 1px solid var(--border-color); 
   padding: 4px 8px; 
   text-align: center; 
@@ -4709,7 +4726,7 @@ label {
 
   .personal-acc-conteiner {
     /* padding: 30px 20px; */
-    margin: 20px 0;
+    /* margin: 20px 0; */
     margin-bottom: 80px;
     min-height: calc(100vh - 60px);
   }
@@ -5040,7 +5057,10 @@ label {
   .table-container {
     overflow-x: auto;
   }
-  
+    
+  .main-table th{
+    background-color: #e4e4e4;
+  }
   .main-table th,
   .main-table td {
     padding: 6px 10px;

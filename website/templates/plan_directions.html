@@ -2,7 +2,7 @@
 {% block title %}{{ _('Направления') }} - ErespondentS{% endblock %}
 {% block content %}
 
-<div class="pers-page-with-table">
+<div class="pers-page">
     <div class="personal-plan-conteiner">
         <div class="menu-conteiner" >
                 <div class="element {% if plan.is_sent or plan.is_approved %}non{% endif %}" id = "AddDirectionModalButton">
@@ -17,9 +17,9 @@
                     <img src="/static/img/Edit_black.svg" alt="">  
                     <a class="element-text">Редакт.</a>  
                 </div>
-          
-
-        </div>   
+        </div>
+  
+            
         <div class = "table-container">
             <table class="main-table" id="directionTable">
                 <thead class="main-table-titels">
@@ -72,6 +72,7 @@
                 </tbody>
             </table>
         </div>
+           
     </div>
 </div>
 {% endblock %}

@@ -262,6 +262,33 @@ def export_xlsx_single(plan: Plan):
         ws.page_margins.header = 0.3
         ws.page_margins.footer = 0.3
 
+    def get_org_name_by_okpo(okpo):
+        dop_org_data = [
+            ('Брестское областное управление', '100000001000'),
+            ('Витебское областное управление', '200000002000'),
+            ('Гомельское областное управление', '300000003000'),
+            ('Гродненское областное управление', '400000004000'),
+            ('Управление г. Минск', '500000005000'),
+            ('Минское областное управление', '600000006000'),
+            ('Могилевское областное управление', '700000007000'),
+            ('Департамент по энергоэффективности', '800000008000'),
+        ]
+    
+        if not okpo or len(str(okpo)) < 4:
+            return ""  
+        
+        okpo_str = str(okpo)
+        if len(okpo_str) >= 4:
+            fourth_from_end = okpo_str[-4]  
+        else:
+            return ""
+        
+        for name, code in dop_org_data:
+            if code.endswith(str(fourth_from_end) + "000"):
+                return name
+        
+            return ""
+
     def title_xlsx(wb, plan):
         ws = wb.create_sheet("Титульный лист", 0)
         # ===============================
@@ -312,15 +339,23 @@ def export_xlsx_single(plan: Plan):
             ws["B3"].value = "(должность)"
             ws["B3"].font = regular_font_9
             ws["B3"].alignment = center
-            
                     
             ws.merge_cells("B4:F4")
             ws["B4"].value = "_______________ областного (городского)"
             ws["B4"].font = regular_font_11
             ws["B4"].alignment = left
                             
-            ws.merge_cells("B5:E5")
-            ws["B5"].value = "управление по надзору за рациональным использованием ТЭР"
+                        
+            okpo = plan.organization.okpo if plan.organization else None
+            org_name = get_org_name_by_okpo(okpo)
+            
+            if org_name:
+                org_text = f"{org_name} по надзору за рациональным использованием ТЭР"
+            else:
+                org_text = f"областное (городское) управление по надзору за рациональным использованием ТЭР"
+                        
+            ws.merge_cells("B5:F5")
+            ws["B5"].value = org_text
             ws["B5"].font = regular_font_11
             ws["B5"].alignment = left
                     
@@ -488,8 +523,8 @@ def export_xlsx_single(plan: Plan):
         # ===============================
         # Колонки и строки
         # ===============================
-        columns = [("A", 5.43), ("B", 55.86), ("C", 14), ("D", 11),
-                ("E", 11.86), ("F", 12.57), ("G", 18.29)]
+        columns = [("A", 5.43), ("B", 58), ("C", 14), ("D", 10),
+                ("E", 10), ("F", 10), ("G", 18.29)]
         
         for col, width in columns:
             ws.column_dimensions[col].width = width
@@ -541,8 +576,28 @@ def export_xlsx_single(plan: Plan):
         previous_group = None
         row_index = 3
 
-        for usage in sorted(plan.indicators_usage, key=lambda u: (u.indicator.Group, u.indicator.RowN)):
-            group_value = usage.indicator.Group if usage.indicator.Group != previous_group else ""
+        for usage in sorted(plan.indicators_usage, 
+            key=lambda u: (
+                (0, u.indicator.Group) if u.indicator.Group is not None else (1, float('-inf')),
+                (0, u.indicator.RowN) if u.indicator.RowN is not None else (1, float('-inf'))
+            )
+        ):
+
+            if usage.indicator.Group != previous_group:
+                if usage.indicator.Group is not None:
+                    try:
+                        group_float = float(usage.indicator.Group)
+                        if group_float.is_integer():
+                            group_value = int(group_float)
+                        else:
+                            group_value = usage.indicator.Group
+                    except (ValueError, TypeError):
+                        group_value = usage.indicator.Group
+                else:
+                    group_value = ""
+            else:
+                group_value = ""
+            
             previous_group = usage.indicator.Group
             
             row = [
@@ -555,11 +610,15 @@ def export_xlsx_single(plan: Plan):
                 (usage.QYearNext or 0) - (usage.QYearCurr or 0),
             ]
             ws.append(row)
-
+            
             row_index += 1
+            
+            if group_value in [5, 8]:
+                ws.row_dimensions[row_index].height = 34
+                
             for col in range(1, len(row)+1):
                 cell = ws.cell(row=row_index, column=col)
-                if group_value:
+                if group_value != "":
                     cell.font = bold_font_11
                 else:
                     cell.font = regular_font_11
@@ -567,18 +626,88 @@ def export_xlsx_single(plan: Plan):
                 cell.alignment = center if col != 2 else left
                 cell.border = thin_border
                 
-                # Разные форматы для разных колонок
-                if col == 1:  # Первая колонка - целые числа или текст
-                    if group_value:  # Если есть значение группы
-                        cell.number_format = '0'  # Без десятичных
+                if col == 1:
+                    if group_value != "":
+                        if isinstance(group_value, (int, float)):
+                            try:
+                                num = float(group_value)
+                                if num.is_integer():
+                                    cell.number_format = '0'
+                                else:
+                                    cell.number_format = '0.0'
+                            except:
+                                cell.number_format = '@'
+                        else:
+                            cell.number_format = '@'
                     else:
-                        cell.number_format = '@'  # Текстовый формат
-                elif col in [4, 5, 6, 7]:  # Колонки с числами
+                        cell.number_format = '@'
+                elif col in [4, 5, 6, 7]:
                     cell.number_format = '0.00'
-                else:  # Текстовые колонки (2, 3)
+                else:
                     cell.number_format = '@'
         
-        # signatures_indicators_xlsx(ws, row_index + 1, plan)
+        def signatures_indicators_xlsx(ws, start_row, plan):
+            
+            okpo = plan.organization.okpo if plan.organization else None
+            org_name = get_org_name_by_okpo(okpo)
+            
+            if org_name:
+                org_text = f"_______________ {org_name} по надзору за рациональным использованием ТЭР"
+            else:
+                org_text = f"_______________ областное (городское) управление по надзору за рациональным использованием ТЭР"
+            
+            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=2, 
+                    text=org_text, font=regular_font_10)
+            
+            set_cell(ws, row_start=start_row+4, col_start=2, col_end=2, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=bottom_left)   
+              
+            set_cell(ws, row_start=start_row+5, col_start=2, col_end=2, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                       
+            set_cell(ws, row_start=start_row+6, col_start=2, col_end=2, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=bottom_left) 
+             
+            set_cell(ws, row_start=start_row+7, col_start=2, col_end=2, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')  
+                    
+            set_cell(ws, row_start=start_row+2, col_start=5, col_end=7, 
+                    text="__________________________________", merge_direction='horizontal')           
+                                   
+            set_cell(ws, row_start=start_row+3, col_start=5, col_end=7, 
+                    text="(юридическое лицо)", merge_direction='horizontal', font = regular_font_9, alignment=center)      
+                     
+            set_cell(ws, row_start=start_row+4, col_start=5, col_end=7, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)
+                     
+            set_cell(ws, row_start=start_row+5, col_start=5, col_end=7, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                       
+            set_cell(ws, row_start=start_row+6, col_start=5, col_end=7, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=left) 
+                         
+            set_cell(ws, row_start=start_row+7, col_start=5, col_end=7, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')           
+                         
+            set_cell(ws, row_start=start_row+9, col_start=5, col_end=7, 
+                    text="__________________________________", merge_direction='horizontal')               
+                         
+            set_cell(ws, row_start=start_row+10, col_start=5, col_end=7, 
+                    text="(министерство, концерн, государственный коммитет)", merge_direction='horizontal', font = regular_font_9, row_height = 11)  
+                                 
+            set_cell(ws, row_start=start_row+11, col_start=5, col_end=7, 
+                    text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)
+                     
+            set_cell(ws, row_start=start_row+12, col_start=5, col_end=7, 
+                    text="_______________________", merge_direction='horizontal', row_height = 5, alignment=bottom_left)   
+                       
+            set_cell(ws, row_start=start_row+13, col_start=5, col_end=7, 
+                    text="(подпись, инициалы и фамилия)", merge_direction='horizontal', font = regular_font_9, row_height = 11, alignment=left) 
+                         
+            set_cell(ws, row_start=start_row+14, col_start=5, col_end=7, 
+                    text="«___» ____________ 20__ г.", merge_direction='horizontal')  
+                 
+        signatures_indicators_xlsx(ws, row_index + 1, plan)
 
         page_setttings(ws, print_area = "A1:G75")
 
@@ -829,7 +958,16 @@ def export_xlsx_single(plan: Plan):
             set_cell(ws, row_start=start_row, col_start=2, col_end=9, 
                     text=text, font=regular_font_10_italic, row_height=None)
 
-            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=9, text="_______________ областное (городское) управление по надзору за рациональным использованием ТЭР")
+            okpo = plan.organization.okpo if plan.organization else None
+            org_name = get_org_name_by_okpo(okpo)
+            
+            if org_name:
+                org_text = f"_______________ {org_name} по надзору за рациональным использованием ТЭР"
+            else:
+                org_text = f"_______________ областное (городское) управление по надзору за рациональным использованием ТЭР"
+
+            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=9, text=org_text)
+      
       
             set_cell(ws, row_start=start_row+4, col_start=2, col_end=3, 
                     text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)   
@@ -1110,7 +1248,16 @@ def export_xlsx_single(plan: Plan):
                 cell.border = thin_border
 
         def signatures_third_half_xlsx(ws, start_row, plan):
-            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=9, text="_______________ областное (городское) управление по надзору за рациональным использованием ТЭР")
+            okpo = plan.organization.okpo if plan.organization else None
+            org_name = get_org_name_by_okpo(okpo)
+            
+            if org_name:
+                org_text = f"_______________ {org_name} по надзору за рациональным использованием ТЭР"
+            else:
+                org_text = f"_______________ областное (городское) управление по надзору за рациональным использованием ТЭР"
+
+            set_cell(ws, row_start=start_row+2, col_start=2, row_end=start_row+3, col_end=9, text=org_text)
+    
     
             set_cell(ws, row_start=start_row+4, col_start=2, col_end=3, 
                     text="Подписано ЭЦП", merge_direction='horizontal', font = regular_font_9_italic, alignment=center)   
@@ -1175,7 +1322,7 @@ def export_xlsx_single(plan: Plan):
     ws_secondHalf = second_half_xlsx(wb, plan)
     ws_thirdHalf = third_half_xlsx(wb, plan)
     
-    wb.active = wb.index(ws_firstHalf)
+    wb.active = wb.index(ws_title)
 
     file_stream = io.BytesIO()
     wb.save(file_stream)
