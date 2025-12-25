@@ -1860,7 +1860,7 @@ class MultiTypeSearchManager {
                     dataKey = 'organizations';
             }
 
-            console.log(`Загрузка данных: тип=${this.selectedItemType}, endpoint=${apiUrl}, ключ=${dataKey}`);
+            // console.log(`Загрузка данных: тип=${this.selectedItemType}, endpoint=${apiUrl}, ключ=${dataKey}`);
 
             const url = `${apiUrl}?q=${encodeURIComponent(this.currentQuery)}&page=${this.currentPage}`;
             const response = await fetch(url);
@@ -2221,7 +2221,7 @@ document.head.appendChild(style);
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Инициализация MultiTypeSearchManager...');
+    // console.log('Инициализация MultiTypeSearchManager...');
     const searchManager = new MultiTypeSearchManager();
 });
 
@@ -2856,7 +2856,7 @@ class MultiStepForm {
         this.elements = {};
         this.getElementReferences();
         this.bindEvents();
-        console.log('MultiStepForm initialized');
+        // console.log('MultiStepForm initialized');
     }
 
     getElementReferences() {
@@ -2968,7 +2968,7 @@ class MultiStepForm {
         
         this.setupStep1Validation();
         
-        console.log('All events bound');
+        // console.log('All events bound');
     }
 
     handleEntityTypeChange(e) {
@@ -3537,7 +3537,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         const multiStepForm = new MultiStepForm();
         window.multiStepForm = multiStepForm; 
-        console.log('MultiStepForm ready');
+        // console.log('MultiStepForm ready');
     } catch (error) {
         console.error('Failed to initialize MultiStepForm:', error);
     }
@@ -3746,8 +3746,6 @@ function initSections() {
 document.addEventListener('DOMContentLoaded', initSections);
 window.reinitSections = initSections;
 initCertificateUpload();
-
-
 
 document.addEventListener('DOMContentLoaded', () => {
   if (document.querySelector('.toggle-password')) {

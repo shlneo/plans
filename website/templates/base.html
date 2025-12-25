@@ -366,6 +366,48 @@
       </div>
     </div>    
 
+<div id="planTypeModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <button type="button" class="modal-close">&times;</button>
+            <h2>Выберите тип плана</h2>
+            <p class="modal-subtitle">Пожалуйста, выберите подходящий тип плана для вашей организации</p>
+        </div>
+        
+        <form id="planTypeForm">
+            <div class="modal-body">
+                <div class="form-error" style="display: none;"></div>
+                
+                <div class="plan-type-options">
+                    <label class="option-card" data-value="before_25k">
+                        <input type="radio" name="plan_type" value="before_25k" required>
+                        <div class="option-content">
+                            <div class="option-icon">📋</div>
+                            <h3>До 25 тыс. т.</h3>
+                            <p>Для организаций с выбросами менее 25 тыс. тонн CO₂-эквивалента в год</p>
+                        </div>
+                    </label>
+                    
+                    <label class="option-card" data-value="after_25k">
+                        <input type="radio" name="plan_type" value="after_25k" required>
+                        <div class="option-content">
+                            <div class="option-icon">📊</div>
+                            <h3>После 25 тыс. т.</h3>
+                            <p>Для организаций с выбросами более 25 тыс. тонн CO₂-эквивалента в год</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" id="remindLaterBtn" class="btn btn-secondary">Напомнить позже</button>
+                <button type="submit" id="submitPlanType" class="btn btn-primary">Сохранить выбор</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
     {% if add_direction_modal %}
     <div id="AddDirectionModal" class="modal">
       <div class="modal-content">
@@ -1208,18 +1250,7 @@
             {% endwith %}
         });
         </script>
-
       {% endblock %}
     </main>
-    <!-- <footer>
-      <div class="fot_cont_text">
-        <div onclick="window.location.href=''">FAQ</div>
-      </div>
-      <div class="fot_cont_img">
-        <a href="" target="_blank">
-          
-        </a>
-      </div>
-    </footer> -->
   </body> 
 </html>

@@ -135,7 +135,7 @@
                                 style="{% if (row.QYearNext - row.QYearCurr) < 0 %}background-color: rgb(255, 96, 96, 0.705);{% elif (row.QYearNext - row.QYearCurr) > 0 %}background-color: rgb(96, 255, 122, 0.705);{% endif %}">
                                 {{ row.QYearNext - row.QYearCurr }}
                             </td>
-                            <td style="display: none;">{{ row.indicator.code }}</td>
+                            <td style="">{{ row.indicator.code }}</td>
                             <td style="display: none;" data-group="{{ row.indicator.Group }}">{{ row.indicator.Group }}</td>
                         </tr>
                     {% endfor %}

@@ -74,10 +74,17 @@ def profile():
     if Plan.query.filter(Plan.user_id == current_user.id).count() > 0:
         can_change_modal = False
         
+    show_plan_type_modal = (
+        current_user.organization_id and
+        not current_user.plan_type and    
+        not Plan.query.filter(Plan.user_id == current_user.id).count() > 0
+    )
+        
     return render_template('profile.html', 
                         can_change_modal=can_change_modal,
                         hide_header=False,
                         second_header = True,
+                        plan_type_modal=show_plan_type_modal,
                         active_tab='account',
                         current_user=current_user,
                         change_orgUser_modal = True
@@ -100,6 +107,8 @@ def edit_user_org():
             return redirect(url_for('views.profile'))
         
         if item_type == 'organization':
+            # Сбрасываем тип плана, чтобы показать модальное окно
+            current_user.plan_type = None
             selected_item = Organization.query.filter_by(id=item_id).first()
             
             if not selected_item:
@@ -119,6 +128,8 @@ def edit_user_org():
                 flash('Министерство не найдено!', 'error')
                 return redirect(request.referrer)
             
+            # Устанавливаем тип плана как министерство
+            current_user.plan_type = 'ministry'
             current_user.ministry_id = selected_item.id
             current_user.organization_id = None 
             current_user.region_id = None    
@@ -132,6 +143,8 @@ def edit_user_org():
                 flash('Регион не найден!', 'error')
                 return redirect(request.referrer)
             
+            # Устанавливаем тип плана как регион
+            current_user.plan_type = 'region'
             current_user.region_id = selected_item.id
             current_user.organization_id = None 
             current_user.ministry_id = None    
@@ -141,6 +154,7 @@ def edit_user_org():
         else:
             flash('Неизвестный тип элемента!', 'error')
             return redirect(request.referrer)
+        
         db.session.commit()
         
         return redirect(url_for('views.profile'))
@@ -150,7 +164,7 @@ def edit_user_org():
         logging.error(f"Error in edit_user_org: {str(e)}")
         flash('Произошла ошибка при обновлении данных', 'error')
         return redirect(request.referrer)
-
+    
 @views.route('/api/organizations')
 @login_required
 def get_organizations_api():
@@ -390,13 +404,34 @@ def export_to(format):
         flash("Не найдены выбранные планы.", "error")
         return redirect(request.url)
     
-    from .plans.export import export_pdf_single, export_xlsx_single, export_xml_single
+    from .plans.export import (
+        export_pdf_single, 
+        export_xlsx_single_before25, 
+        export_xlsx_single_over25, 
+        export_xlsx_single_ministry,
+        export_xlsx_single_region,
+        export_xml_single
+        
+    )
     if len(plans) == 1:
         plan = plans[0]
         if format == "xml":
             file_stream, mime, filename = export_xml_single(plan)
+        # elif format == "xlsx":
+        #     file_stream, mime, filename = export_xlsx_single_before25(plan)
+        
         elif format == "xlsx":
-            file_stream, mime, filename = export_xlsx_single(plan)
+            if plan.user.organization is not None:
+                if plan.user.plan_type == 'org_small':
+                    file_stream, mime, filename = export_xlsx_single_before25(plan)
+                elif plan.user.plan_type == 'org_large':
+                    file_stream, mime, filename = export_xlsx_single_over25(plan)
+            elif plan.user.ministry is not None:
+                file_stream, mime, filename = export_xlsx_single_ministry(plan)
+            elif plan.user.region is not None:
+                file_stream, mime, filename = export_xlsx_single_region(plan)
+            else:
+                flash('Чет не пашет', 'error')
         elif format == "pdf":
             file_stream, mime, filename = export_pdf_single(plan)
         else:
@@ -410,7 +445,7 @@ def export_to(format):
             if format == "xml":
                 f_stream, _, fname = export_xml_single(plan)
             elif format == "xlsx":
-                f_stream, _, fname = export_xlsx_single(plan)
+                f_stream, _, fname = export_xlsx_single_before25(plan)
             elif format == "pdf":
                 f_stream, _, fname = export_pdf_single(plan)
             else:
@@ -1294,7 +1329,7 @@ def handle_draft_status(plan):
 
 def handle_control_status(plan):
     indicator_usage = next(
-        (iu for iu in plan.indicators_usage if iu.id_indicator == 41), 
+        (iu for iu in plan.indicators_usage if iu.indicator.code == '9900'), 
         None
     ) # № п/п = 5
     

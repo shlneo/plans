@@ -107,7 +107,9 @@
         <form method="POST" id="exportForm">
             <div class="plans-area">
                 {% if plans %}
-                    {% for plan in plans %}     
+                    {% for plan in plans %}  
+                    
+                    <label for="plan-{{ plan.id }}" style = "color: black; margin: 0; cursor: pointer;">   
                         <div class="plan-cont
                             {% if plan.is_draft %}plan-cont-redac
                             {% elif plan.is_error %}plan-cont-eror
@@ -186,10 +188,10 @@
                                 </div>
                             </div>                    
                             <div class="plan-cont-column">
-                                <label for="plan-{{ plan.id }}"></label>
                                 <input type="checkbox" class = "black" name="ids" value="{{ plan.id }}" id="plan-{{ plan.id }}">
                             </div>
                         </div>
+                    </label>
                     {% endfor %}
                 {% else %}
                     <div class="choose-plan">

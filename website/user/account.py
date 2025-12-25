@@ -225,9 +225,15 @@ def add_param(first_name, last_name, patronymic_name, phone, organization_id=Non
     current_user.patronymic_name = patronymic_name.strip() if patronymic_name else None
     current_user.phone = normalized_phone
     current_user.post = post.strip() if post else None
+    
     current_user.organization_id = org_id
     current_user.ministry_id = min_id
     current_user.region_id = reg_id
+
+    if min_id:
+        current_user.plan_type = 'ministry'
+    elif reg_id:
+        current_user.plan_type = 'region'
 
     try:
         db.session.commit()
