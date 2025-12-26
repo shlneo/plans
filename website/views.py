@@ -406,10 +406,7 @@ def export_to(format):
     
     from .plans.export import (
         export_pdf_single, 
-        export_xlsx_single_before25, 
-        export_xlsx_single_over25, 
-        export_xlsx_single_ministry,
-        export_xlsx_single_region,
+        export_xlsx_single,
         export_xml_single
         
     )
@@ -417,21 +414,8 @@ def export_to(format):
         plan = plans[0]
         if format == "xml":
             file_stream, mime, filename = export_xml_single(plan)
-        # elif format == "xlsx":
-        #     file_stream, mime, filename = export_xlsx_single_before25(plan)
-        
         elif format == "xlsx":
-            if plan.user.organization is not None:
-                if plan.user.plan_type == 'org_small':
-                    file_stream, mime, filename = export_xlsx_single_before25(plan)
-                elif plan.user.plan_type == 'org_large':
-                    file_stream, mime, filename = export_xlsx_single_over25(plan)
-            elif plan.user.ministry is not None:
-                file_stream, mime, filename = export_xlsx_single_ministry(plan)
-            elif plan.user.region is not None:
-                file_stream, mime, filename = export_xlsx_single_region(plan)
-            else:
-                flash('Чет не пашет', 'error')
+            file_stream, mime, filename = export_xlsx_single(plan)
         elif format == "pdf":
             file_stream, mime, filename = export_pdf_single(plan)
         else:
@@ -445,7 +429,7 @@ def export_to(format):
             if format == "xml":
                 f_stream, _, fname = export_xml_single(plan)
             elif format == "xlsx":
-                f_stream, _, fname = export_xlsx_single_before25(plan)
+                f_stream, _, fname = export_xlsx_single(plan)
             elif format == "pdf":
                 f_stream, _, fname = export_pdf_single(plan)
             else:

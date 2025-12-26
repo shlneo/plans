@@ -34,7 +34,7 @@ class User(db.Model, UserMixin):
     begin_time = db.Column(db.DateTime, nullable=False, default=current_utc_time)
     
     plan_type = db.Column(db.String(50), nullable=True)  # 'org_small', 'org_large', 'ministry', 'region'
-    
+        
     reset_password_token = db.Column(db.String(255), nullable=True)
     reset_password_expires = db.Column(db.DateTime, nullable=True)
     
@@ -259,7 +259,7 @@ class Indicator(db.Model):
     IsMandatory = db.Column(db.Boolean)
     
     Group = db.Column(db.Float)
-    RowN = db.Column(db.Float)
+    RowN = db.Column(db.Integer)
     
     # IsSummary = db.Column(db.Boolean)
     # IsSendRealUnit = db.Column(db.Boolean)

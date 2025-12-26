@@ -209,7 +209,10 @@
                     <img src="/static/img/Back.svg" alt="" class="btn-icon">
                     <span class="btn-text">{{ _('Назад') }}</span>
                 </button>
-                <a class="name-plan">{{ _('План энергосбережения на') }} <span style="font-weight: 600;">{{ plan.year }} {{ _('год') }}</span></a>
+                <a class="plan-info">
+                    <span class= "plan-text">{{ _('План энергосбережения на') }}</span>
+                    <span class= "plan-year">{{ plan.year }} {{ _('год') }}</span>
+                </a>
                 <a class="status-plan"> 
                     {% if plan.is_draft %}В редакции
                     {% elif plan.is_error %}Есть ошибки

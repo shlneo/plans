@@ -201,6 +201,8 @@
   --td-hover: rgb(236, 236, 236);
   --active-row-color: #def0ff;
 
+  --table-titles-background: rgba(231, 231, 231, 0.5);
+
   --primary: #5c5c5c;
   --primary-dark: #000000;
   --secondary: #272330;
@@ -1954,7 +1956,7 @@ input::placeholder {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.5);
   border: 1px solid #e2e8f0;
   display: flex;
   align-items: center;
@@ -2075,14 +2077,16 @@ input::placeholder {
 
 .navigation-container {
   display: flex;
-  width: 100%;
   padding: 4px;
   background-color: var(--background-grey);
   border-radius: 24px;
   margin: 15px 0;
   position: relative;
   overflow: hidden;
-  white-space: nowrap;
+  white-space: nowrap;   
+
+  width: calc(100% - 38px);
+  max-width: 1244px;
 }
 
 .active-drop {
@@ -2199,14 +2203,16 @@ input::placeholder {
 .personal-plan-conteiner{
   border-radius: 8px;
   border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
   background-color: white;
-  width: calc(100% - 50px);
-  max-width: calc(2000px - 50px);
+  width: calc(100%);
+  max-width: calc(2000px);
   height: 100%;
-  padding: 25px;
   display: flex;
   flex-direction: column;
-  /* min-height: 100vh; */
+
   margin-bottom: 25px;
 
 }
@@ -2222,9 +2228,12 @@ input::placeholder {
 .personal-plan-conteiner .header-content{
   font-weight: 500;
   font-size: 16px;
+
   display: flex;
+  align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
+  gap: 15px;
 }
 
 .personal-acc-conteiner .header-content-left,
@@ -3216,7 +3225,7 @@ input[type="checkbox"]:focus {
   align-items: center;
 }
 
-.name-plan{
+.plan-info{
   font-size: 14px;
   font-weight: 500;
   display: flex;
@@ -3224,6 +3233,12 @@ input[type="checkbox"]:focus {
   gap: 5px;
 }
 
+.plan-text{
+}
+
+.plan-year{
+  font-weight: 600;
+}
 
 .data-plan{
   font-size: 14px;
@@ -3274,7 +3289,6 @@ input[type="checkbox"]:focus {
 }
 
 .plan-back-header{
-  width: 80%;
   display: flex;
   justify-content: left;
   align-items: flex-start;
@@ -3283,8 +3297,8 @@ input[type="checkbox"]:focus {
   vertical-align: middle;
   align-items: center;
   margin: 15px 0;  
-  width: calc(80% - 54px);
-  max-width: 1200px;
+  width: calc(100% - 30px);
+  max-width: 1244px;
 }
 
 .plan-back-header button{
@@ -3350,6 +3364,8 @@ input[type="checkbox"]:focus {
 .no-results-row td {
   font-style: italic;
   font-weight: 600 !important;
+  font-size: 13px !important;
+  padding: 15px 12px !important;
 }
 
 .no_info-conteiner td{    
@@ -3504,7 +3520,7 @@ input[type="checkbox"]:focus {
 .menu-conteiner{
   display: flex;
   gap: 15px;
-  
+  margin: 20px;
   margin-bottom: 10px;
   overflow-x: auto;
   padding-bottom: 10px;
@@ -3574,8 +3590,9 @@ input[type="checkbox"]:focus {
 
 .table-container {
   overflow-x: auto; 
+  width: calc(100%);
 
-  padding-bottom: 20px;
+
   scrollbar-width: thin; 
   scrollbar-color: rgba(0, 0, 0, 0.1) transparent;
 }
@@ -3589,11 +3606,15 @@ input[type="checkbox"]:focus {
 .main-table {
   border: none;
   font-size: 12px;
-  display: block;
+  /* display: block; */
+  
+
+  user-select: none;
+
   border-spacing: 0px;
   border-collapse: collapse;
   background-color: white;
-  width: fit-content;
+  width: 100%;
   height: 100%;
 }
 
@@ -3603,8 +3624,9 @@ input[type="checkbox"]:focus {
 }
 
 .main-table-titels th {
-  background-color: var(--background-grey);
-  border: 1px solid var(--border-color); 
+  background-color: var(--table-titles-background);
+  border: 1px solid var(--border-color);
+
   padding: 4px 8px; 
   text-align: center; 
   font-weight: 600;  
@@ -3621,6 +3643,7 @@ input[type="checkbox"]:focus {
 
 .main-table td {
   font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 th .resizer {
@@ -3634,6 +3657,7 @@ th .resizer {
   z-index: 10;
   transition: all 0.2s ease;
   background: transparent;
+
 }
 
 th:hover .resizer {
@@ -3662,11 +3686,15 @@ th .resizer::before {
 }
 
 .main-table td  {
-  border: 1px solid var(--border-color); 
+  /* border: 1px solid var(--border-color);  */
   padding: 7px 16px; 
   white-space: nowrap;
   text-align: end;
   font-weight: 500; 
+}
+
+.main-table tbody tr:hover {
+  background-color: rgba(245, 245, 245, 0.521);
 }
 
 .main-table td:nth-child(1) {
@@ -3725,12 +3753,12 @@ th .resizer::before {
 
 .group-header {
   white-space: normal;
-  background-color: var(--background-grey);
-  border-left: 3px solid var(--group-border-left);
+  background-color: var(--table-titles-background);
+  /* border-left: 3px solid var(--group-border-left); */  
+  cursor: pointer;
 }
 
 .group-header td {
-  /* padding: 12px 12px; */
   font-weight: 600;
   color: var(--group-header-color);
 }
@@ -3741,10 +3769,9 @@ th .resizer::before {
   gap: 10px;
 }
 
-.group-header:hover {
+/* .group-header:hover {
   background-color: var(--background-grey1);
-  cursor: pointer;
-}
+} */
 
 .total-row td{
 
@@ -4761,7 +4788,7 @@ label {
   }
   
   .navigation-container {
-    width: 90%;
+
     height: 100%;
     margin: 0;
     padding: 0;
@@ -4852,11 +4879,13 @@ label {
     transform: scale(0.96);
   }
 
-  .personal-acc-conteiner {
-    /* padding: 30px 20px; */
-    margin: 20px 0;
+  .personal-acc-conteiner{
+    margin-top: 30px;
+  }
+
+  .personal-acc-conteiner,
+  .personal-plan-conteiner {
     margin-bottom: 80px;
-    min-height: calc(100vh - 60px);
   }
 
   .stat {
@@ -4895,8 +4924,15 @@ label {
   
   .personal-acc-conteiner .header-content-right {
     width: 100%;
-    justify-content: flex-end;
     gap: 8px;
+    flex-direction: column;
+
+    align-items: center;
+  }  
+  
+  .personal-acc-conteiner .header-content-right button{
+    width: 100% !important;
+
   }
   
   .personal-acc-conteiner .name {
@@ -4951,7 +4987,7 @@ label {
     justify-content: space-between;
   }
   
-  .name-plan {
+  .plan-info {
     display: flex;
     flex-direction: column;
     font-size: 13px;
@@ -4990,7 +5026,7 @@ label {
     font-size: 13px;
   }
 
-  .name-plan {
+  .plan-info {
 
   }
   
@@ -5014,11 +5050,14 @@ label {
 
 
   .plan-back-header{
-    width: calc(100% - 20px);
-    gap: 10px;
-    padding: 0 10px;
+    width: calc(100% - 40px);
+    gap: 20px;
+    padding: 0 20px;
   }
 
+  .plan-text{
+    display: none;
+  }
 
 
 }
@@ -5032,8 +5071,8 @@ label {
   .navigation-container {
     flex-direction: row;
     justify-content: space-between;
-    width: 100%;
-    max-width: 1244px;
+
+
   }
   
   .nav-item {
@@ -5110,7 +5149,7 @@ label {
   
   #flash-container {
     position: fixed;
-    top: 20px;
+    top: 80px;
     right: auto;
     margin: 0 auto;
     left: 50%; 
@@ -5221,7 +5260,7 @@ label {
     gap: 15px;
   }
   
-  .name-plan {
+  .plan-info {
     font-size: 13px;
   }
   

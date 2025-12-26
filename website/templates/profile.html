@@ -35,14 +35,14 @@
                     <div class="input-with-icon">
                         <img src="/static/img/Account.svg" alt="" class="input-icon">
                         <input type="text" name="last_name" maxlength="30" value="{{current_user.last_name}}" 
-                            placeholder="{{ _('Иванов') }}" class="app-input" required>
+                            placeholder="{{ _('Введите фамилию') }}" class="app-input" required>
                     </div>
                 </div>
                 <div class="app-group">
                     <label>{{ _('Имя *') }}</label>
                     <div class="input-with-icon">
                         <img src="/static/img/Account.svg" alt="" class="input-icon">
-                        <input type="text" name="first_name" maxlength="30" value="{{current_user.first_name}}" class="app-input" placeholder="{{ _('Иван') }}" required>
+                        <input type="text" name="first_name" maxlength="30" value="{{current_user.first_name}}" class="app-input" placeholder="{{ _('Введите Имя') }}" required>
                     </div>
                 </div>
             </div>
@@ -50,14 +50,14 @@
                 <label>{{ _('Отчество') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Account.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="30" name = "patronymic_name" value="{{current_user.patronymic_name}}" placeholder="{{ _('Иванович') }}" class="app-input" required>
+                    <input type="text" maxlength="30" name = "patronymic_name" value="{{current_user.patronymic_name}}" placeholder="{{ _('Введите отчество') }}" class="app-input" required>
                 </div>
             </div> 
             <div class="app-group">
                 <label>{{ _('Email *') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Email.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="" value="{{current_user.email}}" placeholder="{{ _('demo@example.com') }}" class="app-input" readonly>
+                    <input type="text" maxlength="" value="{{current_user.email}}" placeholder="{{ _('Введите email') }}" class="app-input" readonly>
                     <div class="input-mes" title = "{{ _('Не изм.') }}">
                         <img src="/static/img/Edit_off.svg">
                         
@@ -68,14 +68,14 @@
                 <label>{{ _('Телефон *') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Phone.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="13" name = "phone" value="{{current_user.phone}}" placeholder="+375.." class="app-input" required>
+                    <input type="text" maxlength="13" name = "phone" value="{{current_user.phone}}" placeholder="Введите номер телефона" class="app-input" required>
                 </div>
             </div>
             <div class="app-group">
                 <label>{{ _('Должность') }}</label>
                 <div class="input-with-icon">
                     <img src="/static/img/Account.svg" alt="" class="input-icon">
-                    <input type="text" maxlength="25" name = "post" value="{{ current_user.post }}" placeholder="{{ _('Инженер-энергетик') }}" class="app-input">
+                    <input type="text" maxlength="25" name = "post" value="{{ current_user.post }}" placeholder="{{ _('Введите должность') }}" class="app-input">
                 </div>
             </div>
             <div class="button-area">

@@ -148,7 +148,7 @@
                     
                     <div class="plan-cont-column">
                         <div class="plan-cont-column-header">
-                            <a class="name-plan">
+                            <a class="plan-info">
                                 {% if current_user.is_auditor %}
                                     {% if plan.organization.name %}
                                         <span class="structure-plan">Организация</span>{{ plan.organization.name | truncate(35, True, '...') }}
@@ -160,7 +160,7 @@
                                 {% else %}
                                     {{ _('План энергосбережения') }}
                                 {% endif %}
-                                <span class="name-plan" style="font-weight: 600;">{{ plan.year }} {{ _('год') }}</span>
+                                <span class="plan-info" style="font-weight: 600;">{{ plan.year }} {{ _('год') }}</span>
                             </a>
            
                             <a class="status-plan">
@@ -178,7 +178,7 @@
                                 {% if plan.organization.okpo %}
                                 <div class="plan-cont-column-footer-element">
                                     <img src="/static/img/Organization.svg" alt="" class="btn-icon">
-                                    <a class="name-plan">{{ plan.organization.okpo }}</a>
+                                    <a class="plan-info">{{ plan.organization.okpo }}</a>
                                 </div>
                                 {% endif %}
                             {% else %}
@@ -207,12 +207,12 @@
                             {% if not current_user.is_auditor %}
                                 <div class="plan-cont-column-footer-element">
                                     <img src="/static/img/Calendar.svg" alt="" class="btn-icon">
-                                    <a class="name-plan">{{ _('Создан') }}: {{ plan.begin_time.strftime('%d-%m-%Y') if plan.begin_time else '-- -- --'}}</a>
+                                    <a class="plan-info">{{ _('Создан') }}: {{ plan.begin_time.strftime('%d-%m-%Y') if plan.begin_time else '-- -- --'}}</a>
                                 </div>
                             {% endif %}
                             <div class="plan-cont-column-footer-element">
                                 <img src="/static/img/Calendar.svg" alt="" class="btn-icon">
-                                <a class="name-plan">{{ _('Подан') }}: {{ plan.sent_time.strftime('%d-%m-%Y') if plan.sent_time else '-- -- --' }}</a>
+                                <a class="plan-info">{{ _('Подан') }}: {{ plan.sent_time.strftime('%d-%m-%Y') if plan.sent_time else '-- -- --' }}</a>
                             </div>
                         </div>
                     </div>
@@ -246,7 +246,7 @@
             <div class="plan-cont">       
                 <div class="plan-cont-column">
                     <div class="plan-cont-column-header">
-                        <a class="name-plan">{{ _('Нет планов') }}</a> 
+                        <a class="plan-info">{{ _('Нет планов') }}</a> 
                     </div>
                 </div>
             </div>
