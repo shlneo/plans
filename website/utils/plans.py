@@ -369,8 +369,8 @@ def other_data_indicatorUpdate(plan_id):
     
     indicator_usages = IndicatorUsage.query.filter_by(id_plan=plan.id).all()
     
-    def update_indicator_1000():
-        """Обновление индикатора 1000 (сумма всех необязательных показателей)"""
+    def update_indicator_1101():
+        """Обновление индикатора 1101 (сумма всех необязательных показателей)"""
         totals = db.session.query(
             func.sum(IndicatorUsage.QYearBeforePrev).label('total_before_prev'),
             func.sum(IndicatorUsage.QYearPrev).label('total_prev'),
@@ -379,12 +379,12 @@ def other_data_indicatorUpdate(plan_id):
             IndicatorUsage.id_plan == plan.id,
             Indicator.IsMandatory == False
         ).first()
-        
-        indicator_1000 = get_indicator_by_code(indicator_usages, '1000')
-        if indicator_1000:
-            indicator_1000.QYearBeforePrev = to_decimal_2(totals.total_before_prev or 0)
-            indicator_1000.QYearPrev = to_decimal_2(totals.total_prev or 0)
-            indicator_1000.QYearCurrent = to_decimal_2(totals.total_current or 0)
+
+        indicator_1101 = get_indicator_by_code(indicator_usages, '1101')
+        if indicator_1101:
+            indicator_1101.QYearBeforePrev = to_decimal_2(totals.total_before_prev or 0)
+            indicator_1101.QYearPrev = to_decimal_2(totals.total_prev or 0)
+            indicator_1101.QYearCurrent = to_decimal_2(totals.total_current or 0)
             commit_changes()
     
     def update_indicator_1796():
@@ -524,20 +524,20 @@ def other_data_indicatorUpdate(plan_id):
             current_app.logger.warning('Indicator with code 260 not found')
             return
         
-        indicator_1000 = get_indicator_by_code(indicator_usages, '1000')
+        indicator_1101 = get_indicator_by_code(indicator_usages, '1101')
         indicator_1105 = get_indicator_by_code(indicator_usages, '1105')
         indicator_1405 = get_indicator_by_code(indicator_usages, '1405')
         indicator_1104 = get_indicator_by_code(indicator_usages, '1104')
         indicator_1404 = get_indicator_by_code(indicator_usages, '1404')
-        
-        if not all([indicator_1000, indicator_1105, indicator_1405, indicator_1104, indicator_1404]):
+
+        if not all([indicator_1101, indicator_1105, indicator_1405, indicator_1104, indicator_1404]):
             current_app.logger.warning('Missing required indicators for 260 calculation')
             return
-        
+
         periods = ['QYearBeforePrev', 'QYearPrev', 'QYearCurrent']
-        
+
         for period in periods:
-            base = get_value(indicator_1000, period)
+            base = get_value(indicator_1101, period)
             diff1 = get_value(indicator_1105, period) - get_value(indicator_1405, period)
             diff2 = get_value(indicator_1104, period) - get_value(indicator_1404, period)
             result = to_decimal_2(base + diff1 + diff2)
@@ -583,31 +583,31 @@ def other_data_indicatorUpdate(plan_id):
         indicator_1796 = get_indicator_by_code(indicator_usages, '1796')
         indicator_1424 = get_indicator_by_code(indicator_usages, '1424')
         indicator_1425 = get_indicator_by_code(indicator_usages, '1425')
-        indicator_1000 = get_indicator_by_code(indicator_usages, '1000')
-        
-        if not indicator_1000:
-            current_app.logger.warning('Indicator 1000 not found')
+        indicator_1101 = get_indicator_by_code(indicator_usages, '1101')
+
+        if not indicator_1101:
+            current_app.logger.warning('Indicator 1101 not found')
             return
-        
+
         periods = ['QYearBeforePrev', 'QYearPrev', 'QYearCurrent']
-        
+
         for period in periods:
             numerator = Decimal('0.0')
-            
+
             if indicator_1796:
                 numerator += get_value(indicator_1796, period)
             if indicator_1424:
                 numerator += get_value(indicator_1424, period)
             if indicator_1425:
                 numerator += get_value(indicator_1425, period)
-            
-            denominator = get_value(indicator_1000, period)
-            
+
+            denominator = get_value(indicator_1101, period)
+
             if denominator == 0:
                 result = Decimal('0.0')
             else:
                 result = (numerator / denominator) * 100
-            
+
             setattr(indicator_9916, period, to_decimal_1(result))
             current_app.logger.info(f'Set 9916.{period} = {result}')
         
@@ -625,25 +625,25 @@ def other_data_indicatorUpdate(plan_id):
         indicator_1797 = get_indicator_by_code(indicator_usages, '1797')
         indicator_1424 = get_indicator_by_code(indicator_usages, '1424')
         indicator_1425 = get_indicator_by_code(indicator_usages, '1425')
-        indicator_1000 = get_indicator_by_code(indicator_usages, '1000')
-        
-        if not indicator_1000:
-            current_app.logger.warning('Indicator 1000 not found')
+        indicator_1101 = get_indicator_by_code(indicator_usages, '1101')
+
+        if not indicator_1101:
+            current_app.logger.warning('Indicator 1101 not found')
             return
-        
+
         periods = ['QYearBeforePrev', 'QYearPrev', 'QYearCurrent']
-        
+
         for period in periods:
             numerator = Decimal('0.0')
-            
+
             if indicator_1797:
                 numerator += get_value(indicator_1797, period)
             if indicator_1424:
                 numerator += get_value(indicator_1424, period)
             if indicator_1425:
                 numerator += get_value(indicator_1425, period)
-            
-            denominator = get_value(indicator_1000, period)
+
+            denominator = get_value(indicator_1101, period)
             
             if denominator == 0:
                 result = Decimal('0.0')
@@ -657,7 +657,7 @@ def other_data_indicatorUpdate(plan_id):
     
     try:
         update_indicator_9900()
-        update_indicator_1000()
+        update_indicator_1101()
         update_indicator_1796()
         update_indicator_1797()
         update_indicator_9910()

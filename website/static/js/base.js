@@ -2701,17 +2701,6 @@ document.addEventListener('DOMContentLoaded', function() {
         statNumbers.forEach(stat => observer.observe(stat));
     }
     
-    const bgGrid = document.querySelector('.bg-grid');
-    
-    if (bgGrid) {
-        window.addEventListener('mousemove', (e) => {
-            const x = (e.clientX / window.innerWidth) * 20;
-            const y = (e.clientY / window.innerHeight) * 20;
-            
-            bgGrid.style.transform = `translate(${x}px, ${y}px)`;
-        });
-    }
-
     const ticket_container = document.querySelector('.tickets-messages-list');
     if (ticket_container) {
         setTimeout(() => {

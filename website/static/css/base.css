@@ -182,12 +182,14 @@
 
   /* ----- Gray Scale ----- */
   --border-color: #D9D9D9;
+  --border-color-th: #eff4f8;
   --button-grey-hover: #ebebeb;
   --text-title: #2c3e50;
   --text-subtitle: #7f8c8d;
   --text-subtitle2: #5d6566;
   --body-background: #fafafa;
-  --background-grey: rgb(238, 238, 238);
+  --background-grey: rgb(247, 247, 247);
+  --background-grey-input: rgb(253, 253, 253);
   --background-grey-opa: rgb(247, 247, 247);
   --background-grey1: rgba(66, 66, 66, 0.1);
   --placeholder-color: #8a8a8a;
@@ -373,7 +375,7 @@ body {
 
 /* On scroll: just a solid background — no move, no resize. */
 .fixed-header.scrolled {
-  background: var(--blur2);
+  /* background: var(--blur2); */
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 24px rgba(0, 0, 0, 0.06);
@@ -740,7 +742,7 @@ body {
   position: relative;
   background: #ffffff;
   /* border: 2px solid #e5e7eb; */
-  border: 2px solid var(--green-main);
+  border: 1px solid rgb(189, 189, 189);
   /* box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22), 0 4px 10px rgba(0, 0, 0, 0.12); */
   cursor: pointer;
   overflow: hidden;
@@ -873,7 +875,7 @@ body {
   min-width: 220px;
   isolation: isolate;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 1);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
   border-radius: 16px;
@@ -889,12 +891,6 @@ body {
 .user-profile-panel::before {
   content: '';
   position: absolute;
-  inset: -40%;
-  z-index: -1;
-  /* background:
-    radial-gradient(circle at 15% 10%, var(--glass-tint-1), transparent 55%),
-    radial-gradient(circle at 90% 90%, var(--glass-tint-2), transparent 55%); */
-  filter: blur(30px);
 }
 
 .user-profile-panel.show {
@@ -1237,6 +1233,7 @@ body {
 
 .circle-fi {
   background-color: var(--background-grey);
+  border: 1px solid var(--border-color);
   border-radius: 50%;
   padding: 35px 33px;
   display: flex;
@@ -1328,7 +1325,7 @@ hr {
 }
 .footer-col h4 {
   color: var(--white);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   margin-bottom: 25px;
   position: relative;
@@ -1464,7 +1461,7 @@ hr {
     gap: 30px;
   }
   .footer-col h4 {
-    font-size: 18px;
+    font-size: 16px;
   }
   .social-links a {
     width: 40px;
@@ -2071,8 +2068,9 @@ input::placeholder {
 }
 .auto-hint {
   padding: 8px 12px;
-  background: var(--background-grey-opa);
-  border-radius: 8px;
+  background: var(--white);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
   font-size: 12px;
   color: var(--text-subtitle);
   display: flex;
@@ -3011,7 +3009,6 @@ input::placeholder {
   gap: 15px;
 }
 .value-card {
-  background: #f8f9fa;
   border-radius: 10px;
   padding: 15px;
   display: flex;
@@ -3185,7 +3182,7 @@ input::placeholder {
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-size: 14px;
-  background-color: var(--background-grey);
+  background-color: var(--background-grey-input);
   transition: all 0.3s ease-in-out;
   font-weight: 500;
   white-space: nowrap;
@@ -3410,19 +3407,20 @@ input::placeholder {
 
 .quarter-btn {
     padding: 4px 3px;
-    border: 2px solid var(--border-color);
     border-radius: 6px;
     background: white;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 13px;
     color: #1e293b;
-    transition: all 0.2s;
+    border: none;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .quarter-btn:hover {
-    border-color: var(--green-light);
-    transform: scale(1.02);
+    background-color: var(--green-main) !important;
+    color: var(--white) !important;
+    transform: scale(1.05);
 }
 
 .quarter-btn:active {
@@ -3430,7 +3428,7 @@ input::placeholder {
 }
 
 .quarter-btn.selected {
-    border-color: var(--green-main);
+    border: 1px solid var(--green-main);
     background: var(--green-back-gradient);
 }
 
@@ -3593,7 +3591,7 @@ input::placeholder {
    SESSIONS — liquid glass card
    ============================================ */
 .session-glass-card {
-  padding: 22px 24px;
+  padding: 22px 0;
   margin: 16px 0 8px;
 }
 
@@ -3621,6 +3619,7 @@ input::placeholder {
   display: flex;
   align-items: center;
   gap: 8px;
+  padding-left: 5px;
   font-size: 14px;
   font-weight: 600;
   color: var(--faq-text-primary, #1a1a2e);
@@ -3726,9 +3725,6 @@ input::placeholder {
 }
 
 @media (max-width: 480px) {
-  .session-glass-card {
-    padding: 18px;
-  }
   .session-card-top {
     flex-wrap: wrap;
   }
@@ -3837,15 +3833,7 @@ input::placeholder {
 .org-card {
   position: relative;
   overflow: hidden;
-
-}
-
-.org-card-accent {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
+  z-index: 0;
 }
 
 .org-card-header {
@@ -3853,7 +3841,8 @@ input::placeholder {
   align-items: flex-start;
   flex-wrap: wrap;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  z-index: 0;
 }
 
 .org-card-icon {
@@ -3876,6 +3865,7 @@ input::placeholder {
 
 .org-card-heading {
   flex: 1;
+  z-index: 0;
   min-width: 180px;
   display: flex;
   flex-direction: column;
@@ -3892,7 +3882,7 @@ input::placeholder {
 
 .org-card-name {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   line-height: 1.3;
   color: var(--black);
   word-break: break-word;
@@ -3929,15 +3919,20 @@ input::placeholder {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 8px 10px 14px;
-  border-radius: 12px;
-  background: rgba(0, 121, 143, 0.06);
+  padding: 8px 16px;
+  border-radius: 8px;
+  background-color: var(--background-grey);
   border: 1px solid rgba(0, 121, 143, 0.16);
   transition: border-color 0.2s ease;
 }
 
 .org-code-chip:hover {
   border-color: var(--green-light);
+}
+
+.org-code-chip svg{
+  width: 16px;
+  height: 16px;
 }
 
 .org-code-label {
@@ -3949,7 +3944,7 @@ input::placeholder {
 }
 
 .org-code-value {
-  font-size: 13.5px;
+  font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--black);
@@ -4003,9 +3998,6 @@ input::placeholder {
 }
 
 @media (max-width: 480px) {
-  .org-card {
-    padding: 18px 16px;
-  }
   .org-card-codes {
     flex-direction: column;
     align-items: stretch;
@@ -4421,7 +4413,7 @@ input[type="checkbox"]:focus {
   justify-content: space-between;
   gap: 8px;
   padding: 9px 11px;
-  background-color: #f5f5f5;
+  background-color: var(--background-grey-input);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-weight: 500;
@@ -4974,7 +4966,7 @@ input[type="checkbox"]:focus {
 .tickets-container {
   border: 1px solid var(--telegram-gray);
   border-radius: 12px;
-  background-color: var(--th-background);
+  background-color: rgb(255, 255, 255);
   position: relative;
   min-height: 100px;
   max-height: 400px;
@@ -5956,7 +5948,7 @@ input[type="checkbox"]:focus {
 
 .main-table td {
   padding: 10px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color-th);
   border-right: 1px solid var(--border-color);
   color: #334155;
   font-size: 13px;
@@ -6688,7 +6680,7 @@ input[type="checkbox"]:focus {
   vertical-align: top;
   white-space: normal;
   word-break: break-word;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color-th);
 }
 .modal-table-main tbody tr:last-child td {
   border-bottom: none;
@@ -7120,7 +7112,7 @@ button[disabled] {
   flex-direction: column;
   padding: 5px;
   gap: 5px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.5);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -7227,7 +7219,7 @@ button[disabled] {
 
 .btn-disabled {
   opacity: 0.5 !important;
-  pointer-events: none !important;
+
   cursor: not-allowed !important;
 }
 .disabled {
@@ -8490,12 +8482,18 @@ main {
   left: 0;
   width: 100%;
   height: 100%;
-  background-image: linear-gradient(rgba(34, 139, 125, 0.15) 1px, var(--transparent) 1px), linear-gradient(90deg, rgba(50, 174, 205, 0.1) 1px, var(--transparent) 1px);
-  background-size: 70px 70px;
-  mask-image: radial-gradient(circle at center, var(--black) 70%, var(--transparent) 80%);
+  background-image:
+    radial-gradient(900px circle at 0% 0%, rgba(0, 121, 143, 0.30), transparent 55%),
+    radial-gradient(900px circle at 100% 15%, rgba(68, 204, 228, 0.22), transparent 55%),
+    radial-gradient(950px circle at 20% 100%, rgba(0, 121, 143, 0.22), transparent 55%);
   pointer-events: none;
   z-index: -2;
-  filter: blur(0.3px);
+  animation: bg-glow-drift 22s ease-in-out infinite;
+}
+
+@keyframes bg-glow-drift {
+  0%, 100% { background-position: 0 0, 0 0, 0 0; }
+  50% { background-position: 2% 2%, -2% 1%, 1% -2%; }
 }
 
 .modern-container {
@@ -9259,7 +9257,7 @@ main {
      though the filters row itself scrolls, the wrapper around it was
      still forcing the whole page wider. Stack instead of shrinking. */
   .header-content {
-    flex-wrap: wrap;
+
     gap: 12px;
   }
   .header-content-left {

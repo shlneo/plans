@@ -281,6 +281,8 @@ def get_indicator_api(id):
             'code': indicator_usage.indicator.code,
             'name': indicator_usage.indicator.name,
             'note': indicator_usage.note,
+            'group': float(indicator_usage.indicator.Group) if indicator_usage.indicator.Group else None,
+            'is_custom': indicator_usage.indicator.is_custom,
             'unit_name': indicator_usage.indicator.unit.name if indicator_usage.indicator.unit else '',
             'CoeffToTut': float(indicator_usage.indicator.CoeffToTut) if indicator_usage.indicator.CoeffToTut else 0,
             'coeff_before_prev': float(indicator_usage.coeff_before_prev) if indicator_usage.coeff_before_prev else None,
@@ -343,7 +345,11 @@ def get_indicators_data(token):
             
             'is_local': row.indicator.is_local,
             'is_renewable': row.indicator.is_renewable,
-            
+            'is_mandatory': row.indicator.IsMandatory,
+            'is_computed': row.indicator.is_computed,
+            'higher_is_better': row.indicator.higher_is_better,
+
+
             'QYearBeforePrev_unit': QYearBeforePrev_unit,
             'QYearBeforePrev_tut': float(row.QYearBeforePrev) if row.QYearBeforePrev else 0,
 
@@ -591,7 +597,7 @@ def get_stat_data(organization_id):
 
         mapping = {
             # 12-тэк — часть 1 "Показатели ТЭР"
-            '1000': {'report': '12-tek', 'row': row_110, 'col': '1'},  # стр.1 — КПТ израсходовано всего
+            '1101': {'report': '12-tek', 'row': row_110, 'col': '1'},  # стр.1 — КПТ израсходовано всего
             '1796': {'report': '12-tek', 'row': row_110, 'col': '2'},  # из него местные виды топлива и отходы (сумма стр. 11-22)
             '1797': {'report': '12-tek', 'row': row_110, 'col': '3'},  # из них возобновляемые (сумма стр. 11, 16-20, 22)
             '1105': {'report': '12-tek', 'row': row_110, 'col': '5'},  # стр.23 — Электроэнергия израсходовано всего
@@ -604,29 +610,29 @@ def get_stat_data(organization_id):
 
             # 4-тэк — построчно по видам топлива, одинаково для Планов и Перечней
 
-            '2000': {'report': '4-tek', 'row': '1090', 'col': '3', 'subtract': ['1090_5', '1090_6', '1092_7']},
-            '2001': {'report': '4-tek', 'row': '1050', 'col': '3', 'subtract': ['1050_5', '1050_6']},
-            '2002': {'report': '4-tek', 'row': '1040', 'col': '3', 'subtract': ['1040_5', '1040_6']},
-            '2003': {'report': '4-tek', 'row': '1660', 'col': '3', 'subtract': ['1660_5', '1660_6']},
-            '2004': {'report': '4-tek', 'row': '1075', 'col': '3', 'subtract': ['1075_5', '1075_6']},
-            '2005': {'report': '4-tek', 'row': '1160', 'col': '3', 'subtract': ['1160_5', '1160_6']},
-            '2006': {'report': '4-tek', 'row': '1150', 'col': '3', 'subtract': ['1150_5', '1150_6', '1152_7']},
-            '2007': {'report': '4-tek', 'row': '1060', 'col': '3', 'subtract': ['1060_5', '1060_6']},
-            '2008': {'report': '4-tek', 'row': '1750', 'col': '3', 'subtract': ['1750_5', '1750_6']},
-            '2009': {'report': '4-tek', 'row': '1790', 'col': '3', 'subtract': ['1790_5', '1790_6']},
-            '2010': {'report': '4-tek', 'row': '1110', 'col': '3', 'subtract': ['1110_5', '1110_6']},
-            '2011': {'report': '4-tek', 'row': '1620+1630', 'col': '3', 'subtract': ['1620_5', '1620_6', '1630_5', '1630_6']},
-            '2012': {'report': '4-tek', 'row': '1640', 'col': '3', 'subtract': ['1640_5', '1640_6']},
-            '2013': {'report': '4-tek', 'row': '1794', 'col': '3', 'subtract': ['1794_5', '1794_6']},
-            '2014': {'report': '4-tek', 'row': '1745', 'col': '3', 'subtract': ['1745_5', '1745_6']},
-            '2015': {'report': '4-tek', 'row': '1690', 'col': '3', 'subtract': ['1690_5', '1690_6']},
-            '2016': {'report': '4-tek', 'row': '1680', 'col': '3', 'subtract': ['1680_5', '1680_6']},
-            '2017': {'report': '4-tek', 'row': '1742', 'col': '3', 'subtract': ['1742_5', '1742_6']},
-            '2018': {'report': '4-tek', 'row': '1744', 'col': '3', 'subtract': ['1744_5', '1744_6']},
-            '2019': {'report': '4-tek', 'row': '1785', 'col': '3', 'subtract': ['1785_5', '1785_6']},
-            '2020': {'report': '4-tek', 'row': '1730', 'col': '3', 'subtract': ['1730_5', '1730_6']},
-            '2021': {'report': '4-tek', 'row': '1740', 'col': '3', 'subtract': ['1740_5', '1740_6']},
-            '2022': {'report': '4-tek', 'row': '1780', 'col': '3', 'subtract': ['1780_5', '1780_6']},
+            '1090': {'report': '4-tek', 'row': '1090', 'col': '3', 'subtract': ['1090_5', '1090_6', '1092_7']},
+            '1050': {'report': '4-tek', 'row': '1050', 'col': '3', 'subtract': ['1050_5', '1050_6']},
+            '1040': {'report': '4-tek', 'row': '1040', 'col': '3', 'subtract': ['1040_5', '1040_6']},
+            '1660': {'report': '4-tek', 'row': '1660', 'col': '3', 'subtract': ['1660_5', '1660_6']},
+            '1075': {'report': '4-tek', 'row': '1075', 'col': '3', 'subtract': ['1075_5', '1075_6']},
+            '1160': {'report': '4-tek', 'row': '1160', 'col': '3', 'subtract': ['1160_5', '1160_6']},
+            '1150': {'report': '4-tek', 'row': '1150', 'col': '3', 'subtract': ['1150_5', '1150_6', '1152_7']},
+            '1060': {'report': '4-tek', 'row': '1060', 'col': '3', 'subtract': ['1060_5', '1060_6']},
+            '1750': {'report': '4-tek', 'row': '1750', 'col': '3', 'subtract': ['1750_5', '1750_6']},
+            '1790': {'report': '4-tek', 'row': '1790', 'col': '3', 'subtract': ['1790_5', '1790_6']},
+            '1110': {'report': '4-tek', 'row': '1110', 'col': '3', 'subtract': ['1110_5', '1110_6']},
+            '1620': {'report': '4-tek', 'row': '1620+1630', 'col': '3', 'subtract': ['1620_5', '1620_6', '1630_5', '1630_6']},
+            '1640': {'report': '4-tek', 'row': '1640', 'col': '3', 'subtract': ['1640_5', '1640_6']},
+            '1794': {'report': '4-tek', 'row': '1794', 'col': '3', 'subtract': ['1794_5', '1794_6']},
+            '1745': {'report': '4-tek', 'row': '1745', 'col': '3', 'subtract': ['1745_5', '1745_6']},
+            '1690': {'report': '4-tek', 'row': '1690', 'col': '3', 'subtract': ['1690_5', '1690_6']},
+            '1680': {'report': '4-tek', 'row': '1680', 'col': '3', 'subtract': ['1680_5', '1680_6']},
+            '1742': {'report': '4-tek', 'row': '1742', 'col': '3', 'subtract': ['1742_5', '1742_6']},
+            '1744': {'report': '4-tek', 'row': '1744', 'col': '3', 'subtract': ['1744_5', '1744_6']},
+            '1785': {'report': '4-tek', 'row': '1785', 'col': '3', 'subtract': ['1785_5', '1785_6']},
+            '1730': {'report': '4-tek', 'row': '1730', 'col': '3', 'subtract': ['1730_5', '1730_6']},
+            '1740': {'report': '4-tek', 'row': '1740', 'col': '3', 'subtract': ['1740_5', '1740_6']},
+            '1780': {'report': '4-tek', 'row': '1780', 'col': '3', 'subtract': ['1780_5', '1780_6']},
         }
 
         indicator_names = {

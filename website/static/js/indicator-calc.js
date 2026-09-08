@@ -88,7 +88,10 @@ class PlanIndicators {
         const formattedCoeff = coeffValue.toFixed(3).replace('.', ',');
         
         const coeffInputs = document.querySelectorAll('#AddIndicatorModal .coeff-input-display');
-        const isTut = unitName === 'т у.т.';
+        // "т у.т." и "%" сами по себе не пересчитываются в натуральную
+        // величину — коэффициент всегда 1, менять его нельзя (см. "x" в
+        // колонках "в нат. велич." таблицы показателей).
+        const isTut = unitName === 'т у.т.' || unitName === '%';
         
         coeffInputs.forEach(input => {
             input.value = formattedCoeff;
@@ -112,19 +115,21 @@ class PlanIndicators {
         
         const groupNumber = parseFloat(group);
         this.initAddNumericInputsByGroup(groupNumber);
-        
-        if (typeof checkCategoryRequired === 'function') {
-            checkCategoryRequired();
-        }
-        
-        const table = document.querySelector('[data-action="modal-table-main"]');
+
+        const table = row.closest('[data-action="modal-table-main"]');
         if (table) {
             table.querySelectorAll('tbody tr').forEach(tr => {
                 tr.classList.remove('active-row');
             });
         }
         row.classList.add('active-row');
-        
+
+        // должно выполняться после простановки active-row — иначе читает
+        // флаг is_custom предыдущей строки (или ничего при первом клике)
+        if (typeof checkCategoryRequired === 'function') {
+            checkCategoryRequired();
+        }
+
         const nextButton = document.getElementById('step1-next-btn');
         if (nextButton) {
             nextButton.disabled = false;
@@ -255,6 +260,7 @@ class PlanIndicators {
             const data = await response.json();
             
             if (data.success) {
+                this.indicators = data.indicators;
                 this.renderIndicatorsTable(data.indicators);
             } else {
                 this.showError('Ошибка загрузки данных');
@@ -272,10 +278,7 @@ class PlanIndicators {
         tbody.innerHTML = '';
         
         let lastGroup = null;
-        
-        const specialCodes = ['1796', '1797', '9916', '9917', '1425', '1424'];
-        const reverseCodes = ['1000', '1105', '1405', '1104', '1404', '260'];
-        
+
         indicators.forEach((row, index) => {
             const isNewGroup = row.group !== lastGroup;
             lastGroup = row.group;
@@ -297,22 +300,22 @@ class PlanIndicators {
                 }
             };
             
+            // Для строк, чья единица измерения сама по себе "т у.т." или "%",
+            // колонка "в нат. велич." не несёт смысла (натуральная величина
+            // и т у.т. — одно и то же число) — показываем "x" вместо
+            // дублирующего значения. Колонки "в т у.т." заполняются как обычно.
+            const isUnitBlocked = row.unit_name === 'т у.т.' || row.unit_name === '%';
+
             let backgroundColor = '';
             let iconHtml = '';
             let textColor = '';
-            
+
             if (row.group === 5 || row.group === 6) {
             } else if (row.difference !== null && row.difference !== undefined && !isNaN(row.difference) && row.difference !== 0) {
-                const code = String(row.code || '');
-                
-                const isCase11 = 
-                    specialCodes.includes(code) ||
-                    (row.group === 1 && row.is_local === true);
-                
-                const isCase12 = 
-                    reverseCodes.includes(code) ||
-                    (row.group === 1 && row.is_local === false);
-                
+                // higher_is_better приходит с сервера (Indicator.higher_is_better) —
+                // для группы 1 (виды топлива) уже забэкфилено из is_local.
+                const isCase11 = row.higher_is_better === true;
+
                 const isNegative = row.difference < 0;
                 const formattedValue = formatValue(row.difference, row.group);
                 
@@ -362,11 +365,11 @@ class PlanIndicators {
                     ${this.escapeHtml(row.name)}${row.note ? ' (' + this.escapeHtml(row.note) + ')' : ''}
                 </td>
                 <td style="text-align: start">${this.escapeHtml(row.unit_name)}</td>
-                <td>${(row.group === 5 || row.group === 6) ? 'x' : formatValue(row.QYearBeforePrev_unit, row.group)}</td>
-                <td>${(row.group === 5 || row.group === 6) ? 'x' : formatValue(row.QYearBeforePrev_tut, row.group)}</td>
-                <td>${(row.group === 5 || row.group === 6) ? 'x' : formatValue(row.QYearPrev_unit, row.group)}</td>
-                <td>${(row.group === 5 || row.group === 6) ? 'x' : formatValue(row.QYearPrev_tut, row.group)}</td>
-                <td>${formatValue(row.QYearCurrent_unit, row.group)}</td>
+                <td>${isUnitBlocked ? 'x' : formatValue(row.QYearBeforePrev_unit, row.group)}</td>
+                <td>${formatValue(row.QYearBeforePrev_tut, row.group)}</td>
+                <td>${isUnitBlocked ? 'x' : formatValue(row.QYearPrev_unit, row.group)}</td>
+                <td>${formatValue(row.QYearPrev_tut, row.group)}</td>
+                <td>${isUnitBlocked ? 'x' : formatValue(row.QYearCurrent_unit, row.group)}</td>
                 <td>${formatValue(row.QYearCurrent_tut, row.group)}</td>
                 <td class="difference-cell" style="border-right: none; text-align: center; background-color: ${backgroundColor};">
                     ${cellContent}
@@ -382,21 +385,35 @@ class PlanIndicators {
     initTableContextMenu() {
         const indicatorsTable = document.getElementById('indicatorsTable');
         const indicatorsMenu = document.getElementById('MenuMainTable');
-        
+
         if (indicatorsTable && indicatorsMenu && typeof TableContextMenu !== 'undefined') {
             if (window.indicatorsTableMenu) {
                 window.indicatorsTableMenu = null;
             }
-            
+
+            // Раньше это были захардкоженные списки кодов — теперь берём
+            // из is_computed/is_mandatory, которые приходят с сервера
+            // (Indicator.is_computed, Indicator.IsMandatory):
+            //  - is_computed: значение считается автоматически, ни
+            //    редактировать, ни удалять нельзя;
+            //  - is_mandatory && !is_computed: строка обязательна и не
+            //    удаляется, но значение вводится вручную — можно
+            //    редактировать.
+            const indicators = this.indicators || [];
+            const immutableCodes = indicators.filter(i => i.is_computed).map(i => i.code);
+            const immutableDeleteCodes = indicators
+                .filter(i => i.is_mandatory && !i.is_computed)
+                .map(i => i.code);
+
             window.indicatorsTableMenu = new TableContextMenu('indicatorsTable', 'MenuMainTable', {
                 contextEditButtonId: 'contextEditButton',
                 contextDeleteButtonId: 'contextDeleteButton',
                 tableEditButtonId: 'tableEditButton',
                 tableDeleteButtonId: 'tableDeleteButton',
                 removeUrlTemplate: '../delete-indicator/{id}',
-                immutableCodes: ['260', '9900', '9999', '1000', '1797', '1796', '9915', '9916', '9917', '9910'],
+                immutableCodes,
                 immutableEditCodes: [],
-                immutableDeleteCodes: ['9911', '9912', '9913', '9914', '1404', '1104', '1424', '1105', '1405', '1425', '1445'],
+                immutableDeleteCodes,
                 codeColumnIndex: 11,
                 hideCodeColumn: true
             });
@@ -461,19 +478,17 @@ class PlanIndicators {
 
 function checkCategoryRequired() {
     const selectedIndicatorName = document.getElementById('selected-indicator-name');
-    const selectedIndicatorCode = document.getElementById('selected-indicator-code');
     const categorySection = document.getElementById('category-section');
     const nameSection = document.getElementById('name-section');
     const submitBtn = document.getElementById('submit-indicator-btn');
     const categoryRadios = document.querySelectorAll('input[name="fuel_category"]');
     const nameInput = document.getElementById('name-section-input');
-    
+
     if (!selectedIndicatorName || !categorySection || !nameSection) return;
-    
-    const indicatorText = 'selectedIndicatorName.textContent';
-    const indicatorTextCode = selectedIndicatorCode ? selectedIndicatorCode.textContent : '';
-    
-    const isCategoryRequired = indicatorTextCode.includes('2023') || indicatorTextCode.includes('2024');
+
+    const activeRow = document.querySelector('#AddIndicatorModal [data-action="modal-table-main"] tbody tr.active-row');
+    const isCustomCell = activeRow ? activeRow.querySelector('td[data-is-custom]') : null;
+    const isCategoryRequired = isCustomCell ? isCustomCell.getAttribute('data-is-custom') === 'true' : false;
     
     function validateForm() {
         const isCategoryChecked = Array.from(categoryRadios).some(radio => radio.checked);
@@ -640,11 +655,11 @@ function Edit_indicator_modal() {
             });
             
             const indicatorCode = data.code;
-            const indicatorCodeNum = parseInt(indicatorCode);
-            const isCoeffEditable = indicatorCodeNum >= 2000 && indicatorCodeNum <= 2024;
+            const isCoeffEditable = data.group === 1;
             const isCodes9911to9914 = ['9911', '9912', '9913', '9914'].includes(indicatorCode);
-            const isCoeffLocked = ['9913', '9914', '1404', '1104', '1424', '1105', '1405', '1425', '1445'].includes(indicatorCode);
-            const isTut = unitName === 'т у.т.';
+            // "т у.т." и "%" сами по себе не пересчитываются в натуральную
+            // величину — коэффициент всегда 1, менять его нельзя.
+            const isTut = unitName === 'т у.т.' || unitName === '%';
             
             if (isCodes9911to9914) {
                 if (QYearBeforePrevNoDisplay) QYearBeforePrevNoDisplay.style.display = 'none';
@@ -679,7 +694,7 @@ function Edit_indicator_modal() {
             }
             
             // Устанавливаем категорию топлива
-            if (indicatorCode === '2023' || indicatorCode === '2024') {
+            if (data.is_custom) {
                 if (editCategorySection) editCategorySection.style.display = 'block';
                 if (editNameSection) editNameSection.style.display = 'block';
                 
@@ -757,7 +772,7 @@ function Edit_indicator_modal() {
                 
                 input.value = valueToSet;
                 
-                if (isTut || isCoeffLocked || !isCoeffEditable) {
+                if (isTut || !isCoeffEditable) {
                     input.readOnly = true;
                     input.style.backgroundColor = '#f5f5f5';
                     input.style.cursor = 'not-allowed';

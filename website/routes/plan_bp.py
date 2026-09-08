@@ -78,7 +78,7 @@ def plan_indicators(token):
         .filter_by(IsMandatory=False)
         .filter(
             db.or_(
-                Indicator.code.in_(['2023', '2024']),
+                Indicator.is_custom == True,
                 ~Indicator.id.in_(
                     db.session.query(IndicatorUsage.id_indicator)
                     .filter(IndicatorUsage.id_plan == current_plan.id)
@@ -145,7 +145,7 @@ def process_indicator_data(indicator, QYearBeforePrev_ed, QYearPrev_ed, QYearCur
     current_app.logger.info(f'[process_indicator_data] Starting processing for indicator {indicator_code}, is_edit={is_edit}')
     current_app.logger.info(f'[process_indicator_data] Received coeffs - before: {custom_coeff_before}, prev: {custom_coeff_prev}, current: {custom_coeff_current}')
     
-    if indicator_code in ['2023', '2024'] and not fuel_category and not name_other:
+    if indicator.is_custom and not fuel_category and not name_other:
         return None, 'Для данного показателя необходимо выбрать категорию топлива и ввести наименование'
     
     def parse_coeff(value):
@@ -154,10 +154,16 @@ def process_indicator_data(indicator, QYearBeforePrev_ed, QYearPrev_ed, QYearCur
         value = str(value).replace(',', '.')
         return to_decimal_3(value)
     
+    # Коэффициент переводит натуральную величину в т у.т. — если сама
+    # единица измерения показателя уже "т у.т." или "%", пересчитывать
+    # нечего, коэффициент всегда 1 и меняться не должен (см. "x" в
+    # колонках "в нат. велич." таблицы показателей).
+    unit_name = indicator.unit.name if indicator.unit else None
+    coeff_editable = indicator.Group == 1 and unit_name not in ('т у.т.', '%')
+
     if is_edit and indicator_usage:
-        indicator_code_num = int(indicator_code) if indicator_code.isdigit() else 0
-        is_coeff_editable = 2000 <= indicator_code_num <= 2024
-        
+        is_coeff_editable = coeff_editable
+
         current_app.logger.info(f'[process_indicator_data] Edit mode: is_coeff_editable={is_coeff_editable}')
         
         if is_coeff_editable:
@@ -201,12 +207,15 @@ def process_indicator_data(indicator, QYearBeforePrev_ed, QYearPrev_ed, QYearCur
         coeff_current = indicator_usage.coeff_current
         
     else:
-        coeff_before = parse_coeff(custom_coeff_before)
-        coeff_prev = parse_coeff(custom_coeff_prev)
-        coeff_current = parse_coeff(custom_coeff_current)
-        
+        if coeff_editable:
+            coeff_before = parse_coeff(custom_coeff_before)
+            coeff_prev = parse_coeff(custom_coeff_prev)
+            coeff_current = parse_coeff(custom_coeff_current)
+        else:
+            coeff_before = coeff_prev = coeff_current = None
+
         current_app.logger.info(f'[process_indicator_data] Create mode: parsed coeffs - before: {coeff_before}, prev: {coeff_prev}, current: {coeff_current}')
-        
+
         if coeff_before is not None and coeff_before == indicator.CoeffToTut:
             coeff_before = None
             current_app.logger.info('[process_indicator_data] coeff_before equals standard, set to None')
@@ -229,7 +238,7 @@ def process_indicator_data(indicator, QYearBeforePrev_ed, QYearPrev_ed, QYearCur
     
     current_app.logger.info(f'[process_indicator_data] Calculated values - before: {QYearBeforePrev}, prev: {QYearPrev}, current: {QYearCurrent}')
     
-    if indicator_code in ['2023', '2024'] and fuel_category:
+    if indicator.is_custom and fuel_category:
         if fuel_category == 'local':
             is_local_value = True
             is_renewable_value = False

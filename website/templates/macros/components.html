@@ -823,20 +823,13 @@ selected_status='all', selected_year='all') %}
 {% macro organization_view_card(organization) %}
 {% if organization %}
 <div class="org-card">
-  <div class="org-card-accent"></div>
   <div class="org-card-header">
     <div class="org-card-heading">
-      <div class="org-card-name">{{ organization.full_name }}</div>
-    
-    
-    
+      <div class="input-with-icon">
+        {{ icons.icon_org() }}
+        <input type="text" value="{{ organization.full_name }}" placeholder="Наименование организации" class="app-input">
+      </div>
     </div>
-    {% if organization.region %}
-    <div class="org-card-region">
-      {{ icons.icon_region() }}
-      <span>{{ organization.region.name }}</span>
-    </div>
-    {% endif %}
   </div>
   <div class="org-card-codes">
     <div class="org-code-chip">
@@ -858,6 +851,10 @@ selected_status='all', selected_year='all') %}
         <span class="org-copy-icon org-copy-done">{{ icons.icon_confirm() }}</span>
       </button>
       {% endif %}
+    </div>
+    <div class="org-code-chip">
+      {{ icons.icon_region() }}
+      <span class="org-code-value">{{ organization.region.name or _('Нет данных') }}</span>
     </div>
   </div>
 </div>

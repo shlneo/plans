@@ -204,7 +204,7 @@ site.register(
 site.register(
     Indicator, name="Показатели", group="Справочники",
     list_display=["id", "code", "name", "unit", "CoeffToTut"],
-    list_badges=["is_local", "is_renewable", "IsMandatory"],
+    list_badges=["is_local", "is_renewable", "IsMandatory", "is_computed", "is_custom"],
     search=["code", "name"],
     fields=[
         F("code", "Код"), F("name", "Название"),
@@ -215,6 +215,9 @@ site.register(
         F("is_local", "Местный", type="bool"),
         F("is_renewable", "ВИЭ", type="bool"),
         F("IsMandatory", "Обязательный", type="bool"),
+        F("is_computed", "Считается автоматически", type="bool"),
+        F("higher_is_better", "Рост — это хорошо", type="bool"),
+        F("is_custom", "Прочие (свободный ввод)", type="bool"),
         F("DateStart", "Действует с", type="datetime"),
         F("DateEnd", "Действует по", type="datetime"),
     ],
