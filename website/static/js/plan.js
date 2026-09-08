@@ -1,109 +1,11 @@
-var NumericInputHandler = {
-    init: function(selector, options) {
-        var defaults = {
-            allowNegative: false,
-            decimalPlaces: 2,
-            defaultValue: '0,00'
-        };
-        var settings = Object.assign({}, defaults, options);
-        
-        var inputs = document.querySelectorAll(selector);
-        inputs.forEach(function(input) {
-            input.addEventListener('input', function(e) {
-                NumericInputHandler.handleInput(e, settings);
-            });
-            input.addEventListener('focus', function(e) {
-                NumericInputHandler.handleFocus(e, settings);
-            });
-            input.addEventListener('blur', function(e) {
-                NumericInputHandler.handleBlur(e, settings);
-            });
-            input.addEventListener('click', function(e) {
-                e.target.select();
-            });
-        });
-    },
-    
-    handleInput: function(e, settings) {
-        var input = e.target;
-        var cursorPos = input.selectionStart;
-        var oldValue = input.value;
-        var newValue = oldValue;
-        
-        if (settings.allowNegative) {
-            newValue = oldValue.replace(/[^\d,.-]/g, '');
-            var minusCount = (newValue.match(/-/g) || []).length;
-            if (minusCount > 1) {
-                newValue = '-' + newValue.replace(/-/g, '');
-            } else if (minusCount === 1 && !newValue.startsWith('-')) {
-                newValue = '-' + newValue.replace(/-/g, '');
-            }
-            if (newValue === '-') {
-                input.value = newValue;
-                return;
-            }
-        } else {
-            newValue = oldValue.replace(/[^\d,]/g, '');
-            if (newValue === '') {
-                input.value = '';
-                return;
-            }
-        }
-        
-        if (newValue !== '' && newValue !== '-') {
-            newValue = newValue.replace(',', '.');
-            var parts = newValue.split('.');
-            if (parts.length > 1) {
-                newValue = parts[0] + '.' + parts[1].slice(0, settings.decimalPlaces);
-            }
-
-            if (!newValue.includes('.') && settings.decimalPlaces > 0) {
-                newValue = newValue + '.' + '0'.repeat(settings.decimalPlaces);
-            }
-            
-            var floatValue = parseFloat(newValue);
-            if (!isNaN(floatValue)) {
-                newValue = floatValue.toFixed(settings.decimalPlaces);
-                newValue = newValue.replace('.', ',');
-            }
-        }
-        
-        if (newValue !== oldValue) {
-            input.value = newValue;
-            var newCursorPos = Math.min(cursorPos, newValue.length);
-            input.setSelectionRange(newCursorPos, newCursorPos);
-        }
-    },
-    
-    handleFocus: function(e, settings) {
-        var input = e.target;
-        if (input.value === '' || input.value === '-') {
-            input.value = settings.defaultValue;
-        }
-        var commaIndex = input.value.indexOf(',');
-        if (commaIndex !== -1 && settings.decimalPlaces > 0) {
-            input.setSelectionRange(commaIndex, commaIndex);
-        } else if (settings.decimalPlaces === 0) {
-            input.select();
-        }
-    },
-    
-    handleBlur: function(e, settings) {
-        var input = e.target;
-        if (input.value === '' || input.value === '-' || input.value === null) {
-            input.value = settings.defaultValue;
-        } else {
-            var valueWithDot = input.value.replace(',', '.');
-            var num = parseFloat(valueWithDot);
-            if (!isNaN(num)) {
-                var formatted = num.toFixed(settings.decimalPlaces);
-                input.value = formatted.replace('.', ',');
-            } else {
-                input.value = settings.defaultValue;
-            }
-        }
-    }
-};
+// NumericInputHandler определён и инициализируется в base.js (который
+// подключается раньше) — здесь раньше была устаревшая копия этого же
+// объекта, которая просто молча перезаписывала var NumericInputHandler
+// из base.js (ничего своего не вызывала — ни одного NumericInputHandler.init
+// во всём plan.js), из-за чего на КАЖДОЙ странице сайта реально работала
+// эта, более старая и багованная версия: она прогоняла значение через
+// parseFloat/toFixed на каждое нажатие клавиши, из-за чего ввести, например,
+// "-0,5" посимвольно было невозможно (после "-0" toFixed схлопывал в "0,0").
 
 class PlanEvents {
     constructor(token, eventType) {
@@ -684,34 +586,24 @@ class TableContextMenu {
         const isActive = this.isRowActive();
         const isEditDisabled = this.isEditDisabled(this.selectedRow);
         const isDeleteDisabled = this.isDeleteDisabled(this.selectedRow);
-        
-        const allButtons = [
-            this.contextEditButton,
-            this.contextDeleteButton,
-            this.tableEditButton,
-            this.tableDeleteButton
-        ];
-        
-        allButtons.forEach(button => {
-            if (button) {
-                if (!isActive) {
-                    button.classList.add('btn-disabled');
-                } else {
-                    const isEditButton = button === this.contextEditButton || button === this.tableEditButton;
-                    const isDeleteButton = button === this.contextDeleteButton || button === this.tableDeleteButton;
-                    
-                    if (isEditButton && isEditDisabled) {
-                        button.classList.add('btn-disabled');
-                    } else if (isEditButton && !isEditDisabled) {
-                        button.classList.remove('btn-disabled');
-                    } else if (isDeleteButton && isDeleteDisabled) {
-                        button.classList.add('btn-disabled');
-                    } else if (isDeleteButton && !isDeleteDisabled) {
-                        button.classList.remove('btn-disabled');
-                    }
-                }
-            }
+
+        // Кнопки постоянной панели инструментов (Добавить/Редактировать/
+        // Удалить над таблицей) — не всплывающее окно, их по-прежнему
+        // просто гасим, а не убираем из разметки.
+        [this.tableEditButton, this.tableDeleteButton].forEach(button => {
+            if (!button) return;
+            const disabled = !isActive || (button === this.tableEditButton ? isEditDisabled : isDeleteDisabled);
+            button.classList.toggle('btn-disabled', disabled);
         });
+
+        // Пункты всплывающего контекстного меню — если действие для строки
+        // недоступно, пункт вообще не показываем (а не показываем серым).
+        if (this.contextEditButton) {
+            this.contextEditButton.style.display = (isActive && !isEditDisabled) ? '' : 'none';
+        }
+        if (this.contextDeleteButton) {
+            this.contextDeleteButton.style.display = (isActive && !isDeleteDisabled) ? '' : 'none';
+        }
     }
 
     onRowLeftClick(event, row) {
@@ -814,6 +706,14 @@ class TableContextMenu {
         }
         
         this.updateButtonsState();
+
+        // Ни редактировать, ни удалить эту строку нельзя — всплывающему
+        // меню в этом случае показывать нечего.
+        if (this.isEditDisabled(row) && this.isDeleteDisabled(row)) {
+            this.hideContextMenu();
+            return;
+        }
+
         this.showMenu(event.pageX, event.pageY);
     }
 

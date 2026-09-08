@@ -845,6 +845,11 @@ var NumericInputHandler = {
             var valueWithDot = input.value.replace(',', '.');
             var num = parseFloat(valueWithDot);
             if (!isNaN(num)) {
+                // Только отрицательное число либо 0 — положительное вводить
+                // нельзя (см. "целевой показатель энергосбережения").
+                if (settings.negativeOnly && num > 0) {
+                    num = 0;
+                }
                 var formatted = num.toFixed(settings.decimalPlaces);
                 input.value = formatted.replace('.', ',');
             } else {
@@ -880,8 +885,12 @@ NumericInputHandler.init('.app-numeric-input-one-decimal', {
     defaultValue: '0,0'
 });
 
+// Используется только для "Целевой показатель энергосбережения" — по
+// смыслу это цель СНИЖЕНИЯ потребления, поэтому допускается только
+// отрицательное число или 0,0, положительное — нет.
 NumericInputHandler.init('.app-numeric-input-negative-one-decimal', {
     allowNegative: true,
+    negativeOnly: true,
     decimalPlaces: 1,
     defaultValue: '0,0'
 });

@@ -95,12 +95,15 @@ class PlanIndicators {
         
         coeffInputs.forEach(input => {
             input.value = formattedCoeff;
+            const coeffWrapper = input.closest('.value-coeff');
             if (isTut) {
+                // Коэффициент для таких показателей всегда 1 и не
+                // редактируется — блок с ним не показываем вовсе, а не
+                // просто гасим (см. п.2 списка замечаний).
+                if (coeffWrapper) coeffWrapper.style.display = 'none';
                 input.readOnly = true;
-                input.style.backgroundColor = '#f5f5f5';
-                input.style.cursor = 'not-allowed';
-                input.style.color = '#999';
             } else {
+                if (coeffWrapper) coeffWrapper.style.display = '';
                 input.readOnly = false;
                 input.style.backgroundColor = 'white';
                 input.style.cursor = 'text';
@@ -345,7 +348,7 @@ class PlanIndicators {
                 
                 backgroundColor = bgColor;
                 textColor = color;
-                iconHtml = `<span style="color: ${color}; font-weight: 600; margin-right: 4px;">${icon}</span>`;
+                iconHtml = `<span style="color: ${color}; font-weight: 600; margin-left: 4px;">${icon}</span>`;
             }
             
             let cellContent = '';
@@ -353,7 +356,7 @@ class PlanIndicators {
                 cellContent = 'x';
             } else if (row.difference !== null && row.difference !== undefined && !isNaN(row.difference) && row.difference !== 0) {
                 const formattedValue = formatValue(row.difference, row.group);
-                cellContent = `${iconHtml}<span style="color: ${textColor}; font-weight: 600;">${formattedValue}</span>`;
+                cellContent = `<span style="color: ${textColor}; font-weight: 600;">${formattedValue}</span>${iconHtml}`;
             } else {
                 cellContent = formatValue(row.difference, row.group);
             }
@@ -771,13 +774,15 @@ function Edit_indicator_modal() {
                 }
                 
                 input.value = valueToSet;
-                
+
+                const coeffWrapper = input.closest('.value-coeff');
                 if (isTut || !isCoeffEditable) {
+                    // Коэффициент нередактируем — блок с ним не показываем
+                    // вовсе (пустой серый инпут только сбивал бы с толку).
+                    if (coeffWrapper) coeffWrapper.style.display = 'none';
                     input.readOnly = true;
-                    input.style.backgroundColor = '#f5f5f5';
-                    input.style.cursor = 'not-allowed';
-                    input.style.color = '#999';
                 } else {
+                    if (coeffWrapper) coeffWrapper.style.display = '';
                     input.readOnly = false;
                     input.style.backgroundColor = 'white';
                     input.style.cursor = 'text';

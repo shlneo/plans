@@ -343,11 +343,22 @@ def get_indicators_data(token):
             'coeff_prev': float(row.coeff_prev) if row.coeff_prev else None,
             'coeff_current': float(row.coeff_current) if row.coeff_current else None,
             
-            'is_local': row.indicator.is_local,
-            'is_renewable': row.indicator.is_renewable,
+            # is_local/is_renewable читаем с самого использования (row), а не
+            # со статического Indicator: для "прочих" показателей (is_custom)
+            # это выбор категории при добавлении, а не свойство показателя.
+            'is_local': row.is_local,
+            'is_renewable': row.is_renewable,
             'is_mandatory': row.indicator.IsMandatory,
             'is_computed': row.indicator.is_computed,
-            'higher_is_better': row.indicator.higher_is_better,
+            # Для группы 1 (виды топлива) "рост — это хорошо" зависит от
+            # того, местный/возобновляемый ли это конкретный вид топлива в
+            # ЭТОМ плане (row.is_local/is_renewable) — включая "прочие"
+            # показатели, где это выбирается при добавлении, а не от
+            # статического Indicator.higher_is_better, который такое не
+            # различает. Для остальных групп статический флаг верен как есть.
+            'higher_is_better': (bool(row.is_local or row.is_renewable)
+                                  if row.indicator.Group == 1
+                                  else row.indicator.higher_is_better),
 
 
             'QYearBeforePrev_unit': QYearBeforePrev_unit,
@@ -358,8 +369,12 @@ def get_indicators_data(token):
 
             'QYearCurrent_unit': QYearCurrent_unit,
             'QYearCurrent_tut': float(row.QYearCurrent) if row.QYearCurrent else 0,
-            
-            'difference': float(row.QYearCurrent - row.QYearPrev) if row.QYearCurrent and row.QYearPrev else 0
+
+            # is not None, а не просто truthy — иначе разница всегда "0",
+            # если один из годов равен нулю (Decimal('0') ложен в Python).
+            'difference': (float(row.QYearCurrent - row.QYearPrev)
+                           if row.QYearCurrent is not None and row.QYearPrev is not None
+                           else 0)
         })
     
     return jsonify({

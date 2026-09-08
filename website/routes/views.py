@@ -402,6 +402,11 @@ def create_plan():
             return redirect(url_for('views.create_plan'))
 
         energy_saving = to_decimal_1(request.form.get('energy_saving'))
+        # Целевой показатель энергосбережения — цель по СНИЖЕНИЮ, только
+        # отрицательное число или 0 (и на клиенте запрещено вводить
+        # положительное, но дублируем на сервере на случай прямого запроса).
+        if energy_saving > 0:
+            energy_saving = to_decimal_1(0)
         share_fuel = to_decimal_1(request.form.get('share_fuel'))
         saving_fuel = to_decimal_1(request.form.get('saving_fuel'))
         share_energy = to_decimal_1(request.form.get('share_energy'))
@@ -528,6 +533,8 @@ def edit_plan(token):
             return redirect(url_for('views.plans'))
         
         energy_saving = to_decimal_1(request.form.get('energy_saving'))
+        if energy_saving > 0:
+            energy_saving = to_decimal_1(0)
         share_fuel = to_decimal_1(request.form.get('share_fuel'))
         saving_fuel = to_decimal_1(request.form.get('saving_fuel'))
         share_energy = to_decimal_1(request.form.get('share_energy'))

@@ -20,7 +20,8 @@ class PlanStatControl {
         this.mapping = null;
         this.statData = null;
         this.statYears = [];
-        this.yearColumns = {};
+        this.natYearColumns = {};
+        this.tutYearColumns = {};
         this.logContainer = null;
         this.logs = [];
         this.indicatorsEnabled = this.getCookie('stat_indicators_enabled') !== 'false';
@@ -316,40 +317,48 @@ class PlanStatControl {
     }
 
     buildYearColumns() {
-        this.yearColumns = {};
-        
+        // Для каждого прогнозного года запоминаем ОБА индекса ячейки в
+        // <tbody> — "в нат. велич." и соседний с ним "в т у.т.". У строк
+        // <tbody> перед этими столбцами есть один служебный скрытый <td>
+        // (порядковый номер), которого нет в самой последней строке
+        // заголовка — поэтому номер столбца из заголовка ("3" = "в нат.
+        // велич." года 1) без изменений даёт нужный индекс ячейки в
+        // <tbody>: cells[3] в теле — это и есть "в нат. велич.", а
+        // cells[4] — "в т у.т." того же года.
+        this.natYearColumns = {};
+        this.tutYearColumns = {};
+
         const headerRow = this.table.querySelector('thead tr:last-child');
         if (!headerRow) {
             console.warn('[STAT CONTROL] no header row with column numbers');
             return;
         }
-        
+
         const ths = headerRow.querySelectorAll('th');
-        
-        // Columns 4/6/8 are the "в нат. велич." cells for each forecast
-        // year (5/7/9 would be their "в т у.т." neighbours) — comparing
-        // against statistics is more meaningful in natural units.
-        ths.forEach((th, index) => {
+
+        ths.forEach((th) => {
             const colNumber = parseInt(th.textContent.trim());
-            if (!isNaN(colNumber)) {
-                if (colNumber === 4) {
-                    this.yearColumns[this.planYear - 2] = index;
-                } else if (colNumber === 6) {
-                    this.yearColumns[this.planYear - 1] = index;
-                } else if (colNumber === 8) {
-                    this.yearColumns[this.planYear] = index;
-                }
+            if (isNaN(colNumber)) return;
+
+            let year = null;
+            if (colNumber === 3) year = this.planYear - 2;
+            else if (colNumber === 5) year = this.planYear - 1;
+            else if (colNumber === 7) year = this.planYear;
+
+            if (year !== null) {
+                this.natYearColumns[year] = colNumber + 1;
+                this.tutYearColumns[year] = colNumber + 2;
             }
         });
     }
 
     check() {
-        if (Object.keys(this.yearColumns).length === 0) {
+        if (Object.keys(this.natYearColumns).length === 0) {
             console.warn('[STAT CONTROL] no year columns found');
             this.addLog('Столбцы для проверки не найдены', 'warn');
             return;
         }
-        
+
         const statCodes = Object.keys(this.mapping);
         const planCodes = [];
         const rows = this.tbody?.querySelectorAll('tr') || [];
@@ -357,14 +366,14 @@ class PlanStatControl {
             const code = row.dataset.code;
             if (code) planCodes.push(code);
         });
-        
+
         statCodes.forEach(code => {
             if (!planCodes.includes(code)) {
                 const indicatorName = this.mapping[code]?.name || code;
                 this.addLog(`Показатель «${indicatorName}» есть в статистике, но отсутствует в плане`, 'warn');
             }
         });
-        
+
         Object.entries(this.mapping).forEach(([planCode, mappingItem]) => {
             const indicatorName = mappingItem.name || planCode;
             const planTr = this.findPlanRow(planCode);
@@ -373,27 +382,43 @@ class PlanStatControl {
                 return;
             }
 
+            // Со статотчётностью (4-тэк/12-тэк) сравнивается значение в
+            // "родной" единице измерения показателя. Если сама единица —
+            // "т у.т." или "%" (у неё нет отдельной натуральной величины,
+            // столбец "в нат. велич." для таких строк показывает "x" —
+            // см. indicator-calc.js), сравниваем по столбцу "в т у.т.";
+            // для остальных единиц (тонн, тыс. куб. м, тыс. кВт·ч, Гкал
+            // и т.п.) — как и раньше, по "в нат. велич.".
+            const unitName = this.getUnitName(planTr);
+            const isTutUnit = unitName === 'т у.т.' || unitName === '%';
+            const columns = isTutUnit ? this.tutYearColumns : this.natYearColumns;
+
             this.statYears.forEach(year => {
-                const column = this.yearColumns[year];
+                const column = columns[year];
                 if (column === undefined) {
                     this.addLog(`Столбец для года ${year} не найден`, 'warn');
                     return;
                 }
 
-                const planValue = this.getCellValue(planTr, column);
+                const planCell = this.getCellValue(planTr, column);
                 const statValue = this.getStatValue(year, mappingItem);
 
-                this.paint(planTr, column, planValue, statValue, year, indicatorName, mappingItem.report);
+                this.paint(planTr, column, planCell, statValue, year, indicatorName, mappingItem.report);
             });
         });
-        
+
         if (this.logs.length === 0) {
             this.addLog('Все значения совпадают', 'info');
         } else {
             this.addLog(`Проверка завершена. Найдено ${this.logs.length} замечаний`, 'info');
         }
-        
+
         this.renderLogs();
+    }
+
+    getUnitName(row) {
+        const cells = row.querySelectorAll('td');
+        return cells[3] ? cells[3].textContent.trim() : '';
     }
 
     findPlanRow(code) {
@@ -446,8 +471,17 @@ class PlanStatControl {
     getCellValue(row, column) {
         const cells = row.querySelectorAll('td');
         const cell = cells[column];
-        if (!cell) return 0;
-        return this.normalize(cell.textContent);
+        if (!cell) return { value: 0, decimals: 0 };
+        const text = cell.textContent.trim();
+        const fractionMatch = text.match(/,(\d+)/);
+        return {
+            value: this.normalize(text),
+            // сколько знаков после запятой реально показано в плане —
+            // округляем статистику до той же точности перед сравнением
+            // (иначе, например, план "487" т.к. отображается с округлением
+            // до целых, никогда бы не совпал со статистикой "487,5")
+            decimals: fractionMatch ? fractionMatch[1].length : 0,
+        };
     }
 
     normalize(value) {
@@ -455,24 +489,27 @@ class PlanStatControl {
         return Number(String(value).replace(/\s/g, '').replace(',', '.'));
     }
 
-    paint(row, column, plan, stat, year, indicatorName, report) {
+    paint(row, column, planCell, stat, year, indicatorName, report) {
         const cells = row.querySelectorAll('td');
         const cell = cells[column];
         if (!cell) return;
-        
+
+        const plan = planCell.value;
+        const statRounded = Number(stat.toFixed(planCell.decimals));
+
         cell.style.position = 'relative';
         cell.removeAttribute('title');
-        
+
         const existingIndicator = cell.querySelector('.stat-indicator');
         if (existingIndicator) {
             existingIndicator.remove();
         }
-        
+
         const indicator = document.createElement('div');
         indicator.className = 'stat-indicator';
         cell.appendChild(indicator);
-        
-        if (Number(plan) === Number(stat)) {
+
+        if (Number(plan) === statRounded) {
             cell.classList.add('stat-cell', 'match');
             cell.classList.remove('mismatch');
             indicator.title = 'Совпадает';
@@ -480,7 +517,7 @@ class PlanStatControl {
             cell.classList.add('stat-cell', 'mismatch');
             cell.classList.remove('match');
             indicator.title = `Не совпадает: план ${plan} != статистика ${stat}`;
-            
+
             this.addLog(`Не совпадает: «${indicatorName}», год ${year}, план ${plan}, статистика ${stat}`, 'error');
 
             const showTooltip = (e) => {
