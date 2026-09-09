@@ -393,9 +393,164 @@ def handle_approved_status(plan, current_user):
             message = "Этап успешно согласован"
         
         db.session.commit()
-        
+
         return {'message': message}
-        
+
     except Exception as e:
         db.session.rollback()
         return {'error': f'Ошибка при согласовании: {str(e)}'}
+
+
+def handle_admin_confirm_step(plan, path_id, admin_user):
+    """Администратор подтверждает произвольный этап согласования, минуя
+    обычную очередь (в отличие от handle_approved_status, который
+    подтверждает только "свой" текущий этап).
+
+    Нюанс: подтверждаются также все более ранние ещё не пройденные этапы
+    — иначе нарушился бы порядок прохождения (обычный пользователь не
+    может согласовать свой этап, пока не пройдены предыдущие — см.
+    handle_approved_status), а после подтверждения выбранного этапа он
+    формально стал бы "текущим", даже если раньше него остались
+    непройденные. Если подтверждённый этап оказался последним по
+    порядку — план, как и в обычном флоу, полностью утверждается.
+    """
+    try:
+        target_path = PlanApprovalPath.query.filter_by(id=path_id, plan_id=plan.id).first()
+        if not target_path:
+            return {'error': 'Этап согласования не найден'}
+
+        if target_path.is_viewed:
+            return {'error': 'Этап уже подтверждён'}
+
+        paths_to_confirm = PlanApprovalPath.query.filter(
+            PlanApprovalPath.plan_id == plan.id,
+            PlanApprovalPath.step_order <= target_path.step_order,
+            PlanApprovalPath.is_viewed == False
+        ).order_by(PlanApprovalPath.step_order).all()
+
+        now = current_utc_time()
+        for path in paths_to_confirm:
+            path.is_viewed = True
+            path.viewed_at = now
+
+        plan.audit_time = now
+        plan.afch = False
+
+        last_path = PlanApprovalPath.query.filter_by(plan_id=plan.id).order_by(
+            PlanApprovalPath.step_order.desc()
+        ).first()
+        is_final = bool(last_path and last_path.id == target_path.id)
+
+        org_name = target_path.organization.full_name if target_path.organization else f'этап {target_path.step_order}'
+
+        if is_final:
+            plan.is_approved = True
+            plan.is_draft = False
+            plan.is_control = False
+            plan.is_sent = False
+            plan.is_error = False
+
+            note = f"Администратор {admin_user.email} подтвердил этап «{org_name}» и весь путь согласования. План согласован и утвержден."
+            notif_message = f"План на {plan.year} год был утвержден администратором"
+            result_message = 'План полностью согласован и утвержден администратором'
+        else:
+            note = f"Администратор {admin_user.email} подтвердил этап «{org_name}» (шаг {target_path.step_order}) в обход обычного порядка согласования."
+            notif_message = f"Этап согласования плана на {plan.year} год подтвержден администратором"
+            result_message = 'Этап подтвержден администратором'
+
+        ticket = PlanTicket(
+            note=note,
+            luck=True,
+            is_system=True,
+            user_id=admin_user.id,
+            plan_id=plan.id,
+            begin_time=now
+        )
+        db.session.add(ticket)
+
+        notification = Notification(
+            user_id=plan.user_id,
+            message=notif_message,
+            created_at=now
+        )
+        db.session.add(notification)
+
+        db.session.commit()
+
+        return {'message': result_message}
+
+    except Exception as e:
+        db.session.rollback()
+        return {'error': f'Ошибка при подтверждении этапа: {str(e)}'}
+
+
+def handle_admin_cancel_step(plan, path_id, admin_user):
+    """Администратор отменяет уже подтверждённый этап согласования.
+
+    Нюанс: вместе с выбранным этапом откатываются и все более поздние
+    уже подтверждённые этапы — они логически зависят от него (следующий
+    этап не может считаться пройденным, если предыдущий, от которого он
+    зависел, снова стал непройденным). Если план уже был утверждён
+    (is_approved), отмена возвращает его в статус "отправлен на
+    согласование" (is_sent), а не в статус "в редакции" — план остаётся
+    в процессе рассмотрения, просто с одним или несколькими непройденными
+    этапами.
+    """
+    try:
+        target_path = PlanApprovalPath.query.filter_by(id=path_id, plan_id=plan.id).first()
+        if not target_path:
+            return {'error': 'Этап согласования не найден'}
+
+        if not target_path.is_viewed:
+            return {'error': 'Этап еще не подтвержден'}
+
+        paths_to_cancel = PlanApprovalPath.query.filter(
+            PlanApprovalPath.plan_id == plan.id,
+            PlanApprovalPath.step_order >= target_path.step_order,
+            PlanApprovalPath.is_viewed == True
+        ).order_by(PlanApprovalPath.step_order).all()
+
+        now = current_utc_time()
+        for path in paths_to_cancel:
+            path.is_viewed = False
+            path.viewed_at = None
+
+        if plan.is_approved:
+            plan.is_approved = False
+            plan.is_sent = True
+            plan.is_draft = False
+            plan.is_control = False
+            plan.is_error = False
+
+        plan.audit_time = now
+
+        org_name = target_path.organization.full_name if target_path.organization else f'этап {target_path.step_order}'
+        note = f"Администратор {admin_user.email} отменил подтверждение этапа «{org_name}» (шаг {target_path.step_order})"
+        if len(paths_to_cancel) > 1:
+            note += f" и {len(paths_to_cancel) - 1} последующих зависимых от него этапов"
+        note += "."
+
+        ticket = PlanTicket(
+            note=note,
+            luck=True,
+            is_system=True,
+            user_id=admin_user.id,
+            plan_id=plan.id,
+            begin_time=now
+        )
+        db.session.add(ticket)
+
+        notification = Notification(
+            user_id=plan.user_id,
+            message=f"Согласование плана на {plan.year} год было отменено администратором на этапе «{org_name}»",
+            created_at=now
+        )
+        db.session.add(notification)
+
+        db.session.commit()
+
+        return {'message': 'Подтверждение этапа отменено'}
+
+    except Exception as e:
+        db.session.rollback()
+        return {'error': f'Ошибка при отмене этапа: {str(e)}'}

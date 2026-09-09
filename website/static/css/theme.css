@@ -110,11 +110,11 @@ html[data-theme] select {
  * 3) Статусы планов — тот же оттенок, тёмная плашка вместо пастели
  * ------------------------------------------------------------ */
 :root[data-theme="dark"] {
-  --background-redaced: #1a123f;     /* было #E1DBFF */
-  --background-controled: #123f32;   /* было #cefff1 */
-  --background-sented: #12243f;      /* было #CFE2FF */
-  --background-sogl: #123d3f;        /* было #cffdff */
-  --background-erorsed: #3f1213;     /* было #ffb2b3 */
+  --background-redaced: #8269ff;     /* было #E1DBFF */
+  --background-controled: #cefff1;   /* было #cefff1 */
+  --background-sented: #CFE2FF;      /* было #CFE2FF */
+  --background-sogl: #cffdff;        /* было #cffdff */
+  --background-erorsed: #ffb2b3;     /* было #ffb2b3 */
   --background-submited: #123f17;    /* было #D8FFDC */
   --background-warning: #383f12;     /* было #f9ffd8 */
 }
@@ -191,9 +191,25 @@ html[data-theme] select {
    пузырь входящего сообщения — свой градиент вместо var(--white) */
 :root[data-theme="dark"] .chat-container,
 :root[data-theme="dark"] .chat-footer,
-:root[data-theme="dark"] .typing-indicator {
+:root[data-theme="dark"] .typing-indicator,
+:root[data-theme="dark"] footer{
   background: #181c22;
 }
+
+:root[data-theme="dark"] .nav-item .nav-text,
+:root[data-theme="dark"] .name,
+:root[data-theme="dark"] label{
+  color: #fcfdfd;
+}
+
+:root[data-theme="dark"] .nav-item.active .nav-text{
+  color: var(--green-light);
+}
+
+:root[data-theme="dark"] .nav-icon-wrapper{
+  color: #fcfdfd;
+}
+
 :root[data-theme="dark"] .chat-message-content {
   background: linear-gradient(135deg, #16283a, #1a3350);
   color: #eef1f5;

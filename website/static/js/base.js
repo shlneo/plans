@@ -208,6 +208,13 @@ const NotificationPopup = {
 
     toggle: function () {
         this.popup.classList.toggle("show");
+        // Каждое открытие подтягивает свежий первый экран уведомлений —
+        // иначе бейдж и список могли разойтись, если что-то пришло, пока
+        // попап был закрыт (а фоновое обновление раз в минуту теперь
+        // трогает только сам бейдж, не список — см. Notifications.refreshBadge).
+        if (this.popup.classList.contains("show") && typeof Notifications !== 'undefined') {
+            Notifications.load();
+        }
     },
 
     hide: function () {
@@ -229,36 +236,29 @@ const Notifications = {
     perPage: 3,
     hasMore: true,
     isLoading: false,
+    unreadTotal: 0,
     allNotifications: [],
+    initialized: false,
 
-    async load(reset = true) {
+    // Полная (пере)загрузка первой страницы — при первом заходе на
+    // страницу и при каждом открытии попапа. Список действительно
+    // перерисовывается целиком, но это ожидаемо: пользователь ещё не
+    // успел никуда прокрутить только что открытый попап.
+    async load() {
         if (this.isLoading) return;
-        if (!reset && !this.hasMore) return;
-        
         this.isLoading = true;
-        
-        if (reset) {
-            this.page = 1;
-            this.allNotifications = [];
-            this.hasMore = true;
-            this.notifListEl.innerHTML = '';
-        }
-        
+        this.page = 1;
+        this.hasMore = true;
+
         try {
-            const response = await fetch(`/api/notifications?page=${this.page}&per_page=${this.perPage}`);
+            const response = await fetch(`/api/notifications?page=1&per_page=${this.perPage}`);
             const data = await response.json();
-            
+
+            this.allNotifications = data.notifications;
             this.hasMore = data.has_next;
-            this.allNotifications = reset ? data.notifications : [...this.allNotifications, ...data.notifications];
-            
-            this.render(this.allNotifications);
-            
-            if (this.hasMore) {
-                this.showLoadMore();
-            } else {
-                this.hideLoadMore();
-            }
-            
+            this.renderAll(this.allNotifications);
+            this.updateCounter(data.unread_total);
+            this.updateLoadMoreVisibility();
         } catch (err) {
             console.error("Ошибка загрузки уведомлений:", err);
         } finally {
@@ -266,8 +266,81 @@ const Notifications = {
         }
     },
 
-    render(data) {
-        this.notifListEl.innerHTML = ""; 
+    // Дозагрузка "предыдущих" — дописывает новые карточки в конец списка,
+    // не трогая уже отрисованные, чтобы не сбрасывать прокрутку попапа
+    // (раньше весь список каждый раз перерисовывался заново, и попап
+    // всегда прыгал наверх — из-за этого дозагрузка и выглядела странно).
+    async loadMore() {
+        if (this.isLoading || !this.hasMore) return;
+        this.isLoading = true;
+        this.setLoadMoreState('loading');
+        const nextPage = this.page + 1;
+
+        try {
+            const response = await fetch(`/api/notifications?page=${nextPage}&per_page=${this.perPage}`);
+            const data = await response.json();
+
+            this.page = nextPage;
+            this.hasMore = data.has_next;
+            this.allNotifications = [...this.allNotifications, ...data.notifications];
+            this.appendNotifications(data.notifications);
+            this.updateCounter(data.unread_total);
+        } catch (err) {
+            console.error("Ошибка загрузки уведомлений:", err);
+        } finally {
+            this.isLoading = false;
+            this.updateLoadMoreVisibility();
+        }
+    },
+
+    // Лёгкое периодическое обновление (раз в минуту) — только счётчик на
+    // колокольчике. Раньше сюда вызывался полный init(), который заново
+    // сбрасывал список на первую страницу и навешивал ещё один обработчик
+    // на кнопку "Отметить все" при каждом тике — если попап был открыт,
+    // его содержимое каждую минуту дёргалось и терялась прокрутка.
+    async refreshBadge() {
+        try {
+            const response = await fetch(`/api/notifications?page=1&per_page=1`);
+            const data = await response.json();
+            this.updateCounter(data.unread_total);
+        } catch (err) {
+            console.error("Ошибка обновления счётчика уведомлений:", err);
+        }
+    },
+
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    },
+
+    buildNotifNode(n) {
+        const notif = document.createElement("div");
+        notif.classList.add("notif");
+        notif.dataset.id = n.id;
+        if (!n.is_read) {
+            notif.classList.add("unread");
+        }
+
+        const formattedTime = this.formatNotificationTime(n.created_at);
+
+        notif.innerHTML = `
+            <div class="notif-message">${this.escapeHtml(n.message)}</div>
+            <div class="notif-time">${formattedTime}</div>
+        `;
+
+        notif.addEventListener('click', () => {
+            if (!n.is_read) {
+                this.markAsRead(n.id);
+            }
+        });
+
+        return notif;
+    },
+
+    renderAll(data) {
+        this.notifListEl.innerHTML = "";
 
         if (!data || data.length === 0) {
             this.notifListEl.innerHTML = `
@@ -275,39 +348,20 @@ const Notifications = {
                     <h1>Нет уведомлений</h1>
                 </div>
             `;
-            this.hideCounter();
-            this.hideLoadMore();
             return;
         }
 
-        let unreadCount = 0;
+        const fragment = document.createDocumentFragment();
+        data.forEach(n => fragment.appendChild(this.buildNotifNode(n)));
+        this.notifListEl.appendChild(fragment);
+    },
 
-        data.forEach(n => {
-            const notif = document.createElement("div");
-            notif.classList.add("notif");
-            if (!n.is_read) {
-                notif.classList.add("unread");
-                unreadCount++;
-            }
+    appendNotifications(items) {
+        if (!items || items.length === 0) return;
 
-            const formattedTime = this.formatNotificationTime(n.created_at);
-            
-            notif.innerHTML = `
-                <div class="notif-message">${n.message}</div>
-                <div class="notif-time">${formattedTime}</div>
-                <div class="notif-divider-line"></div>
-            `;
-            
-            notif.addEventListener('click', () => {
-                if (!n.is_read) {
-                    this.markAsRead(n.id);
-                }
-            });
-            
-            this.notifListEl.appendChild(notif);
-        });
-
-        this.updateCounter(unreadCount);
+        const fragment = document.createDocumentFragment();
+        items.forEach(n => fragment.appendChild(this.buildNotifNode(n)));
+        this.notifListEl.appendChild(fragment);
     },
 
     formatNotificationTime(dateString) {
@@ -338,10 +392,13 @@ const Notifications = {
         }
     },
 
+    // Точечно обновляет только сам кликнутый элемент (снимает "unread"),
+    // а не перерисовывает весь список — иначе прокрутка попапа сбрасывалась
+    // в начало при каждом клике по уведомлению.
     async markAsRead(notificationId) {
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
-            
+
             const response = await fetch(`/api/notifications/mark-read/${notificationId}`, {
                 method: "POST",
                 headers: {
@@ -349,44 +406,52 @@ const Notifications = {
                     "X-CSRFToken": csrfToken
                 }
             });
-            
+
             if (response.ok) {
                 const notification = this.allNotifications.find(n => n.id === notificationId);
-                if (notification) {
-                    notification.is_read = true;
-                    this.render(this.allNotifications);
-                }
+                if (notification) notification.is_read = true;
+
+                const node = this.notifListEl.querySelector(`.notif[data-id="${notificationId}"]`);
+                if (node) node.classList.remove('unread');
+
+                this.updateCounter(Math.max(0, this.unreadTotal - 1));
             }
         } catch (err) {
             console.error("Ошибка при отметке уведомления:", err);
         }
     },
 
-    async loadMore() {
-        this.page++;
-        await this.load(false);
+    ensureLoadMoreButton() {
+        if (this.loadMoreBtn) return;
+        this.loadMoreBtn = document.createElement("button");
+        this.loadMoreBtn.type = "button";
+        this.loadMoreBtn.className = "load-more-notifications";
+        this.loadMoreBtn.textContent = "Загрузить предыдущие";
+        this.loadMoreBtn.addEventListener("click", () => this.loadMore());
+        this.notifListEl.parentNode.appendChild(this.loadMoreBtn);
     },
 
-    showLoadMore() {
-        if (!this.loadMoreBtn) {
-            this.loadMoreBtn = document.createElement("button");
-            this.loadMoreBtn.className = "load-more-notifications";
-            this.loadMoreBtn.textContent = "Загрузить предыдущие";
-            this.loadMoreBtn.addEventListener("click", () => this.loadMore());
-            this.notifListEl.parentNode.appendChild(this.loadMoreBtn);
-        }
-        this.loadMoreBtn.style.display = "block";
+    // Вызывается уже ПОСЛЕ завершения загрузки (успешной или нет) — всегда
+    // возвращает кнопку в обычное (не "загрузка") состояние и просто
+    // показывает/прячет её по факту наличия следующей страницы.
+    updateLoadMoreVisibility() {
+        this.ensureLoadMoreButton();
+        this.setLoadMoreState('idle');
+        this.loadMoreBtn.style.display = this.hasMore ? "flex" : "none";
     },
 
-    hideLoadMore() {
-        if (this.loadMoreBtn) {
-            this.loadMoreBtn.style.display = "none";
-        }
+    setLoadMoreState(state) {
+        this.ensureLoadMoreButton();
+        const isLoading = state === 'loading';
+        this.loadMoreBtn.disabled = isLoading;
+        this.loadMoreBtn.classList.toggle('is-loading', isLoading);
+        this.loadMoreBtn.textContent = isLoading ? "Загрузка…" : "Загрузить предыдущие";
     },
 
     updateCounter(count) {
+        this.unreadTotal = count;
         if (count > 0) {
-            this.notifCountEl.innerText = count;
+            this.notifCountEl.innerText = count > 99 ? '99+' : count;
             this.notifCountEl.style.display = "flex";
             this.notifCountEl.classList.add("active");
         } else {
@@ -396,12 +461,8 @@ const Notifications = {
         }
     },
 
-    hideCounter() {
-        this.notifCountEl.classList.remove("active");
-        this.notifCountEl.style.display = "none";
-        this.notifCountEl.innerText = "";
-    },
-
+    // Снимает "unread" только с уже отрисованных карточек — не трогает
+    // остальной список (см. комментарий у markAsRead).
     async markAllRead() {
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute("content");
@@ -410,23 +471,25 @@ const Notifications = {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken 
+                    "X-CSRFToken": csrfToken
                 }
             });
 
             if (!response.ok) throw new Error("Ошибка запроса");
 
-            const result = await response.json();
-            
             this.allNotifications.forEach(n => n.is_read = true);
-            this.render(this.allNotifications);
-            
+            this.notifListEl.querySelectorAll('.notif.unread').forEach(el => el.classList.remove('unread'));
+            this.updateCounter(0);
+
         } catch (err) {
             console.error("Ошибка при отметке уведомлений:", err);
         }
     },
 
     init() {
+        if (this.initialized) return;
+        this.initialized = true;
+
         this.notifListEl = document.getElementById("notifList");
         this.notifCountEl = document.getElementById("notifCount");
         this.markAllBtn = document.getElementById("markAllRead");
@@ -2595,7 +2658,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         Notifications.init();
         setInterval(() => {
-            Notifications.init();
+            Notifications.refreshBadge();
         }, 60000);
     }
 
@@ -2815,6 +2878,28 @@ document.addEventListener('DOMContentLoaded', () => {
             btn._copyResetTimeout = setTimeout(() => {
                 btn.classList.remove('copied');
             }, 1600);
+        });
+    });
+});
+
+// Подтверждение/отмена этапа согласования плана администратором
+// (см. macros/components.html :: plan_agree_slider) — предупреждаем о
+// каскадном эффекте (см. handle_admin_confirm_step/handle_admin_cancel_step
+// в status_plan.py) перед реальной отправкой формы.
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.enplans-approval-admin-form').forEach((form) => {
+        form.addEventListener('submit', (e) => {
+            const button = e.submitter;
+            const action = button ? button.dataset.confirmAction : null;
+            const orgName = form.dataset.orgName || '';
+
+            const question = action === 'cancel'
+                ? `Отменить подтверждение этапа «${orgName}»? Все последующие подтверждённые этапы тоже будут отменены.`
+                : `Подтвердить этап «${orgName}» в обход обычного порядка? Все предыдущие непройденные этапы будут подтверждены автоматически.`;
+
+            if (!confirm(question)) {
+                e.preventDefault();
+            }
         });
     });
 });

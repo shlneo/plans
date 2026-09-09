@@ -268,6 +268,21 @@ def process_indicator_data(indicator, QYearBeforePrev_ed, QYearPrev_ed, QYearCur
     
     return result, None
 
+def _is_ajax_request():
+    return request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+
+def _indicator_action_response(token, message, category='success'):
+    """Единый ответ для create/edit/delete-indicator: обычная форма — как
+    раньше, flash + редирект на всю страницу; запрос от JS (см.
+    indicator-calc.js) — JSON, без редиректа, чтобы обновить только саму
+    таблицу показателей и не сбрасывать прокрутку страницы к началу."""
+    if _is_ajax_request():
+        return jsonify({'success': category != 'error', 'message': message}), (400 if category == 'error' else 200)
+    flash(message, category)
+    return redirect(url_for('plan_bp.plan_indicators', token=token))
+
+
 @plan_bp.route('/create-indicator/<token>', methods=['POST'])
 @user_with_all_params()
 @login_required
@@ -292,25 +307,22 @@ def create_indicator(token):
 
         if not id_indicator:
             current_app.logger.warning('Empty indicator')
-            flash('Пустой показатель', 'error')
-            return redirect(url_for('plan_bp.plan_indicators', token=token))
-        
+            return _indicator_action_response(token, 'Пустой показатель', 'error')
+
         indicator = Indicator.query.filter_by(id=id_indicator).first()
-        
+
         if not indicator:
             current_app.logger.warning(f'Indicator with id {id_indicator} not found')
-            flash('Показатель не найден', 'error')
-            return redirect(url_for('plan_bp.plan_indicators', token=token))
-        
+            return _indicator_action_response(token, 'Показатель не найден', 'error')
+
         data, error = process_indicator_data(
             indicator, QYearBeforePrev_ed, QYearPrev_ed, QYearCurrent_ed,
             custom_coeff_before, custom_coeff_prev, custom_coeff_current,
             fuel_category, name_other
         )
-        
+
         if error:
-            flash(error, 'error')
-            return redirect(url_for('plan_bp.plan_indicators', token=token))
+            return _indicator_action_response(token, error, 'error')
 
         new_IndicatorUsage = IndicatorUsage(
             id_plan=current_plan.id,
@@ -333,14 +345,12 @@ def create_indicator(token):
         update_ChangeTimePlan(current_plan.id)
         
         current_app.logger.info(f'Successfully created indicator usage with id {new_IndicatorUsage.id} for plan {current_plan.id}')
-        flash('Показатель добавлен', 'success')
-        return redirect(url_for('plan_bp.plan_indicators', token=token))
-    
+        return _indicator_action_response(token, 'Показатель добавлен')
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error creating indicator: {str(e)}', exc_info=True)
-        flash(f'Ошибка при добавлении показателя: {str(e)}', 'error')
-        return redirect(url_for('plan_bp.plan_indicators', token=token))
+        return _indicator_action_response(token, f'Ошибка при добавлении показателя: {str(e)}', 'error')
 
 
 @plan_bp.route('/edit-indicator/<token>', methods=['POST'])
@@ -351,17 +361,15 @@ def create_indicator(token):
 def edit_indicator(token):
     try:
         id_indicator = request.form.get('id_indicator')
-        
+
         if not id_indicator:
-            flash('ID показателя не указан', 'error')
-            return redirect(url_for('plan_bp.plan_indicators', token=token))
-        
+            return _indicator_action_response(token, 'ID показателя не указан', 'error')
+
         indicator_usage = IndicatorUsage.query.get_or_404(id_indicator)
         current_plan = g.current_plan
-        
+
         if indicator_usage.id_plan != current_plan.id:
-            flash('Показатель не принадлежит указанному плану', 'error')
-            return redirect(url_for('plan_bp.plan_indicators', token=token))
+            return _indicator_action_response(token, 'Показатель не принадлежит указанному плану', 'error')
         
         indicator = indicator_usage.indicator
         indicator_code = indicator.code
@@ -386,9 +394,8 @@ def edit_indicator(token):
         )
         
         if error:
-            flash(error, 'error')
-            return redirect(url_for('plan_bp.plan_indicators', token=token))
-        
+            return _indicator_action_response(token, error, 'error')
+
         is_codes_9911_9914 = indicator_code in ['9911', '9912', '9913', '9914']
         
         if is_codes_9911_9914:
@@ -412,14 +419,12 @@ def edit_indicator(token):
         update_ChangeTimePlan(current_plan.id)
         
         current_app.logger.info(f'Successfully updated indicator usage {id_indicator} for plan {current_plan.id}')
-        flash('Показатель успешно обновлен', 'success')
-        return redirect(url_for('plan_bp.plan_indicators', token=token))
-    
+        return _indicator_action_response(token, 'Показатель успешно обновлен')
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error editing indicator: {str(e)}', exc_info=True)
-        flash(f'Ошибка при редактировании показателя: {str(e)}', 'error')
-        return redirect(url_for('plan_bp.plan_indicators', token=token))
+        return _indicator_action_response(token, f'Ошибка при редактировании показателя: {str(e)}', 'error')
     
     
 @plan_bp.route('/delete-indicator/<int:id>', methods=['POST'])
@@ -434,9 +439,8 @@ def delete_indicator(id):
     db.session.commit()
     other_data_indicatorUpdate(current_plan.id)
     update_ChangeTimePlan(current_plan.id)
-    
-    flash('Показатель успешно удален', 'success')
-    return redirect(url_for('plan_bp.plan_indicators', token=current_plan.token))
+
+    return _indicator_action_response(current_plan.token, 'Показатель успешно удален')
 
 @plan_bp.route('/events-<event_type>/<token>', methods=['GET', 'POST'])
 @user_with_all_params()
@@ -537,6 +541,20 @@ def update_period_eff_values(plan_id, event_type):
             db.session.commit()
             current_app.logger.info(f'Updated period 0004 EffCurrYear for plan_id={plan_id}, event_type={event_type}')
             
+def _event_action_response(message, category='success', event_type=None, token=None):
+    """Единый ответ для create/edit/delete-event — тот же принцип, что и
+    _indicator_action_response: обычная форма получает flash + редирект,
+    как раньше, а запрос от JS (см. events.js) — JSON без редиректа, чтобы
+    обновлялась только сама таблица мероприятий, без перезагрузки всей
+    страницы плана."""
+    if _is_ajax_request():
+        return jsonify({'success': category != 'error', 'message': message}), (400 if category == 'error' else 200)
+    flash(message, category)
+    if event_type and token:
+        return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=token))
+    return redirect(request.referrer or url_for('views.plans'))
+
+
 @plan_bp.route('/create-event/<token>', methods=['POST'])
 @user_with_all_params()
 @login_required
@@ -550,39 +568,35 @@ def create_event(token):
     
     direction = Direction.query.get(id_direction)
     if not direction:
-        flash('Направление не найдено', 'error')
         current_app.logger.warning(f'Direction not found: id_direction={id_direction}, plan_id={current_plan.id}')
-        return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=token))
-    
+        return _event_action_response('Направление не найдено', 'error', event_type, token)
+
     try:
         check_and_create_period_directions(current_plan.id, event_type)
 
         event_data = process_event_data(current_plan, direction, event_type, request.form)
         new_event = create_event_record(current_plan, direction, event_data)
-        
+
         db.session.add(new_event)
         db.session.commit()
-        
+
         if event_data['is_double_effect'] and event_type == 'increase':
             update_double_effect_payback(current_plan.id, direction.id)
-        
+
         other_data_indicatorUpdate(current_plan.id)
         update_period_eff_values(current_plan.id, event_type)
-        flash('Мероприятие добавлено', 'success')
         current_app.logger.info(f'Event created successfully: id={new_event.id}, plan_id={current_plan.id}, direction_id={id_direction}')
-        
-        return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=token))
-        
+
+        return _event_action_response('Мероприятие добавлено', 'success', event_type, token)
+
     except ValueError as e:
         db.session.rollback()
         current_app.logger.error(f'ValueError creating event for plan_id={current_plan.id}: {str(e)}')
-        flash(str(e), 'error')
-        return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=token))
+        return _event_action_response(str(e), 'error', event_type, token)
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error creating event for plan_id={current_plan.id}: {str(e)}', exc_info=True)
-        flash('Ошибка при добавлении мероприятия', 'error')
-        return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=token))
+        return _event_action_response('Ошибка при добавлении мероприятия', 'error', event_type, token)
 
 @plan_bp.route('/edit-event/<int:id>', methods=['POST'])
 @user_with_all_params()
@@ -595,14 +609,12 @@ def edit_event(id):
         current_event = Event.query.get(id)
         if not current_event:
             current_app.logger.warning(f'Event with id={id} not found')
-            flash('Мероприятие не найдено', 'error')
-            return redirect(request.referrer)
-        
+            return _event_action_response('Мероприятие не найдено', 'error')
+
         current_plan = Plan.query.get(current_event.id_plan)
         if not current_plan:
             current_app.logger.warning(f'Plan with id={current_event.id_plan} not found')
-            flash('План не найден', 'error')
-            return redirect(request.referrer)
+            return _event_action_response('План не найден', 'error')
         
         event_type = request.form.get('event_type') or 'saving'
         edit_type = request.form.get('edit_type') or 'full'
@@ -625,9 +637,8 @@ def edit_event(id):
                 )
                 
                 if error_message:
-                    flash(error_message, 'error')
-                    return redirect(request.referrer)
-            
+                    return _event_action_response(error_message, 'error', event_type, current_plan.token)
+
             current_event.EffCurrYear = EffCurrYear
             current_app.logger.info(f'Updated period EffCurrYear for event {id}: {EffCurrYear}')
             
@@ -725,17 +736,15 @@ def edit_event(id):
         
         other_data_indicatorUpdate(current_plan.id)
         update_period_eff_values(current_plan.id, event_type)
-        
-        flash('Мероприятие изменено', 'success')
+
         current_app.logger.info(f'Event {id} updated successfully')
-        
-        return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=current_plan.token))
-    
+
+        return _event_action_response('Мероприятие изменено', 'success', event_type, current_plan.token)
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error editing event {id}: {str(e)}', exc_info=True)
-        flash(f'Ошибка при редактировании мероприятия: {str(e)}', 'error')
-        return redirect(request.referrer)
+        return _event_action_response(f'Ошибка при редактировании мероприятия: {str(e)}', 'error')
 
 @plan_bp.route('/delete-eventes/<int:id>', methods=['POST'])
 @user_with_all_params()
@@ -784,8 +793,7 @@ def delete_eventes(id):
         
     update_period_eff_values(current_plan.id, event_type)
     other_data_indicatorUpdate(current_plan.id)
-    flash('Мероприятие успешно удалено', 'success')
-    return redirect(url_for('plan_bp.plan_event', event_type=event_type, token=current_plan.token))
+    return _event_action_response('Мероприятие успешно удалено', 'success', event_type, current_plan.token)
         
 @plan_bp.route('/change-status/<token>', methods=['POST'])
 @user_with_all_params()
@@ -863,3 +871,51 @@ def api_change_plan_status(token):
             return redirect(request.referrer)
         else:
             return redirect(url_for('plan_bp.plan_review', token=plan.token))
+
+
+@plan_bp.route('/admin-set-approval-step/<token>', methods=['POST'])
+@user_with_all_params()
+@login_required
+@owner_only
+def api_admin_set_approval_step(token):
+    """Только для администраторов: подтвердить или отменить произвольный
+    этап согласования плана (см. handle_admin_confirm_step /
+    handle_admin_cancel_step для деталей и нюансов)."""
+    if not current_user.is_admin:
+        if request.is_json:
+            return jsonify({'error': 'Доступно только администраторам'}), 403
+        flash('Доступно только администраторам', 'error')
+        return redirect(request.referrer or url_for('views.plans'))
+
+    plan = g.current_plan
+
+    if request.is_json:
+        data = request.get_json()
+        path_id = data.get('path_id')
+        action = data.get('action')
+    else:
+        path_id = request.form.get('path_id')
+        action = request.form.get('action')
+
+    if not path_id or action not in ('confirm', 'cancel'):
+        error = 'Не указан этап или действие'
+        if request.is_json:
+            return jsonify({'error': error}), 400
+        flash(error, 'error')
+        return redirect(request.referrer or url_for('plan_bp.plan_review', token=token))
+
+    from website.utils.status_plan import handle_admin_confirm_step, handle_admin_cancel_step
+
+    handler = handle_admin_confirm_step if action == 'confirm' else handle_admin_cancel_step
+    result = handler(plan, path_id, current_user)
+
+    if request.is_json:
+        if isinstance(result, dict) and 'error' in result:
+            return jsonify({'error': result['error']}), 400
+        return jsonify({'message': result.get('message')})
+
+    if isinstance(result, dict) and 'error' in result:
+        flash(result['error'], 'error')
+    else:
+        flash(result.get('message', 'Готово'), 'success')
+    return redirect(request.referrer or url_for('plan_bp.plan_review', token=token))

@@ -19,6 +19,7 @@ class PlanEvents {
         this.initTableContextMenu();
         this.initCollapseSections();
         this.initColumnResize();
+        this.initAjaxForms();
     }
 
     async loadEvents() {
@@ -266,6 +267,7 @@ class PlanEvents {
                 contextDeleteButtonId: 'contextDeleteButton',
                 tableEditButtonId: 'tableEditButton',
                 tableDeleteButtonId: 'tableDeleteButton',
+                removeCallback: (rowId) => this.deleteEventAjax(rowId),
                 removeUrlTemplate: '/plans/plan/delete-eventes/{id}',
                 immutableCodes: [],
                 immutableEditCodes: ['0004'],
@@ -275,6 +277,152 @@ class PlanEvents {
                 additionalContainers: ['other-content']
             });
         }
+    }
+
+    // Добавление/редактирование/удаление мероприятия раньше были обычными
+    // POST-формами с редиректом на ту же страницу — из-за этого после
+    // сохранения строки в конце длинной таблицы страница перезагружалась
+    // целиком и прокрутка сбрасывалась в начало (см. тот же фикс для
+    // показателей в indicator-calc.js). Теперь эти действия шлются через
+    // fetch, а обновляется только сама таблица (см. refreshTable).
+    initAjaxForms() {
+        const addForm = document.getElementById('addEventForm');
+        if (addForm) {
+            addForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.submitEventForm(addForm, 'AddEventModal');
+            });
+        }
+
+        const editForm = document.getElementById('editEventeForm');
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                // При редактировании периодной (квартальной) строки значение
+                // берётся из отдельного поля-инпута и переносится в скрытое
+                // поле формы перед отправкой.
+                const editType = document.getElementById('edit-event-type')?.value;
+                if (editType === 'period') {
+                    const effCurrYearInput = document.getElementById('period-EffCurrYear-edit');
+                    const hiddenEffCurrYear = document.getElementById('change-EffCurrYear-edit-model');
+                    if (effCurrYearInput && hiddenEffCurrYear) {
+                        hiddenEffCurrYear.value = effCurrYearInput.value.replace(',', '.');
+                    }
+                }
+
+                this.submitEventForm(editForm, 'EditEventModal');
+            });
+        }
+    }
+
+    async submitEventForm(form, modalId) {
+        await this.withScrollPreserved(async () => {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const wasDisabled = submitBtn ? submitBtn.disabled : null;
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form)
+                });
+                const data = await response.json();
+
+                this.notify(data.message, data.success);
+
+                if (data.success) {
+                    const modal = document.getElementById(modalId);
+                    if (modal) modal.classList.remove('active');
+                    // Раньше страница целиком перезагружалась после отправки,
+                    // из-за чего модалка сама "сбрасывалась" на первый шаг.
+                    // Теперь модалка не пересоздаётся — сбрасываем шаги
+                    // мастера вручную, иначе при повторном открытии он
+                    // окажется там же, где был при закрытии (а у EditEventModal
+                    // счётчик шага внутри EventModal вообще не совпадёт с тем,
+                    // что показывает showEventStep(), и "Далее" перестанет
+                    // работать).
+                    if (modalId === 'AddEventModal') {
+                        form.reset();
+                        window.addEventModalWizard?.resetForm();
+                    } else if (modalId === 'EditEventModal') {
+                        window.editEventModalWizard?.resetForm();
+                    }
+                    await this.refreshTable();
+                }
+            } catch (e) {
+                console.error('[PlanEvents] submit error', e);
+                this.notify('Не удалось сохранить мероприятие', false);
+            } finally {
+                if (submitBtn) submitBtn.disabled = wasDisabled;
+            }
+        });
+    }
+
+    async deleteEventAjax(id) {
+        await this.withScrollPreserved(async () => {
+            try {
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const formData = new FormData();
+                if (csrfMeta) formData.append('csrf_token', csrfMeta.content);
+
+                const response = await fetch(`/plans/plan/delete-eventes/${id}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+                const data = await response.json();
+
+                this.notify(data.message, data.success);
+
+                if (data.success) {
+                    await this.refreshTable();
+                }
+            } catch (e) {
+                console.error('[PlanEvents] delete error', e);
+                this.notify('Не удалось удалить мероприятие', false);
+            }
+        });
+    }
+
+    async withScrollPreserved(fn) {
+        const scrollY = window.scrollY;
+        let active = true;
+
+        const onScroll = () => {
+            if (active && window.scrollY !== scrollY) {
+                window.scrollTo(0, scrollY);
+            }
+        };
+        window.addEventListener('scroll', onScroll);
+
+        try {
+            return await fn();
+        } finally {
+            if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+            setTimeout(() => {
+                active = false;
+                window.removeEventListener('scroll', onScroll);
+            }, 1500);
+        }
+    }
+
+    notify(message, success) {
+        if (typeof messageFlash !== 'undefined' && message) {
+            messageFlash.addMessage(message, success ? 'success' : 'error');
+        } else if (message && !success) {
+            alert(message);
+        }
+    }
+
+    // Общее место обновления таблицы после add/edit/delete: перерисовывает
+    // только тело таблицы (loadEvents), затем заново навешивает контекстное
+    // меню — оно завязано на конкретные DOM-узлы строк, которые
+    // renderOriginalEvents/renderEventsWithChanges каждый раз создают заново.
+    async refreshTable() {
+        await this.loadEvents();
+        this.initTableContextMenu();
     }
 
     initCollapseSections() {
@@ -3302,21 +3450,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    const formEventeForm = document.getElementById('editEventeForm');
-    if (formEventeForm) {
-        formEventeForm.addEventListener('submit', function(e) {
-            const editType = document.getElementById('edit-event-type')?.value;
-            if (editType === 'period') {
-                const effCurrYearInput = document.getElementById('period-EffCurrYear-edit');
-                const hiddenEffCurrYear = document.getElementById('change-EffCurrYear-edit-model');
-                
-                if (effCurrYearInput && hiddenEffCurrYear) {
-                    let value = effCurrYearInput.value.replace(',', '.');
-                    hiddenEffCurrYear.value = value;
-                }
-            }
-        });
-    }
+    // Обработка отправки editEventeForm (включая перенос значения периодного
+    // поля EffCurrYear перед отправкой) теперь выполняется через AJAX внутри
+    // PlanEvents.initAjaxForms() — см. ниже, где создаётся window.planEvents.
 
     if (document.getElementById('indicatorsTable') && document.getElementById('indicators-tbody')) {
         const token = document.getElementById('indicatorsTable')?.dataset?.token;
@@ -3527,12 +3663,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const addEventModal = document.getElementById('AddEventModal');
     const addEventModal1 = new EventModal('AddEventModal');
+    window.addEventModalWizard = addEventModal1;
     if (addEventModal && addEventModal1) {
         handleModal(addEventModal, document.getElementById('AddEventsModalBtn'), addEventModal.querySelector('.close'));
     }
 
     const editEventModal = document.getElementById('EditEventModal');
     const eventModal = new EventModal('EditEventModal');
+    window.editEventModalWizard = eventModal;
 
     if (editEventModal && eventModal) {
         const tableEditButton = document.getElementById('tableEditButton');

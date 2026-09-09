@@ -616,6 +616,16 @@ class PlanStatControl {
             this.tooltipElement.style.display = 'none';
         }
     }
+
+    // Таблица показателей теперь обновляется без перезагрузки страницы
+    // (см. PlanIndicators в indicator-calc.js) — renderIndicatorsTable()
+    // каждый раз пересоздаёт все <tr> заново, стирая индикаторы/классы,
+    // которые paint() расставил на старых узлах. Вызывается извне после
+    // такого обновления, чтобы перерисовать сравнение на новых строках.
+    refresh() {
+        if (!this.hasStatData || !this.isInitialized) return;
+        this.check();
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -625,12 +635,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const table = document.getElementById('indicatorsTable');
         const isRegionManagement = table?.dataset?.isRegionManagement === 'true';
         const isAdmin = table?.dataset?.isAdmin === 'true';
-        
+
         if (rows && rows.length > 0 && rows[0].dataset.code) {
-            new PlanStatControl('indicatorsTable', isRegionManagement, isAdmin);
+            window.planStatControl = new PlanStatControl('indicatorsTable', isRegionManagement, isAdmin);
         } else {
             setTimeout(() => {
-                new PlanStatControl('indicatorsTable', isRegionManagement, isAdmin);
+                window.planStatControl = new PlanStatControl('indicatorsTable', isRegionManagement, isAdmin);
             }, 1000);
         }
     }, 500);

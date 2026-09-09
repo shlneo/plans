@@ -10,6 +10,143 @@ class PlanIndicators {
         this.initColumnResize();
         this.initAddIndicatorModal();
         this.initEditIndicatorModal();
+        this.initAjaxForms();
+    }
+
+    // Добавление/редактирование/удаление показателя раньше были обычными
+    // POST-формами с редиректом на ту же страницу — из-за этого после
+    // сохранения строки в конце длинной таблицы страница перезагружалась
+    // целиком и прокрутка сбрасывалась в начало. Теперь эти действия шлются
+    // через fetch, а обновляется только сама таблица (см. refreshTable).
+    initAjaxForms() {
+        const addForm = document.getElementById('addIndicatorForm');
+        if (addForm) {
+            addForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.submitIndicatorForm(addForm, 'AddIndicatorModal');
+            });
+        }
+
+        const editForm = document.getElementById('editIndicatorForm');
+        if (editForm) {
+            editForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                this.submitIndicatorForm(editForm, 'EditIndicatorModal');
+            });
+        }
+    }
+
+    async submitIndicatorForm(form, modalId) {
+        await this.withScrollPreserved(async () => {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const wasDisabled = submitBtn ? submitBtn.disabled : null;
+            // disabled на сфокусированной кнопке уводит фокус на <body>, а
+            // это само по себе заставляет браузер прокрутить страницу к
+            // нулю — отсюда и withScrollPreserved вокруг всего действия.
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: new FormData(form)
+                });
+                const data = await response.json();
+
+                this.notify(data.message, data.success);
+
+                if (data.success) {
+                    const modal = document.getElementById(modalId);
+                    if (modal) modal.classList.remove('active');
+                    await this.refreshTable();
+                }
+            } catch (e) {
+                console.error('[PlanIndicators] submit error', e);
+                this.notify('Не удалось сохранить показатель', false);
+            } finally {
+                if (submitBtn) submitBtn.disabled = wasDisabled;
+            }
+        });
+    }
+
+    async deleteIndicatorAjax(id) {
+        await this.withScrollPreserved(async () => {
+            try {
+                const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                const formData = new FormData();
+                if (csrfMeta) formData.append('csrf_token', csrfMeta.content);
+
+                const response = await fetch(`../delete-indicator/${id}`, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                });
+                const data = await response.json();
+
+                this.notify(data.message, data.success);
+
+                if (data.success) {
+                    await this.refreshTable();
+                }
+            } catch (e) {
+                console.error('[PlanIndicators] delete error', e);
+                this.notify('Не удалось удалить показатель', false);
+            }
+        });
+    }
+
+    // Закрытие модалки и/или снятие фокуса с disabled-кнопки сбрасывают
+    // document.activeElement на <body>, а это в некоторых браузерах само
+    // по себе прокручивает страницу к началу — что и было исходной жалобой
+    // ("ПО возвращает нас в начало таблицы"). Момент сброса не привязан
+    // жёстко к одному тику (гонка между разными частями обновления
+    // таблицы), поэтому вместо разовой попытки восстановить прокрутку
+    // держим её "прибитой" слушателем на весь короткий период обновления
+    // плюс небольшой запас после.
+    async withScrollPreserved(fn) {
+        const scrollY = window.scrollY;
+        let active = true;
+
+        const onScroll = () => {
+            if (active && window.scrollY !== scrollY) {
+                window.scrollTo(0, scrollY);
+            }
+        };
+        window.addEventListener('scroll', onScroll);
+
+        try {
+            return await fn();
+        } finally {
+            if (window.scrollY !== scrollY) window.scrollTo(0, scrollY);
+            // ещё немного держим слушателя — сброс может произойти уже
+            // после того, как fn() отработала (см. отложенные reflow),
+            // с запасом на медленных машинах/браузерах.
+            setTimeout(() => {
+                active = false;
+                window.removeEventListener('scroll', onScroll);
+            }, 1500);
+        }
+    }
+
+    notify(message, success) {
+        if (typeof messageFlash !== 'undefined' && message) {
+            messageFlash.addMessage(message, success ? 'success' : 'error');
+        } else if (message && !success) {
+            alert(message);
+        }
+    }
+
+    // Общее место обновления таблицы после add/edit/delete: перерисовывает
+    // только tbody (loadIndicators), затем заново навешивает контекстное
+    // меню и перерисовывает сравнение со статотчётностью — оба завязаны на
+    // конкретные DOM-узлы строк, которые renderIndicatorsTable каждый раз
+    // создаёт заново.
+    async refreshTable() {
+        await this.loadIndicators();
+        this.initTableContextMenu();
+        if (window.planStatControl) {
+            window.planStatControl.refresh();
+        }
     }
 
     initAddIndicatorModal() {
@@ -277,9 +414,16 @@ class PlanIndicators {
     renderIndicatorsTable(indicators) {
         const tbody = document.getElementById('indicators-tbody');
         if (!tbody) return;
-        
-        tbody.innerHTML = '';
-        
+
+        // Строки собираются во фрагмент и добавляются в tbody одним разом
+        // в конце — если чистить tbody и добавлять строки по одной, между
+        // ними таблица на мгновение пустеет, документ становится короче
+        // прежней прокрутки, и браузер тут же сбрасывает scrollY к 0
+        // (именно то неудобство при редактировании нижних строк, которое
+        // должно было исчезнуть с переходом на обновление таблицы без
+        // перезагрузки страницы).
+        const fragment = document.createDocumentFragment();
+
         let lastGroup = null;
 
         indicators.forEach((row, index) => {
@@ -381,8 +525,11 @@ class PlanIndicators {
                 <td style="display: none" data-group="${row.group}">${row.group}</td>
             `;
             
-            tbody.appendChild(tr);
+            fragment.appendChild(tr);
         });
+
+        tbody.innerHTML = '';
+        tbody.appendChild(fragment);
     }
 
     initTableContextMenu() {
@@ -414,6 +561,7 @@ class PlanIndicators {
                 tableEditButtonId: 'tableEditButton',
                 tableDeleteButtonId: 'tableDeleteButton',
                 removeUrlTemplate: '../delete-indicator/{id}',
+                removeCallback: (rowId) => this.deleteIndicatorAjax(rowId),
                 immutableCodes,
                 immutableEditCodes: [],
                 immutableDeleteCodes,

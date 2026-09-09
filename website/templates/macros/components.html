@@ -351,13 +351,21 @@ progress_width = (completed_steps / total_steps * 100) if total_steps > 0 else 0
 
       <div class="enplans-approval-step-actions">
         {% if current_user.is_admin %}
-        <button
-          class="enplans-approval-btn"
-          data-action="approve"
-          data-path-id="{{ path.id }}"
-        >
-          {{ _('Подтвердить') }}
-        </button>
+        <form method="POST" action="{{ url_for('plan_bp.api_admin_set_approval_step', token=plan.token) }}" class="enplans-approval-admin-form" data-org-name="{{ org.full_name if org else path.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="path_id" value="{{ path.id }}">
+          {% if is_completed %}
+          <input type="hidden" name="action" value="cancel">
+          <button type="submit" class="enplans-approval-btn enplans-approval-btn-cancel" data-confirm-action="cancel">
+            {{ _('Отменить') }}
+          </button>
+          {% else %}
+          <input type="hidden" name="action" value="confirm">
+          <button type="submit" class="enplans-approval-btn" data-confirm-action="confirm">
+            {{ _('Подтвердить') }}
+          </button>
+          {% endif %}
+        </form>
         {% endif %}
       </div>
     </div>

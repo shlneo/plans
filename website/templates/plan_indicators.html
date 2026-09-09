@@ -183,7 +183,7 @@
                     </button>
                 </div>
             </div>
-            <form action="{{ url_for('plan_bp.create_indicator', token=plan.token) }}" method="POST">
+            <form id="addIndicatorForm" action="{{ url_for('plan_bp.create_indicator', token=plan.token) }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div id="step2" class="modal-step" style="display: none;">
                             

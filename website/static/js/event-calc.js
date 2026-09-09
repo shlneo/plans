@@ -899,8 +899,12 @@ class EventModalManager {
         const fields = {
             'change-name-edit-model': data.name || '',
             'change-Volume-edit-model': data.Volume || '',
-            'change-EffTut-edit-model': data.EffTut || '',
-            'change-EffRub-edit-model': data.EffRub || '',
+            // Раньше при отсутствии значения подставлялась пустая строка, а
+            // оба поля обязательны — форму было невозможно отправить, пока
+            // пользователь не введёт их вручную. Остальные числовые поля
+            // ниже уже подставляют ноль по умолчанию — делаем так же.
+            'change-EffTut-edit-model': data.EffTut ? this.formatNumber(parseFloat(data.EffTut), 2) : '0,00',
+            'change-EffRub-edit-model': data.EffRub ? this.formatNumber(parseFloat(data.EffRub), 0) : '0',
             'change-EffCurrYear-edit-model': data.EffCurrYear ? this.formatNumber(parseFloat(data.EffCurrYear), 2) : '0,00',
             'change-Payback-edit-model': data.Payback ? this.formatNumber(parseFloat(data.Payback), 1) : '0,0',
             'change-ObchVolumeFin-edit-model': data.ObchVolumeFin || '0',

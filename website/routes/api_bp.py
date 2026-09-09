@@ -552,7 +552,12 @@ def api_notifications():
     notifications = Notification.query.filter_by(user_id=current_user.id)\
         .order_by(Notification.created_at.desc())\
         .paginate(page=page, per_page=per_page, error_out=False)
-    
+
+    # Счётчик на колокольчике должен отражать ВСЕ непрочитанные уведомления,
+    # а не только те, что попали на текущую (маленькую) страницу — раньше
+    # бейдж считался на клиенте из уже загруженного списка и занижал число.
+    unread_total = Notification.query.filter_by(user_id=current_user.id, is_read=False).count()
+
     return jsonify({
         'notifications': [
             {
@@ -566,6 +571,7 @@ def api_notifications():
         'page': notifications.page,
         'per_page': notifications.per_page,
         'total': notifications.total,
+        'unread_total': unread_total,
         'has_next': notifications.has_next
     })
 
